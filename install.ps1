@@ -173,6 +173,26 @@ function Expand-PackZip([string]$zipPath, [string]$zipLeaf) {
     else { Fail "zip 里找不到 $ProfileName\mods.yml，包可能不完整。" }
 }
 
+# 兜底：用 GitHub API 查最新 Release 里附件的真实地址
+# （刚发布时 releases/latest/download/... 可能短暂 404，但 assets 里的直链已经能用）
+function Resolve-AssetUrlByApi([string]$repo, [string]$preferLeaf) {
+    if ([string]::IsNullOrWhiteSpace($repo) -or ($repo -notmatch '^[\w.-]+/[\w.-]+$')) { return $null }
+    try {
+        $req = [System.Net.HttpWebRequest]::Create("https://api.github.com/repos/$repo/releases/latest")
+        $req.Timeout = 20000
+        $req.UserAgent = "makabaka-install"
+        $req.Accept = "application/vnd.github+json"
+        $resp = $req.GetResponse()
+        $sr = New-Object System.IO.StreamReader($resp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+        $json = $sr.ReadToEnd()
+        $sr.Close(); $resp.Close()
+        $assets = @(($json | ConvertFrom-Json).assets)
+        foreach ($a in $assets) { if ($preferLeaf -and $a.name -eq $preferLeaf) { return $a.browser_download_url } }
+        foreach ($a in $assets) { if ($a.name -like "${ProfileName}_profile*.zip") { return $a.browser_download_url } }
+    } catch {}
+    return $null
+}
+
 $script:LogLines = New-Object System.Collections.Generic.List[string]
 $script:LogPath = ""
 $script:SelfFiles = @("一键安装.bat", "install.ps1", "安装日志.txt")
@@ -289,8 +309,17 @@ else {
     if (-not (Test-Path $zip)) {
         $sizeTxt = ""
         if ($man -and $man.ContainsKey("size")) { $sizeTxt = "约 " + [math]::Round(([int64]$man["size"]) / 1MB, 1) + " MB，" }
-        if (-not (Save-FileWithMirrors $dlUrl $zip ($sizeTxt + "多条线路自动重试"))) {
-            Fail "下载失败：所有线路都连不上（也可能被防火墙拦了）。可以手动从 Release 页面下载 zip，放到本脚本旁边再运行本脚本。"
+        $ok = Save-FileWithMirrors $dlUrl $zip ($sizeTxt + "多条线路自动重试")
+        if (-not $ok) {
+            Say "        直接下载失败 → 改用 GitHub API 查附件的真实地址（刚发布的包，latest 链接可能还没生效）…" "Yellow"
+            $realUrl = Resolve-AssetUrlByApi $ReleasesRepo $zipLeaf
+            if ($realUrl) {
+                Say "        真实地址：$realUrl" "DarkGray"
+                $ok = Save-FileWithMirrors $realUrl $zip ($sizeTxt + "API 给出的附件地址")
+            }
+        }
+        if (-not $ok) {
+            Fail "下载失败：所有线路都连不上（也可能被防火墙/杀软拦了）。刚发布或刚更新时可能需要等 1~2 分钟再试；也可以手动从 Release 页面下载 zip，放到本脚本旁边再运行本脚本。"
         }
         Say "        下载完成。" "Green"
     }
