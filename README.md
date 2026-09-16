@@ -23,18 +23,20 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 
 ### A. 一行命令（不用装 git，最省事）
 
-PowerShell 窗口里粘这一行、回车（走镜像，国内直连 raw 常常连不上）：
+PowerShell 窗口里把这四行整段粘进去、回车（镜像优先，失败自动改直连）：
 
 ```powershell
-$s="$env:TEMP\makabaka-install.ps1"; iwr "https://ghfast.top/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1" -OutFile $s; powershell -NoProfile -ExecutionPolicy Bypass -File $s
+$u = "https://ghfast.top/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"
+$s = "$env:TEMP\makabaka-install.ps1"
+$wc = New-Object Net.WebClient; $wc.Headers.Add("User-Agent","makabaka-install")
+try { $wc.DownloadFile($u,$s) } catch { $wc.Proxy = $null; $wc.DownloadFile("https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1",$s) }
+powershell -NoProfile -ExecutionPolicy Bypass -File $s
 ```
 
-镜像不行就换这几个前缀（也可以直接用 `raw.githubusercontent.com` 直连）：
+（这里用 `Net.WebClient` 而不是 `iwr`：实测同一台机器上 WebClient 1 秒拿到，
+`Invoke-WebRequest` 有时会卡住十几分钟。卡住就 Ctrl+C，改用 B 或 C 两种装法。）
 
-```powershell
-$u="https://ghproxy.net/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"
-$u="https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"   # 直连
-```
+镜像前缀可以换成 `https://ghproxy.net/`，或者干脆不挂前缀直连 `raw.githubusercontent.com`。
 
 > 在跑着 Clash / 机场加速器的机器上，脚本下载会先走系统代理、失败会自动绕开代理直连；
 > 首装要下 117MB，几分钟属正常，别中途关窗口。
