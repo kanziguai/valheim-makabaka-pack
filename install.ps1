@@ -75,8 +75,8 @@ $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字�
 $VrmDefaultModel = "金乌"                             # VRM 默认模型（对应 Models\ 下的目录名，会排在清单第一位）
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.1_20260916.zip"
-$FallbackMd5     = "7c5a65eaa42d9f072bb6822d5f6952cd"
+$FallbackAsset   = "MAKABAKA_profile_v1.2_20260916.zip"
+$FallbackMd5     = "f842894d34c4e7fa1b65e2833ee9ebc3"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）

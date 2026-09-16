@@ -1,0 +1,48 @@
+﻿英灵神殿 MAKABAKA 整合档 —— 2026-09-16 更新说明（v1.2）
+（上一版：v1.1 / 2026-09-16；mod 内容与 v1.1 相同，本版升级的是"安装脚本 + 说明文档"）
+
+【下载时终于能看到进度和速度了】
+  · 现在下载安装包时会实时显示一行：
+       89%   117 MB / 131.6 MB   18.8 MB/s，剩约 1 秒
+    并显示你正在走哪条线路（镜像 / 直连）；下完再给一行汇总：
+       下载完成：131.6 MB，用时 6.5 秒（平均 20.3 MB/s）
+  · 顺带修了个老问题：以前用的是 WebClient 同步下载，它根本不触发进度事件
+    （所以之前只显示"下载中…"然后直接"下载完成"，看不到百分比和速度）。
+    现在改成自己读网络流写文件，进度必然可见。
+  · 同时加了【下载完整性校验】：收到的字节数和应有大小不一致（下到一半断了、
+    被代理截断）就判这一条线路失败，自动换下一条线路重试 —— 不会再出现"装到一半报校验失败"。
+
+【安装包放哪，你可以自己选（不想放 C 盘的话）】
+  · 首次运行（只有在需要下载或解压时）会问一次：
+        1) C:\Users\你\AppData\Local\Temp\makabaka_pack   （默认；会显示该盘剩余空间）
+        2) D:\MAKABAKA_install   （列表里会列出你其它盘和各自剩余空间）
+        0) 我自己输入一个路径（只写 D: 也行）
+    选完会记住（脚本旁的 download-path.txt），以后不再问。
+  · 命令行等价写法： -DownloadDir D:\MAKABAKA_install
+  · 换模型用的模型缓存（约 100MB）也会放在你选的这个目录里（VRM_Models\）；
+    用默认位置时放在 %LOCALAPPDATA%\MAKABAKA\VRM\Models（因为临时目录会被系统清理）。
+  · 解压出来的临时目录用同一个位置，装完自动清理。
+
+【机器上有多个 r2modman 数据文件夹时，会让你选（不再"找到第一个就用"）】
+  · 会全部列出来，并标注每个是"已有 MAKABAKA 档（时间）"还是"会新建"，以及哪个是"上次装在这"：
+        1) C:\Users\你\AppData\Roaming\r2modmanPlus-local\Valheim\profiles   ← 上次装在这
+        2) D:\r2modmanPlus-local\Valheim\profiles
+        9) 再扫描所有硬盘，找找别的数据文件夹
+        0) 我自己输入路径（r2modman → 左下 Settings → Locations → Browse data folder 能看到）
+  · 直接回车 = 第 1 项（一般就是你要升级的那份）；只有一个数据文件夹时不会问。
+  · 自动安装（-NonInteractive）时用第 1 个，并把候选列表打进日志。
+
+【git 装法简化：一段命令，不用 cd、不用双击】
+  先装 git，然后把这段整段粘进 PowerShell 回车即可（以后更新也是粘同一段）：
+        $d = "$env:USERPROFILE\valheim-makabaka-pack"
+        if (Test-Path "$d\.git") { git -C $d pull }
+        elseif (Test-Path $d) { $d = "$d-git"; git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
+        else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
+        & "$d\一键安装.bat"
+  · 首次 = clone 完直接接着安装；再粘一次 = git pull 完接着安装。
+  · 目录已存在但不是 git 仓库（比如以前下的是 zip）会自动克隆到 ...-pack-git，不会撞车。
+
+【老玩家怎么更新】
+  · 一行命令 / 手动下载装的：重跑一次即可（每次取最新版）
+  · git 装的：把上面那段命令再粘一次（或 git pull 后双击 一键安装.bat）
+  · 只想换模型 / 改角色名：双击「换模型.bat」（v1.1 起提供）
