@@ -23,17 +23,21 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 
 ### A. 一行命令（不用装 git，最省事）
 
-PowerShell 窗口里粘这一行、回车：
+PowerShell 窗口里粘这一行、回车（走镜像，国内直连 raw 常常连不上）：
 
 ```powershell
-$s="$env:TEMP\makabaka-install.ps1"; iwr "https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1" -OutFile $s; powershell -NoProfile -ExecutionPolicy Bypass -File $s
+$s="$env:TEMP\makabaka-install.ps1"; iwr "https://ghfast.top/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1" -OutFile $s; powershell -NoProfile -ExecutionPolicy Bypass -File $s
 ```
 
-raw 连不上就换镜像前缀（两个都行）：
+镜像不行就换这几个前缀（也可以直接用 `raw.githubusercontent.com` 直连）：
 
 ```powershell
-$u="https://ghfast.top/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"
+$u="https://ghproxy.net/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"
+$u="https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"   # 直连
 ```
+
+> 在跑着 Clash / 机场加速器的机器上，脚本下载会先走系统代理、失败会自动绕开代理直连；
+> 首装要下 117MB，几分钟属正常，别中途关窗口。
 
 ### B. clone 仓库 + 双击（推荐，以后更新最方便）
 
