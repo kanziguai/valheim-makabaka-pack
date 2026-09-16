@@ -619,8 +619,12 @@ if (Test-Path $dst) {
             } else {
                 Copy-Item (Join-Path $dst "BepInEx\plugins") (Join-Path $bakRoot "plugins") -Recurse -Force
             }
-            Copy-Item (Join-Path $dst "mods.yml") (Join-Path $bakRoot "mods.yml") -Force
-            Say "        备份完成（plugins 目录 + mods.yml）。" "Green"
+            if (Test-Path (Join-Path $dst "mods.yml")) {
+                Copy-Item (Join-Path $dst "mods.yml") (Join-Path $bakRoot "mods.yml") -Force
+                Say "        备份完成（plugins 目录 + mods.yml）。" "Green"
+            } else {
+                Say "        备份完成（plugins 目录）。[注意] 档里没有 mods.yml，档可能不完整。" "Yellow"
+            }
         } catch { Fail "升级前备份失败：$($_.Exception.Message)" }
     }
 } else {
@@ -763,8 +767,16 @@ if ($vrmPack -and -not $SkipVRM) {
         $vrmOk = @{ "插件" = $false; "Managed" = $false; "模型" = $false }
 
         # ---- ① 插件：装进 r2modman 的档（这一步不依赖游戏目录，先做）----
+        # 目标位置：先找档里已存在的 ValheimVRM.dll 所在目录（避免新建平行目录导致插件重复加载），
+        #          找不到就用本包约定的 <档>\BepInEx\plugins\ValheimVRM_1.2.2\
         $profRootThis = Join-Path $ProfilesRoot $ProfileName
-        $plugDst = Join-Path $profRootThis "BepInEx\plugins\ValheimVRM_1.2.2"
+        $pluginsDir = Join-Path $profRootThis "BepInEx\plugins"
+        $plugDst = $null
+        if (Test-Path $pluginsDir) {
+            $found = Get-ChildItem -Path $pluginsDir -Recurse -File -Filter "ValheimVRM.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) { $plugDst = $found.DirectoryName }
+        }
+        if (-not $plugDst) { $plugDst = Join-Path $pluginsDir "ValheimVRM_1.2.2" }
         if ($srcVrmPlugins) {
             $pCopy = 0; $pSame = 0; $pBak = 0
             $pBakDir = Join-Path (Join-Path $profRootThis "BepInEx") ("_vrm_backup_" + (Get-Date -Format "yyyyMMdd-HHmmss"))
