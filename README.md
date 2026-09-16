@@ -81,7 +81,15 @@ cd valheim-makabaka-pack
 |---|---|---|
 | 插件 `ValheimVRM.dll` + `ValheimVRM.shaders` | `ValheimVRM_手动安装\BepInEx_pluginsに入れるファイル\` | **r2modman 的档里**：`<档>\BepInEx\plugins\ValheimVRM_1.2.2\` |
 | 运行时 dll（15 个，`VRM10.dll`/`UniGLTF.dll`/`MToon.dll`…） | `ValheimVRM_手动安装\valheim_Data_Managedに入れる文件\` | **游戏本体里**：`<游戏>\valheim_Data\Managed\`（覆盖前自动备份到 `<游戏>\_vrm_backup_<时间>\`） |
-| 模型与设置 | `ValheimVRM_手动安装\ValheimVRM.zip` | **游戏本体里**：`<游戏>\ValheimVRM\<角色名>.vrm` + `settings_<角色名>.txt` |
+| 模型与设置 | `ValheimVRM_手动安装\Models\金乌\` 或 `\辰星\`（默认金乌） | **游戏本体里**：`<游戏>\ValheimVRM\<角色名>.vrm` + `settings_<角色名>.txt` |
+
+模型是**装的时候自己选、角色名自己输**的：脚本列出 `金乌`（默认）/`辰星`/`0 不换`，然后问你的角色名，
+复制成 `<角色名>.vrm` + `settings_<角色名>.txt`。**只换模型不用重装整个档** —— 双击 `换模型.bat` 即可
+（等价 `install.ps1 -VRMOnly`，也可 `-VrmModel 辰星 -CharName 你的角色名 -NonInteractive` 直接指定）。
+
+> 文件名规则（照上游源码确认）：`<游戏>\ValheimVRM\<角色名>.vrm` 与 `settings_<角色名>.txt`。
+> 拼写必须与游戏里角色名一致（大小写无所谓，字母不能错），前缀必须是 `settings_`；
+> 缺配置文件不会崩，插件会用默认值（模型大小 1.1、亮度 0.8…）。改完要完全重启游戏。
 
 脚本对每个文件都比对 MD5：缺的补上、内容不一样的换掉（换之前先备份），装完还会打一份**三处自检**，
 三行都得是 `[✓]`：`① 插件（档里）` / `② Managed dll（游戏里）` / `③ 模型（游戏里）`。

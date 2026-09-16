@@ -11,6 +11,9 @@
     -PackUrl <url>         直接从指定 URL 下载包（http/https/file 都行）
     -Offline               只用本地文件，绝不联网下载
     -ReleaseRepo <o/r>     换成别的 GitHub 仓库（默认见脚本里的 $ReleasesRepo）
+    -VRMOnly               只换模型：不重装档，只做 VRM 的模型与设置（配合 换模型.bat 用）
+    -VrmModel <名字|路径>  指定用哪个模型（名字=Models 下的目录名，如 金乌/辰星；也可以给 .vrm 路径）
+    -CharName <角色名>     指定角色名（模型会被复制成 <角色名>.vrm + settings_<角色名>.txt）
     -NonInteractive        不提问：自动关 r2modman、已装过则默认走"升级"
     -Fresh                 已装过时强制"全新重装"（旧档改名备份）
     -DetectOnly            只显示"探测到的 profiles 目录"然后退出（不动任何文件）
@@ -38,7 +41,10 @@ param(
     [string]$PackUrl = "",
     [switch]$Offline,
     [string]$ReleaseRepo = "",
-    [string]$ReleaseBase = ""
+    [string]$ReleaseBase = "",
+    [switch]$VRMOnly,
+    [string]$VrmModel = "",
+    [string]$CharName = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -63,6 +69,7 @@ $ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owne
 $ScriptBuild    = "2026-09-16"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
+$VrmDefaultModel = "金乌"                             # VRM 默认模型（对应 Models\ 下的目录名，会排在清单第一位）
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.0_20260915.zip"
@@ -248,7 +255,20 @@ $src = $null
 $script:packVer = ""
 $script:packTmpExtract = ""
 
-if (Test-Path (Join-Path $PSScriptRoot "$ProfileName\mods.yml")) {
+if ($VRMOnly) {
+    # -VRMOnly（只换模型）：不动 r2modman 的档、不下载安装包，只处理 VRM 的模型与设置
+    Say "  [只换模型模式] 不改动 r2modman 的档，只处理 VRM 的模型与设置（并做三处自检）" "Cyan"
+    $packRoot = $PSScriptRoot
+    if (-not (Test-Path (Join-Path $PSScriptRoot "ValheimVRM_手动安装")) -and -not (Test-Path (Join-Path $PSScriptRoot "Models"))) {
+        $up = Split-Path $PSScriptRoot -Parent
+        if ($up -and ((Test-Path (Join-Path $up "ValheimVRM_手动安装")) -or (Test-Path (Join-Path $up "Models")))) { $packRoot = $up }
+    }
+    $src = $packRoot   # 占位：只换模型不需要档源
+    if (-not (Test-Path (Join-Path $packRoot "ValheimVRM_手动安装")) -and -not (Test-Path (Join-Path $packRoot "Models"))) {
+        Fail "没找到 VRM 的模型源（ValheimVRM_手动安装\ 或 Models\）。把 换模型.bat 和它们放在同一个目录，或用 -ProfilesRoot/-PackRoot 相关参数指定。"
+    }
+}
+elseif (Test-Path (Join-Path $PSScriptRoot "$ProfileName\mods.yml")) {
     $src = Join-Path $PSScriptRoot $ProfileName
     Say "  [1/7] 源档：脚本同目录下的 $ProfileName 文件夹" "Green"
 }
@@ -364,7 +384,7 @@ else {
 }
 
 if (-not $src) { Fail "没能定位到档源目录，请把日志发给我们。" }
-$packRoot = Split-Path $src -Parent
+if (-not $VRMOnly) { $packRoot = Split-Path $src -Parent }
 
 # ---------- 2) 目标 profiles 目录（多路探测，支持数据文件夹被挪到别的盘）----------
 $GameName = "Valheim"
@@ -460,6 +480,28 @@ function Find-ValheimGameDir {
     return $null
 }
 
+if ($VRMOnly) {
+    # 只换模型：只做"轻量探测"（不扫盘、不写 install-path.txt），探测不到也不阻断
+    $resolved = $null
+    if (-not [string]::IsNullOrWhiteSpace($ProfilesRoot)) {
+        $resolved = Try-ProfilesRoot $ProfilesRoot
+        if (-not $resolved) { $resolved = Try-AnyProfilesRoot $ProfilesRoot }
+    }
+    if (-not $resolved -and (Test-Path $rememberFile)) {
+        try { $resolved = Try-ProfilesRoot ((Get-Content $rememberFile -Raw).Trim()) } catch {}
+    }
+    if (-not $resolved) {
+        foreach ($d in @((Join-Path $env:APPDATA "r2modmanPlus-local"), (Join-Path $env:LOCALAPPDATA "r2modmanPlus-local"))) {
+            $resolved = Try-ProfilesRoot $d
+            if (-not $resolved) { $resolved = Try-AnyProfilesRoot $d }
+            if ($resolved) { break }
+        }
+    }
+    if ($resolved) { $ProfilesRoot = $resolved }
+    if ($resolved) { Say "  [只换模型] 档目录：$ProfilesRoot" "DarkGray" }
+    else { Say "  [只换模型] 没探测到 r2modman 的档目录 → 跳过 ① 插件自检（只装模型，不影响档）" "DarkGray" }
+}
+else {
 $resolved = $null
 
 # ① 命令行指定（宽松：当成数据文件夹 / profiles 目录都行；不存在就按给定的用，稍后新建）
@@ -520,7 +562,7 @@ if (-not $resolved -and -not $NonInteractive) {
     Say "    打开 r2modman → 左下 Settings（设置）→ Locations 标签页 → 点 Browse data folder" "Yellow"
     Say "    弹出的文件夹就是数据文件夹（里面有 Valheim、config、image-cache 等）" "Yellow"
     Say "    如果 r2modman 还没装/没运行过：先装好、启动一次、选好 Valheim 位置，再回来运行本脚本。" "Yellow"
-    $ans = Read-Host "  把该文件夹路径粘贴到这里（也可以把文件夹直接拖进本窗口），回车=放弃"
+    $ans = "" + (Read-Host "  把该文件夹路径粘贴到这里（也可以把文件夹直接拖进本窗口），回车=放弃")
     if (-not [string]::IsNullOrWhiteSpace($ans)) {
         $resolved = Try-ProfilesRoot $ans
         if (-not $resolved) { $resolved = Try-AnyProfilesRoot $ans }
@@ -562,6 +604,10 @@ if (-not (Test-Path $ProfilesRoot)) {
     Say "        提示：如果 r2modman 你还没装/没运行过，请先装好 r2modman 并启动一次" "Yellow"
     Say "             （它会自己建立目录并让你选 Valheim 安装位置），再运行本脚本。" "Yellow"
 }
+}   # ← 结束"完整安装"的档目录探测（-VRMOnly 走上面的轻量分支）
+
+# ---------- 3~7) 只在"完整安装"时执行；-VRMOnly 直接跳到下面的 VRM 段 ----------
+if (-not $VRMOnly) {
 
 # ---------- 3) r2modman 必须先关掉 ----------
 $proc = Get-Process -Name "r2modman" -ErrorAction SilentlyContinue
@@ -726,6 +772,8 @@ Say "  如果帧率还是 15fps 左右（明显卡）：" "Yellow"
 Say "   → 那是旧版自研插件 ChestFlowTweaks 0.3.0 的 bug，本包是 0.3.1。" "Yellow"
 Say "   → 上面第 [6/7] 步若显示""校验通过""就说明已经修好；若显示不一致，把日志发我们。" "Yellow"
 
+}   # ← 结束 3~7 步（-VRMOnly 不走这里）
+
 # ---------- 附加：ValheimVRM（角色自定义模型；两处不同落点）----------
 # 源目录里两个子目录名（「…に入れるファイル」/「…に入れる文件」两种写法都认）：
 #   BepInEx_pluginsに入れるファイル      → 装进 r2modman 的档：<档>\BepInEx\plugins\ValheimVRM_1.2.2\
@@ -758,13 +806,14 @@ if ($vrmPack -and -not $SkipVRM) {
     Say "    ③ 模型与设置 → 游戏本体里   : <游戏>\ValheimVRM\<角色名>.vrm + settings_<角色名>.txt"
     $doVrm = $true
     if (-not $NonInteractive) {
-        $ansV = Read-Host "  一并配置 ValheimVRM 吗？(Y/n)"
+        $ansV = "" + (Read-Host "  一并配置 ValheimVRM 吗？(Y/n)")
         if ($ansV -match "^[Nn]") { $doVrm = $false }
     }
     if (-not $doVrm) {
         Say "  已跳过。之后想装：重跑本脚本，或按 $((Split-Path $vrmPack -Leaf))\说明_ValheimVRM.txt 手动做。" "DarkGray"
     } else {
         $vrmOk = @{ "插件" = $false; "Managed" = $false; "模型" = $false }
+        $script:vrmActiveName = ""
 
         # ---- ① 插件：装进 r2modman 的档（这一步不依赖游戏目录，先做）----
         # 目标位置：先找档里已存在的 ValheimVRM.dll 所在目录（避免新建平行目录导致插件重复加载），
@@ -777,7 +826,18 @@ if ($vrmPack -and -not $SkipVRM) {
             if ($found) { $plugDst = $found.DirectoryName }
         }
         if (-not $plugDst) { $plugDst = Join-Path $pluginsDir "ValheimVRM_1.2.2" }
-        if ($srcVrmPlugins) {
+        if ($srcVrmPlugins -and $VRMOnly) {
+            # 只换模型模式：① 只做检查（不写档里的任何文件）
+            $pMissing = @()
+            foreach ($f in (Get-ChildItem -Path $srcVrmPlugins -File)) {
+                $t = Join-Path $plugDst $f.Name
+                if (-not (Test-Path $t)) { $pMissing += $f.Name; continue }
+                if ((Get-FileHash $f.FullName -Algorithm MD5).Hash -ne (Get-FileHash $t -Algorithm MD5).Hash) { $pMissing += $f.Name }
+            }
+            if ($pMissing.Count -eq 0) { Say "        ① 插件（档里）：已是最新 ✓（只换模型模式不写档）" "Green"; $vrmOk["插件"] = $true }
+            else { Say "        ① 插件（档里）：缺/不一致 → $($pMissing -join '、')（跑一次完整安装即可补齐）" "Yellow" }
+        }
+        elseif ($srcVrmPlugins) {
             $pCopy = 0; $pSame = 0; $pBak = 0
             $pBakDir = Join-Path (Join-Path $profRootThis "BepInEx") ("_vrm_backup_" + (Get-Date -Format "yyyyMMdd-HHmmss"))
             try { New-Item -ItemType Directory -Path $plugDst -Force | Out-Null } catch {}
@@ -807,7 +867,7 @@ if ($vrmPack -and -not $SkipVRM) {
         if (-not $game -or -not (Test-Path (Join-Path $game "valheim_Data\Managed"))) {
             if (-not $NonInteractive) {
                 Say "  没能自动找到 Valheim 游戏目录（要含 valheim.exe 与 valheim_Data\Managed 的那一层）。" "Yellow"
-                $g = Read-Host "  把游戏目录粘进来（例如 I:\steam\steamapps\common\Valheim），回车=跳过"
+                $g = "" + (Read-Host "  把游戏目录粘进来（例如 I:\steam\steamapps\common\Valheim），回车=跳过")
                 if (-not [string]::IsNullOrWhiteSpace($g)) {
                     $g = $g.Trim().Trim('"').TrimEnd('\')
                     if (Test-Path (Join-Path $g "valheim_Data\Managed")) { $game = $g }
@@ -842,35 +902,161 @@ if ($vrmPack -and -not $SkipVRM) {
 
             $vrmTarget = Join-Path $game "ValheimVRM"
             try { New-Item -ItemType Directory -Path $vrmTarget -Force | Out-Null } catch {}
-            $got = @()
-            # 3a) 从 ValheimVRM.zip 里取 .vrm 与 settings_*.txt
-            $zipModel = Join-Path $vrmPack "ValheimVRM.zip"
-            if (Test-Path $zipModel) {
-                $tmpX = Join-Path $env:TEMP ("vrmx_" + (Get-Date -Format "HHmmss"))
-                try {
-                    Add-Type -AssemblyName System.IO.Compression.FileSystem
-                    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipModel, $tmpX)
-                    foreach ($f in (Get-ChildItem -Path $tmpX -Recurse -File | Where-Object { $_.Extension -eq ".vrm" -or $_.Name -like "settings_*.txt" })) {
-                        Copy-Item $f.FullName (Join-Path $vrmTarget $f.Name) -Force
-                        if ($got -notcontains $f.Name) { $got += $f.Name }
-                    }
-                    Remove-Item $tmpX -Recurse -Force -ErrorAction SilentlyContinue
-                } catch { Say "        [注意] 模型解压失败：$($_.Exception.Message)" "Yellow" }
-            }
-            # 3b) 源目录里直接放着的 .vrm / settings_*.txt（有人习惯自己放）也一并复制
-            #     （模板/示例文件不算：settings_player* 与带「模板」字样的跳过，免得在游戏目录里堆垃圾）
-            foreach ($f in (Get-ChildItem -Path $vrmPack -File | Where-Object {
-                        ($_.Extension -eq ".vrm" -or $_.Name -like "settings_*.txt") -and
-                        ($_.Name -notlike "settings_player*") -and ($_.Name -notlike "*模板*") })) {
-                Copy-Item $f.FullName (Join-Path $vrmTarget $f.Name) -Force
-                if ($got -notcontains $f.Name) { $got += $f.Name }
-            }
-            Say "        ③ 模型 → $vrmTarget"
-            if ($got.Count -gt 0) { Say "           本次放入：$($got -join '、')" "Green" }
-            else { Say "           [注意] 没有可放的模型（包内 ValheimVRM.zip 或源目录里应有 .vrm）" "Yellow" }
-            $vrmOk["模型"] = (@(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm").Count -gt 0)
 
-            Say "        ★ 模型按【角色名】生效：<角色名>.vrm 与 settings_<角色名>.txt（角色不叫 KaNzI 就把这两个文件改名）" "Yellow"
+            # ---- 3a) 收集可选模型：Models\<模型名>\<模型名>.vrm（+ 可选 settings.txt）----
+            $modelsDir = Join-Path $vrmPack "Models"
+            if (-not (Test-Path $modelsDir)) { $modelsDir = Join-Path $packRoot "Models" }
+            if (-not (Test-Path $modelsDir)) {
+                $cm = Join-Path $env:LOCALAPPDATA "MAKABAKA\VRM\Models"   # 本机缓存（在线安装时缓存下来的）
+                if (Test-Path $cm) { $modelsDir = $cm }
+            }
+            $modelList = @()
+            if (Test-Path $modelsDir) {
+                foreach ($d in (Get-ChildItem -Path $modelsDir -Directory -ErrorAction SilentlyContinue | Sort-Object Name)) {
+                    $v = Get-ChildItem -Path $d.FullName -File -Filter "*.vrm" -ErrorAction SilentlyContinue | Select-Object -First 1
+                    if (-not $v) { continue }
+                    $s = Join-Path $d.FullName "settings.txt"
+                    if (-not (Test-Path $s)) { $s = Join-Path $modelsDir "默认settings.txt" }
+                    $modelList += @{ Name = $d.Name; Vrm = $v.FullName; Settings = $(if (Test-Path $s) { $s } else { $null }) }
+                }
+            }
+            # 兼容老包：没有 Models\ 但有 ValheimVRM.zip（解压到临时目录，当"唯一可用模型"）
+            $vrmLegacyTmp = $null
+            if ($modelList.Count -eq 0) {
+                $zipModel = Join-Path $vrmPack "ValheimVRM.zip"
+                if (Test-Path $zipModel) {
+                    $vrmLegacyTmp = Join-Path $env:TEMP ("vrmm_" + (Get-Date -Format "HHmmss"))
+                    try {
+                        Add-Type -AssemblyName System.IO.Compression.FileSystem
+                        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipModel, $vrmLegacyTmp)
+                        $v = Get-ChildItem -Path $vrmLegacyTmp -Recurse -File -Filter "*.vrm" -ErrorAction SilentlyContinue | Select-Object -First 1
+                        if ($v) {
+                            $s = Get-ChildItem -Path $vrmLegacyTmp -Recurse -File -Filter "settings_*.txt" -ErrorAction SilentlyContinue | Select-Object -First 1
+                            $modelList += @{ Name = ($v.BaseName + "（包内 ValheimVRM.zip）"); Vrm = $v.FullName; Settings = $(if ($s) { $s.FullName } else { $null }) }
+                        }
+                    } catch { Say "        [注意] ValheimVRM.zip 解压失败：$($_.Exception.Message)" "Yellow" }
+                }
+            }
+            # 源目录根下直接放着的 .vrm（有人习惯自己丢进去）也算候选
+            foreach ($f in (Get-ChildItem -Path $vrmPack -File -Filter "*.vrm" -ErrorAction SilentlyContinue)) {
+                $modelList += @{ Name = $f.BaseName; Vrm = $f.FullName; Settings = $null }
+            }
+
+            # 默认模型排到第一位（清单顺序 = 显示顺序，第 1 个就是默认）
+            if ($VrmDefaultModel -and ($modelList | Where-Object { $_.Name -eq $VrmDefaultModel })) {
+                $modelList = @($modelList | Where-Object { $_.Name -eq $VrmDefaultModel }) + @($modelList | Where-Object { $_.Name -ne $VrmDefaultModel })
+            }
+            $script:vrmActiveName = ""
+            if ($modelList.Count -eq 0) {
+                Say "        ③ [注意] 没找到任何模型文件（包里应有 Models\<模型名>\<模型名>.vrm）" "Yellow"
+                $vrmOk["模型"] = (@(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count -gt 0)
+            } else {
+                # ---- 3b) 选哪个模型 ----
+                $pick = $null
+                if (-not [string]::IsNullOrWhiteSpace($VrmModel)) {
+                    $VrmModel = $VrmModel.Trim().Trim('"')
+                    if (Test-Path $VrmModel) {
+                        $pick = @{ Name = (Split-Path $VrmModel -Leaf); Vrm = (Resolve-Path $VrmModel).Path; Settings = $null }
+                        Say "        用 -VrmModel 指定的文件：$($pick.Vrm)" "DarkGray"
+                    } else {
+                        $pick = $modelList | Where-Object { $_.Name -eq $VrmModel } | Select-Object -First 1
+                        if (-not $pick) { $pick = $modelList | Where-Object { $_.Name -like "*$VrmModel*" } | Select-Object -First 1 }
+                        if (-not $pick) { Say "        [注意] -VrmModel 指定的「$VrmModel」不在清单里，改用默认（第一个）。" "Yellow" }
+                    }
+                }
+                if (-not $pick -and -not $NonInteractive) {
+                    Say ""
+                    Say "        可选模型："
+                    for ($i = 0; $i -lt $modelList.Count; $i++) {
+                        $mb = [math]::Round((Get-Item $modelList[$i].Vrm).Length / 1MB, 1)
+                        $tag = ""
+                        if ($i -eq 0) { $tag = "   ← 默认" }
+                        Say ("          {0}) {1}（{2} MB）{3}" -f ($i + 1), $modelList[$i].Name, $mb, $tag)
+                    }
+                    Say "          0) 不换模型（保持现状）"
+                    $sel = "" + (Read-Host "        选哪个？(直接回车 = 1)")
+                    if ($sel -match '^\s*0\s*$') { $pick = "skip" }
+                    elseif ($sel -match '^\s*$') { $pick = $modelList[0] }
+                    elseif ($sel -match '^\s*\d+\s*$' -and [int]$sel -ge 1 -and [int]$sel -le $modelList.Count) { $pick = $modelList[[int]$sel - 1] }
+                    else { Say "        输入看不懂，按默认（1）处理。" "Yellow"; $pick = $modelList[0] }
+                }
+                if (-not $pick) { $pick = $modelList[0] }   # 非交互模式：默认第一个
+
+                if ($pick -eq "skip") {
+                    Say "        ③ 已跳过（保持现有模型不动）" "DarkGray"
+                    $vrmOk["模型"] = (@(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count -gt 0)
+                } else {
+                    # ---- 3c) 问角色名（每个人的名字不同，由玩家自己输）----
+                    $charName = $CharName.Trim().Trim('"')
+                    $existing = @(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm" -ErrorAction SilentlyContinue | ForEach-Object { $_.BaseName })
+                    if (-not [string]::IsNullOrWhiteSpace($charName) -and ($charName -match '[\\/:*?"<>|]')) {
+                        Say "        [注意] -CharName 里有不能用于文件名的字符，改用交互输入。" "Yellow"
+                        $charName = ""
+                    }
+                    if ([string]::IsNullOrWhiteSpace($charName) -and -not $NonInteractive) {
+                        Say ""
+                        if ($existing.Count -gt 0) { Say "        （目录里现有的模型文件：$($existing -join '、')）" "DarkGray" }
+                        Say "        请输入【你在游戏里的角色名】（拼写要一模一样，区分大小写的话以游戏里显示为准）："
+                        Say "          · 模型会装成   <角色名>.vrm"
+                        Say "          · 设置会装成   settings_<角色名>.txt"
+                        Say "          · 输入 0 = 不换模型"
+                        for ($try = 0; $try -lt 3; $try++) {
+                            $ansRaw = Read-Host "        角色名"
+                            if ($null -eq $ansRaw) { $ansRaw = "" }
+                            $ans = $ansRaw.Trim().Trim('"')
+                            if ([string]::IsNullOrWhiteSpace($ans)) { Say "        （这次没读到输入）不能为空：再输一次（或输入 0 跳过）。" "Yellow"; continue }
+                            if ($ans -match '^\s*0\s*$') { $charName = "skip"; break }
+                            if ($ans -match '[\\/:*?"<>|]') { Say "        含不能用于文件名的字符，换一个。" "Yellow"; continue }
+                            $charName = $ans; break
+                        }
+                    }
+                    if ([string]::IsNullOrWhiteSpace($charName) -and $NonInteractive -and $existing.Count -ge 1) {
+                        $charName = $existing[0]
+                        Say "        （非交互模式：沿用现有角色名「$charName」）" "DarkGray"
+                    }
+
+                    if ([string]::IsNullOrWhiteSpace($charName) -or $charName -eq "skip") {
+                        Say "        ③ 没有拿到角色名 → 模型这步跳过（想装：重跑本脚本，或双击 换模型.bat）" "Yellow"
+                        $vrmOk["模型"] = (@(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count -gt 0)
+                    } else {
+                        Copy-Item $pick.Vrm (Join-Path $vrmTarget "$charName.vrm") -Force
+                        $setDst = Join-Path $vrmTarget "settings_$charName.txt"
+                        if ($pick.Settings -and (Test-Path $pick.Settings)) { Copy-Item $pick.Settings $setDst -Force }
+                        Say "        ③ 模型 → $vrmTarget" "Green"
+                        Say "           模型： $charName.vrm（用的「$($pick.Name)」，只是复制一份改名；源文件没动）"
+                        if (Test-Path $setDst) { Say "           设置： settings_$charName.txt ✓" "Green" }
+                        else { Say "           设置： 缺失（插件会退回默认值：模型大小 1.1、亮度 0.8…）" "Yellow" }
+                        if ($existing.Count -gt 0) { Say "           目录里还有：$($existing -join '、')（按角色名各取所需，不要的可以自己删）" "DarkGray" }
+                        $script:vrmActiveName = $charName
+                        $vrmOk["模型"] = ((Test-Path (Join-Path $vrmTarget "$charName.vrm")) -and (Test-Path $setDst))
+                    }
+                }
+            }
+            if ($vrmLegacyTmp -and (Test-Path $vrmLegacyTmp)) { try { Remove-Item $vrmLegacyTmp -Recurse -Force -ErrorAction SilentlyContinue } catch {} }
+
+            # ---- 3d) 包是从 zip 解出来的（在线安装 / -PackFile）时，把模型缓存到本机 ----
+            #      （源在 %TEMP% 里，装完就没了；缓存后 换模型.bat 就不用再下 100MB）
+            $cacheModels = Join-Path $env:LOCALAPPDATA "MAKABAKA\VRM\Models"
+            if ((Test-Path $modelsDir) -and $script:packTmpExtract -and ($modelsDir -notlike "$cacheModels*")) {
+                try {
+                    New-Item -ItemType Directory -Path $cacheModels -Force | Out-Null
+                    $n = 0
+                    foreach ($d in (Get-ChildItem -Path $modelsDir -Directory -ErrorAction SilentlyContinue)) {
+                        $dstD = Join-Path $cacheModels $d.Name
+                        New-Item -ItemType Directory -Path $dstD -Force | Out-Null
+                        foreach ($f in (Get-ChildItem -Path $d.FullName -File)) {
+                            $t = Join-Path $dstD $f.Name
+                            if ((Test-Path $t) -and ((Get-FileHash $t -Algorithm MD5).Hash -eq (Get-FileHash $f.FullName -Algorithm MD5).Hash)) { continue }
+                            Copy-Item $f.FullName $t -Force; $n++
+                        }
+                    }
+                    $sDef = Join-Path $modelsDir "默认settings.txt"
+                    if (Test-Path $sDef) { Copy-Item $sDef (Join-Path $cacheModels "默认settings.txt") -Force }
+                    if ($n -gt 0) { Say "        （模型已缓存到本机：$cacheModels —— 以后换模型不用重新下载）" "DarkGray" }
+                } catch { Say "        [注意] 模型缓存失败（不影响本次安装）：$($_.Exception.Message)" "DarkGray" }
+            }
+
+            Say "        ★ 模型按【角色名】生效：<角色名>.vrm 与 settings_<角色名>.txt —— 换角色就把文件改成新角色名（或双击 换模型.bat）" "Yellow"
             Say "        ★ Steam「验证游戏文件完整性」会清掉 Managed 里这些 dll；之后重跑本脚本即可恢复" "Yellow"
         }
 
@@ -890,7 +1076,14 @@ if ($vrmPack -and -not $SkipVRM) {
             if ($mOk) { Say "        [✓] ② Managed dll（游戏里）：$((@(Get-ChildItem -Path $srcVrmManaged -File)).Count) 个都在" "Green" }
             else { Say "        [×] ② Managed 里缺 dll（Steam 验证文件完整性会清掉，重跑本脚本即可）" "Red" }
             $vrmCount = @(Get-ChildItem -Path (Join-Path $game "ValheimVRM") -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count
-            if ($vrmCount -gt 0) { Say "        [✓] ③ 模型（游戏里）：$vrmCount 个 .vrm 在 $(Join-Path $game 'ValheimVRM')" "Green" }
+            if ($script:vrmActiveName) {
+                $vf = Join-Path (Join-Path $game "ValheimVRM") "$($script:vrmActiveName).vrm"
+                $sf = Join-Path (Join-Path $game "ValheimVRM") "settings_$($script:vrmActiveName).txt"
+                if ((Test-Path $vf) -and (Test-Path $sf)) { Say "        [✓] ③ 模型（游戏里）：$($script:vrmActiveName).vrm + settings_$($script:vrmActiveName).txt 都在" "Green" }
+                elseif (Test-Path $vf) { Say "        [✓] ③ 模型（游戏里）：$($script:vrmActiveName).vrm 在；settings_$($script:vrmActiveName).txt 没有（插件会用默认值）" "Yellow" }
+                else { Say "        [×] ③ 模型缺失：$(Join-Path $game 'ValheimVRM')\$($script:vrmActiveName).vrm" "Red" }
+            }
+            elseif ($vrmCount -gt 0) { Say "        [✓] ③ 模型（游戏里）：$vrmCount 个 .vrm 在 $(Join-Path $game 'ValheimVRM')" "Green" }
             else {
                 Say "        [×] ③ 没找到 .vrm 模型：$(Join-Path $game 'ValheimVRM')" "Red"
                 Say "            （想用自己的模型：把 <角色名>.vrm 与 settings_<角色名>.txt 放进该目录即可）" "Yellow"

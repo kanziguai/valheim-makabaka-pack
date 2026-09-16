@@ -263,27 +263,39 @@ hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里�
   ② 运行时 dll（15 个：VRM10.dll / UniGLTF.dll / MToon.dll / UnityEngine.VRModule.dll …）
        → 游戏本体里：<游戏>\valheim_Data\Managed\
        （覆盖前自动备份到 <游戏>\_vrm_backup_<时间>\）
-  ③ 模型与设置：<角色名>.vrm + settings_<角色名>.txt
+  ③ 模型与设置：<角色名>.vrm + settings_<角色名>.txt（角色名你自己输）
        → 游戏本体里：<游戏>\ValheimVRM\
 
 源文件都在包里的  ValheimVRM_手动安装\  （两个「に入れるファイル」子目录就是①②的源）：
   BepInEx_pluginsに入れるファイル\        ← ① 的源（装进 r2modman 的档）
   valheim_Data_Managedに入れる文件\       ← ② 的源（装进游戏本体）
-  ValheimVRM.zip                          ← ③ 的源（模型）
-  settings_player_模板.txt                ← ③ 的调参模板（只给你参考，不会被装进游戏目录）
+  Models\金乌\金乌.vrm                    ← ③ 的源之一（59.8MB，默认用这个）
+  Models\辰星\辰星.vrm                    ← ③ 的源之二（36.7MB）
+  Models\默认settings.txt                 ← ③ 的默认参数（模型目录里若有 settings.txt 就优先用它）
 
 自动做法（推荐）：运行 一键安装.bat 时，最后会问「一并配置 ValheimVRM 吗？」，选 Y（回车）就会：
-  · ①②③ 依次放好，每个文件都比对 md5：缺的补、不一样的换（换之前先备份）
+  · ① 插件：装进 r2modman 的档（逐文件比对 md5，缺的补、不一样的换，换前备份）
+  · ② Managed dll：把那 15 个 dll 放进游戏本体（覆盖前备份到 <游戏>\_vrm_backup_<时间>\）
+  · ③ 模型：先列出可选模型让你挑（默认 1 = 金乌，2 = 辰星，0 = 不换），
+       再问【你的角色名】（每个人不一样，自己输；输入 0 可跳过），
+       然后复制成 <游戏>\ValheimVRM\<角色名>.vrm + settings_<角色名>.txt
   · 找不到游戏目录时会问你要路径（含 valheim.exe 与 valheim_Data 的那一层）。
     这一步找不到也不影响 ① —— 插件那半照装，之后重跑本脚本补 ②③ 即可
   · 最后打一份「VRM 三处自检」，三行都要是 [✓]：
       [✓] ① 插件（档里）   [✓] ② Managed dll（游戏里）   [✓] ③ 模型（游戏里）
     出问题时照这三行排查即可 —— 那就是最常见的「装了没效果」的清单。
-手动做法：见 ValheimVRM_手动安装\说明_ValheimVRM.txt（三步 + 完整 dll 清单）。
+手动做法：见 ValheimVRM_手动安装\说明_ValheimVRM.txt（三步 + 完整 dll 清单 + 文件名规则）。
+
+只想换模型 / 换角色名：双击包里的 **换模型.bat**（不用重装整个档，不用再下 100MB）：
+  列出模型 → 你选 → 输角色名 → 自动改名复制 + 三处自检（只报告，不动 r2modman 的档）。
 
 三个必须知道的点：
-  1) 模型按【角色名】生效：<角色名>.vrm 与 settings_<角色名>.txt。
-     我们给的这套对应角色名 KaNzI；你的角色不叫这个，就把这两个文件改名（两个都要改），改完重启游戏。
+  1) 文件名必须跟着【角色名】走（插件源码规则）：
+       模型： <游戏>\ValheimVRM\<角色名>.vrm
+       配置： <游戏>\ValheimVRM\settings_<角色名>.txt
+     拼写必须和游戏里一模一样（大小写无所谓，字母不能错）；前缀必须是 settings_。
+     缺配置文件不崩：日志警告后用默认值。改完必须完全重启游戏。
+     一个角色一份，多角色/多模型可各放各的文件并存（插件按当前角色名去找）。
   2) Steam「验证游戏文件完整性」会把 Managed 里那些 dll 清掉 → 之后重跑一次 一键安装.bat 就能恢复。
   3) 模型只有本机可见（别人看到的是他自己的模型）。想互相看到，两边都装同一套。
 
