@@ -86,19 +86,22 @@ function Get-MirroredUrls([string]$url) {
     return @($out | Select-Object -Unique)
 }
 
-# 取一段文本（小文件），多线路依次试
+# 取一段文本（小文件），多线路依次试；每条线路先按系统代理、失败再绕开代理直连
 function Get-TextWithMirrors([string]$url, [int]$timeoutSec = 20) {
     foreach ($u in (Get-MirroredUrls $url)) {
-        try {
-            $req = [System.Net.HttpWebRequest]::Create($u)
-            $req.Timeout = $timeoutSec * 1000
-            $req.UserAgent = "makabaka-install"
-            $resp = $req.GetResponse()
-            $sr = New-Object System.IO.StreamReader($resp.GetResponseStream(), [System.Text.Encoding]::UTF8)
-            $txt = $sr.ReadToEnd()
-            $sr.Close(); $resp.Close()
-            if (-not [string]::IsNullOrWhiteSpace($txt)) { return $txt }
-        } catch {}
+        foreach ($useDirect in @($false, $true)) {
+            try {
+                $req = [System.Net.HttpWebRequest]::Create($u)
+                $req.Timeout = $timeoutSec * 1000
+                $req.UserAgent = "makabaka-install"
+                if ($useDirect) { $req.Proxy = $null }
+                $resp = $req.GetResponse()
+                $sr = New-Object System.IO.StreamReader($resp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+                $txt = $sr.ReadToEnd()
+                $sr.Close(); $resp.Close()
+                if (-not [string]::IsNullOrWhiteSpace($txt)) { return $txt }
+            } catch {}
+        }
     }
     return $null
 }
@@ -114,11 +117,16 @@ function Save-FileWithMirrors([string]$url, [string]$outFile, [string]$label) {
             $h = ([Uri]$u).Host
             if ([string]::IsNullOrWhiteSpace($h)) { $line = $line + "：本地文件" } else { $line = $line + "：" + $h }
         } catch {}
-        Say "        下载中（$label，$line）…" "DarkGray"
-        $wc = $null
-        try {
+        # 每条线路先按系统代理下；失败再绕开代理直连（用 Clash / 加速器时经常需要这一步）
+        foreach ($useDirect in @($false, $true)) {
+            $tag = $line
+            if ($useDirect) { $tag = $tag + "（不走代理）" }
+            Say "        下载中（$label，$tag）…" "DarkGray"
+            $wc = $null
+            try {
             $wc = New-Object System.Net.WebClient
             $wc.Headers.Add("User-Agent", "makabaka-install")
+            if ($useDirect) { $wc.Proxy = $null }
             $script:dlLastPct = -5
             $script:dlLastAt  = Get-Date
             $wc.add_DownloadProgressChanged({
@@ -137,10 +145,13 @@ function Save-FileWithMirrors([string]$url, [string]$outFile, [string]$label) {
             $wc.DownloadFile($u, $outFile)
             $wc.Dispose()
             return $true
-        } catch {
-            if ($wc) { try { $wc.Dispose() } catch {} }
-            Say "        这条线路失败：$($_.Exception.Message)" "DarkGray"
-            if (Test-Path $outFile) { Remove-Item $outFile -Force -ErrorAction SilentlyContinue }
+            } catch {
+                if ($wc) { try { $wc.Dispose() } catch {} }
+                $how = "代理"
+                if ($useDirect) { $how = "直连" }
+                Say "        这一条失败（$how）：$($_.Exception.Message)" "DarkGray"
+                if (Test-Path $outFile) { Remove-Item $outFile -Force -ErrorAction SilentlyContinue }
+            }
         }
     }
     return $false
