@@ -38,6 +38,8 @@ $u="https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/insta
 
 > 在跑着 Clash / 机场加速器的机器上，脚本下载会先走系统代理、失败会自动绕开代理直连；
 > 首装要下 117MB，几分钟属正常，别中途关窗口。
+> 镜像（ghfast / ghproxy）对 raw 文件有几分钟缓存：脚本刚更新完的头几分钟，
+> 从镜像拿到的可能还是旧副本 —— 脚本开头会打印「脚本日期」，对不上就等几分钟或改用直连。
 
 ### B. clone 仓库 + 双击（推荐，以后更新最方便）
 

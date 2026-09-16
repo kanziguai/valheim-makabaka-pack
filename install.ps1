@@ -60,6 +60,7 @@ $Expect = @{
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
 $ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owner/repo）
+$ScriptBuild    = "2026-09-16"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
@@ -239,6 +240,8 @@ Say "  本脚本会：把本包里的 MAKABAKA 档装进 r2modman 的 profiles �
 Say "  · 以前没装过 → 全新安装"
 Say "  · 装过旧版   → 原地升级：更新 mod 文件，保留你自己的设置与收藏（旧文件先备份）"
 Say "  你的世界存档、角色存档不会被碰。" "DarkGray"
+Say "  脚本日期：$ScriptBuild   内置仓库：$ReleasesRepo" "DarkGray"
+Say "  （如果你是从镜像下载的本脚本，镜像可能有几分钟缓存 —— 拿到旧副本时上面这两行会对不上最新版）" "DarkGray"
 
 # ---------- 1) 找源档（本地文件夹 → 本地 zip → 在线下载）----------
 $src = $null
