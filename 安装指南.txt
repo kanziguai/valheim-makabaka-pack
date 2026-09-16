@@ -1,0 +1,292 @@
+﻿================================================================
+英灵神殿（Valheim）r2modman 整合档 移植指南
+档名：MAKABAKA      导出日期：2026-09-14（更新版：EpicLoot 0.14.5 / AutoRepairBuilding 1.2.16；
+                                      新增 Endurance 汉化 + VRM 传送幽灵修复）
+================================================================
+
+【这个包是什么】
+一份完整的 r2modman 配置档（35 个启用的 mod + 5 个已装但禁用 + 3 个自制插件 + 全部配置文件）。
+按本指南操作后，你的游戏会和我们那台电脑**完全一样**：同样的 mod、同样的版本、同样的设置。
+
+本包不是"mod 安装包"，而是 r2modman 的一个"档（profile）"目录——r2modman 启动时会把这个档
+里的文件同步进游戏目录。所以核心只有一步：把这个档放进你的 r2modman 里。
+
+----------------------------------------------------------------
+【0. 你需要先有的东西】
+----------------------------------------------------------------
+1) 正版 Valheim（Steam）。
+   版本要求：与我们一致的最新版（Steam buildid 25253764，2026-09-12 时的正式版）。
+   建议先在 Steam 里关掉自动更新：
+   Steam → 库 → Valheim 右键 → 属性 → 更新 → 选"仅在我启动游戏时更新"。
+   （mod 是配着这个版本做的，游戏如果自己更新到更新版本，个别 mod 可能报错。）
+
+2) r2modman（免费）：https://thunderstore.io/c/valheim/p/ebkr/r2modman/
+   或 GitHub：https://github.com/ebkr/r2modmanPlus/releases
+   我们用的是 3.2.19，你可以用同版本或更新的。
+
+3) Windows 10/11，预留约 350MB 空间（解压后约 120MB）。
+
+----------------------------------------------------------------
+【0.5 本版（2026-09-14）相对上一版改了什么】
+----------------------------------------------------------------
+1) EpicLoot 0.14.4 → 0.14.5（官方小修：世界升级安全检查、商人界面、掉落池无效物品）
+   · 汉化包不用换：0.14.4/0.14.5 的文案键完全一致
+2) AutoRepairBuilding 1.2.14 → 1.2.16
+3) 新增 blacks7ar-Endurance 1.1.2（耐力技能，**本地简体汉化版**：技能描述/升级飘字/配置说明是中文）
+4) 新增自制插件 VRMGhostFix 1.0.0：修 ValheimVRM 传送时多出人物模型的 bug（上游自 2024 年未修）
+5) AzuCraftyBoxes 保持**禁用**（不再“从附近箱子取材料”）；合成/建造/熔炉仍由 ChestFlow 负责
+6) EpicLoot 附魔台“前 3 次升级各 1 金币”的本地改动**包含在本包里**（想还原官方价：见 游戏内功能速查.txt）
+7) 其它：Endurance 的技能名保留英文（它是技能内部标识，翻了会重置已练等级）
+
+----------------------------------------------------------------
+【1. 安装步骤（照着做，约 5 分钟）】
+----------------------------------------------------------------
+
+★ 最快路径（推荐，1 分钟，不用手抄路径）：
+  1) 解压 MAKABAKA_profile.zip（或直接用我们给你的 MAKABAKA 文件夹）；
+  2) 双击同目录（或 MAKABAKA 文件夹里）的  一键安装.bat  ；
+     它会自动完成：定位 r2modman 的 profiles 目录 → 提示你关掉 r2modman →
+     复制/更新本档 → 校验文件数与关键文件 → 打印后续步骤。
+       · 以前没装过 → 直接全新安装；
+       · 装过旧版（包括那个会掉到 15fps 的旧包）→ 它会问你一句，选 [1] 升级 即可：
+         只更新 mod 文件，你自己的 F1 设置、收藏格、热键都保留，旧文件自动备份一份
+         （备份在你解压出来的包目录里，名字 MAKABAKA_backup-<时间>）。
+       · 最后还会问「一并配置 ValheimVRM 吗？」——那是角色换模型用的（要往游戏目录放文件，
+         r2modman 不管这些），选 Y 就自动放好。详见第 9 节。
+     装完按窗口提示做：打开 r2modman → 选中 MAKABAKA → Start modded。
+  3) 若双击无反应（被安全软件拦住等），就用下面的手动步骤，效果完全一样。
+
+  ★ 脚本会自己找 r2modman 的档目录，所以 r2modman 的数据文件夹被挪到别的盘也能装。
+    查找顺序：① 命令行 -ProfilesRoot 指定 → ② 上次记住的路径（install-path.txt）→
+    ③ r2modman 自己记录过的路径 → ④ 默认位置（%APPDATA%\r2modmanPlus-local 等，含用符号链接搬家的）
+    → ⑤ 逐个扫描所有固定硬盘 → ⑥ 都找不到就弹窗让你粘贴路径。
+    屏幕第 [2/7] 步会打印它最终用的是哪个目录、以及是怎么找到的（来源），可以对着核对。
+    想只看它认到哪儿、不装任何东西：命令行运行 install.ps1 -DetectOnly
+    （在包目录按住 Shift 右键 →「在此处打开 PowerShell 窗口」→ .\install.ps1 -DetectOnly）
+
+--- 手动步骤（不想用脚本时照这个做）---
+
+第 1 步：解压
+  把 MAKABAKA_profile.zip 解压出来，会看到一个 MAKABAKA 文件夹（或者直接给的就是
+  MAKABAKA 文件夹）。里面应该能看到 mods.yml、BepInEx、winhttp.dll 等。
+
+第 2 步：装好并首次运行 r2modman
+  打开 r2modman → 选择游戏 Valheim（如果列表里没有，用 "Select game" 添加）。
+  首次会让你指定 Valheim 安装目录，一般能自动识别 Steam 库；识别错了就手动选到
+  <你的盘>\Steam\steamapps\common\Valheim 这一层。
+  （每台电脑游戏装哪儿不一样，所以包里不含路径，r2modman 自己在本机记录。）
+
+第 3 步：先随便建一个档（为了让目录存在）
+  在 r2modman 的 Profile 下拉里点 "Create new profile"，名字随便（比如 temp），
+  然后点 "Start modded" 启动一次游戏（进到主菜单即可，然后退出游戏）。
+  如果你以前就用过 r2modman 且已经有档，这步可跳过。
+
+第 4 步：完全关闭 r2modman
+  右上角 X 关掉窗口，并且注意右下角任务栏托盘里的 r2modman 图标也要右键退出。
+
+第 5 步：打开 profiles 目录
+  按 Win + R，输入  %APPDATA%  回车，进入：
+      r2modmanPlus-local\Valheim\profiles\
+  完整路径通常是：
+      C:\Users\你的用户名\AppData\Roaming\r2modmanPlus-local\Valheim\profiles\
+
+第 6 步：把 MAKABAKA 文件夹整个复制进去
+  复制完的最终结构必须是：
+      ...\profiles\MAKABAKA\mods.yml
+      ...\profiles\MAKABAKA\BepInEx\plugins\... 
+  注意是"文件夹名字叫 MAKABAKA"，不要套成 MAKABAKA\MAKABAKA\。
+  如果你已经有一个同名档，把它改名备份（比如 MAKABAKA_old），或者把新档改名成
+  MAKABAKA2 —— r2modman 直接用文件夹名当档名，叫什么都能用。
+
+第 7 步：重新打开 r2modman
+  Profile 下拉里现在应该能看到 MAKABAKA，选中它，点 "Start modded" 启动游戏。
+
+第 8 步：进入游戏验证
+  ① 打开物品栏：应该是扩展版界面（比原版多几行、右侧有附加装备槽、顶部/底部有若干按钮）。
+  ② 按 F1 应该能弹出"配置管理器"窗口（说明 mod 已加载）。
+  ③ 按 Alt+右键点背包格子：格子边框变蓝（收藏功能生效）。
+  以上任意一条成立，说明整套 mod 装好了。
+
+----------------------------------------------------------------
+【2. 包里的内容】
+----------------------------------------------------------------
+MAKABAKA\                   ← 整个 r2modman 档（把它放到 profiles 目录下）
+  BepInEx\core               BepInEx 5.4.23.5 本体（无需另装）
+  BepInEx\patchers           预加载补丁（MMHOOK 等）
+  BepInEx\plugins\           全部 mod 的 dll（34 启用 + 5 禁用 + 2 自研）
+  BepInEx\config\            全部 mod 的配置（含自研插件的配置）
+  doorstop_libs\ winhttp.dll doorstop_config.ini   注入器（BepInEx 启动用）
+  mods.yml                   r2modman 的 mod 清单（记录启用/禁用状态）
+MAKABAKA_profile.zip        上面这一堆的压缩包（传输用，解压后同上）
+一键安装.bat / install.ps1  一键安装脚本（双击 bat 即可；详细见第 1 节"最快路径"）
+ValheimVRM_手动安装\        角色换模型（ValheimVRM）要用的东西：官方包 + 模型包 + 15 个 dll + 说明
+                            （这个 mod 特殊：必须往游戏目录放文件，所以单独放这儿；见第 9 节）
+Mod清单_MAKABAKA.txt        全部 mod 名称 / 版本 / 作者 / 说明
+游戏内功能速查.txt            常用按键和功能一览
+r2modman使用说明.txt          r2modman 本身的使用说明（装 mod、切档、导出导入、排错）
+安装指南.txt                 本文件
+
+----------------------------------------------------------------
+【3. 包里"没有"的东西（要自己补，或不需要）】
+----------------------------------------------------------------
+1) 没有游戏本体、没有 r2modman 程序 —— 自己装（见第 0 节）。
+2) 人物模型只带了一个（KANZI/辰星 那个 60MB 的，可选）：它在 ValheimVRM_手动安装\ 里，
+   要往游戏目录放文件，做法见第 9 节（一键安装脚本会问你一声）。原来那批 780MB 私人模型没打包。
+   想换成你自己的模型：把 .vrm 放进 <游戏>\ValheimVRM\ 并按角色名命名（<角色名>.vrm）。
+3) 没有世界存档和角色存档（你那台电脑上的进度）。想玩同一个世界就在房主电脑上复制：
+      世界： C:\Users\房主\AppData\LocalLow\IronGate\Valheim\worlds_local\  （.db 和 .fwl）
+      角色： C:\Users\房主\AppData\LocalLow\IronGate\Valheim\characters\    （.fch）
+   把文件拷到你机子的同一位置即可。
+4) 没有 r2modman 的 mod 下载缓存（为了减小体积）。不影响使用：mod 文件都已经在包里，
+   r2modman 里显示为"已安装"。只有以后想"重装/更新某个 mod"时才需要联网。
+
+----------------------------------------------------------------
+【4. 联机注意】
+----------------------------------------------------------------
+- 必须从 r2modman 点 "Start modded" 启动游戏；直接开 Steam / valheim.exe 是不带 mod 的。
+- 两个人想正常联机，最好两边装同一份档（就是本包）。
+- 部分 mod 的功能是"服务端决定"的（比如储物/堆叠/地图共享相关），哪怕客户端装了，
+  也要服主端装了才生效。所以自己开服玩最省事：房主的游戏进程当服务端。
+- 部分配置标注了 [Synced with Server]，意思是联机时以服务器（房主）的设置为准。
+
+----------------------------------------------------------------
+【5. 常见问题排查】
+----------------------------------------------------------------
+Q: 进游戏完全看不到 mod 效果
+   → 检查是不是从 r2modman 的 "Start modded" 启动的；Profile 下拉是否选中 MAKABAKA。
+
+Q: 游戏闪退 / 卡在加载画面 / 报 mod 加载失败
+   → 99% 是游戏版本比这份档新。解决：Steam → Valheim 属性 → Betas 里选择与
+     25253764 对应的版本回退（或等对应 mod 更新后再玩）。
+   → 查日志：游戏目录（steamapps\common\Valheim）下 BepInEx\LogOutput.log，
+     搜 "Error" / "Failed"，能看到具体哪个 dll 出问题。
+   → 救急：在 r2modman 里把报错的 mod 关掉，不影响其他 mod 使用。
+
+Q: 物品栏界面错位 / 按钮乱了 / 物品栏变成原版
+   → 删掉 ...\profiles\MAKABAKA\BepInEx\config\Azumatt.AzuExtendedPlayerInventory.cfg
+     后重新启动游戏，会自动重建默认配置（此时界面恢复默认，功能仍在）。
+
+Q: Alt+右键 / Alt+左键 没反应
+   → 那是 AzuEPI 的收藏功能，只在"指向背包格子/物品"时生效；装备栏、箱子内部无效。
+     也可以在 F1 配置管理器里搜 AzuExtendedPlayerInventory 查看 "Favoriting Modifier Key"。
+
+Q: 帧率只有 15fps 左右、明显卡（主菜单也卡）
+   → 这是旧版自制插件 ChestFlowTweaks 0.3.0 的 bug：它在每帧执行的一次补丁里做了
+     "遍历所有已加载程序集"的反射查找，实测每帧白白多花约 48ms（GPU/CPU 都闲着却只有 15fps）。
+     本包用的是修好的 0.3.1，正常应 60fps 左右。
+     补救：把 BepInEx\plugins\ChestFlowTweaks\ChestFlowTweaks.dll 换成 0.3.1（本包里就是），
+     或者直接重新装一次本包。
+
+Q: 我以前装过旧版，怎么升级到这一版？
+   → 解压新包 → 双击 一键安装.bat → 它会检测到已装的档并问你：
+      选 [1] 升级（推荐）：只更新 mod 文件，保留你的 F1 设置与收藏格；旧文件备份到
+                           包目录下的 MAKABAKA_backup-<时间戳>。
+      选 [2] 全新重装：旧档整个改名成 MAKABAKA.backup-<时间戳> 留在 profiles 里
+                       （不需要了可以手动删掉），装一份干净的。
+   → 升级完请确认窗口第 [6/7] 步显示「关键文件校验通过 ✓」—— 那就代表 15fps 的旧插件
+     已经换成修好的 0.3.1 了。
+   → 升级不会动你的世界存档、角色存档、收藏格数据（收藏档在 BepInEx\config 里，升级会保留）。
+
+Q: 我的 r2modman 数据文件夹不在 C 盘（用 设置→Locations→Change data folder 挪过），能装吗？
+   → 能。脚本按"命令行指定 → 上次记住的 → r2modman 记录过的 → 默认位置 → 扫所有硬盘 → 问你要"
+     的顺序自动找，并把找到的来源打印在第 [2/7] 步。注意 r2modman 的 Change data folder 不会
+     把已有档搬过去（官方行为），所以要装到这个新位置就装到这里；旧位置那些档不受影响。
+   → 如果它认错了位置，命令行运行：  .\install.ps1 -ProfilesRoot "D:\你的\r2modmanPlus-local\Valheim\profiles"
+     想只看它认到哪儿不加 -ProfilesRoot 而加 -DetectOnly。
+
+Q: 想改设置
+   → 游戏内按 F1 打开配置管理器改，改完即生效（大部分）。或者直接编辑
+     ...\profiles\MAKABAKA\BepInEx\config\ 下的 .cfg 文件（改完重启游戏）。
+
+Q: r2modman 里提示 mod "已更新"或想重装
+   → 需要联网（会从 Thunderstore 重新下载）。注意：ChestFlowTweaks 和 InventorySortOnly
+     这两个自制插件不在 Thunderstore 上，重装清单里不会包含它们，别删包里的文件。
+
+----------------------------------------------------------------
+【6. 卸载 / 还原】
+----------------------------------------------------------------
+- 只想去掉 mod：r2modman 里选中 MAKABAKA 档 → 删除档（Delete profile）；
+  或直接删掉 ...\profiles\MAKABAKA 文件夹。
+- 想彻底干净：删掉 profiles 目录（r2modman 的其它档也会一起没），
+  以及游戏目录里被同步进去的 BepInEx / winhttp.dll / doorstop_config.ini /
+  doorstop_libs / ValheimVRM 这些文件（这些原本就是 mod 相关，删掉不影响正版游戏，
+  Steam 验证文件完整性即可恢复原状）。
+
+----------------------------------------------------------------
+【7. 本档 mod 概览（详细清单见 Mod清单_MAKABAKA.txt）】
+----------------------------------------------------------------
+数量：34 个启用 + 5 个已装禁用 + 2 个自制插件
+覆盖：物品栏扩展 / 快捷栏 / 装备管理、储物与自动入库（ChestFlow）、物品堆叠与重量、
+      一键整理（自制）、建造辅助（PlanBuild、Build Camera、AutoRepairBuilding）、
+      附魔战利品（EpicLoot + 中文）、地图共享（OneMapToRuleThemAll）、目标点传送
+      （TargetPortal）、植物批量种植（PlantEasily）、宠物自动喂食（PetPantry）、
+     动物/蜂箱/发酵桶辅助（PetPantry、HoneyPlease、FermenterUtilities）、回收
+      （Recycle N Reclaim）、UI（BetterUI、MinimalUI）、跑动中换装、闪避快捷键、
+      斜坡战斗修正、钓鱼、天气不毁建筑等。
+
+关于"已装的 5 个禁用 mod"（AzuCraftyBoxes、QuickStackStore、HexQuickStackStorage、
+hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里，但状态是禁用——
+这是原机主刻意选的方案（QuickStackStore 与 ChestFlow 冲突，曾被拒绝加载），
+建议保持禁用，需要时在 r2modman 里勾选启用即可。
+
+自制插件两个（包里有 dll 和配置，务必别丢）：
+  ChestFlowTweaks v0.3.1 —— 关掉 ChestFlow 的 Alt+左键锁定循环和"丢弃"按钮，
+                      并让 ChestFlow 认 AzuEPI 的收藏标记；
+                      v0.3.1 修掉了一个"每帧反射查找"造成的掉帧 bug
+                      （旧版 0.3.0 会让帧率从 60 掉到 15）
+  InventorySortOnly —— 背包里加"整理"按钮（只排常规行，跳过收藏格，不动装备行）
+
+----------------------------------------------------------------
+【8. 别用 r2modman 点"更新 / 重装"的 mod（会覆盖本地改动）】
+----------------------------------------------------------------
+下面这些我们改过或汉化过，r2modman 的 Update / Reinstall 会把改动冲掉：
+  jg224-ChestFlow            0.5.7 界面简体汉化
+  Azumatt-Minimal_UI         汉化 + 箱子界面默认位置
+  BetterUI_ForeverMaintained 汉化
+  Azumatt-PetPantry          IL 补丁版（官方版在 Unity6 下起不来）
+  Azumatt-Recycle_N_Reclaim  已摘除"丢弃"功能
+  Azumatt-AzuExtendedPlayerInventory  自编译 2.4.13（官方才 2.4.8）
+  Azumatt-AzuCraftyBoxes              自编译 1.8.18（官方才 1.8.15，本档里禁用）
+  ChestFlowTweaks / InventorySortOnly 自制插件，不在 Thunderstore 上（重装清单里不会出现，别删）
+
+其余 mod（EpicLoot、Jotunn、PlanBuild、OneMap、ConfigurationManager 等）没动过，可以放心更新。
+真需要升级上面某个时，把包名发我们，重打好汉化/补丁再给你。
+
+----------------------------------------------------------------
+【9. ValheimVRM（角色换模型）怎么装】
+----------------------------------------------------------------
+这个 mod 和别的不一样：它必须往【游戏目录】放文件（r2modman 只管档目录，这些它不会同步），
+所以包里单独给了  ValheimVRM_手动安装\  这个目录（官方包 + 模型包 + 15 个 dll + 中文说明）。
+
+自动做法（推荐）：运行 一键安装.bat 时，最后会问「一并配置 ValheimVRM 吗？」，选 Y 就会：
+  · 15 个 vrm/gltf 相关 dll → <游戏>\valheim_Data\Managed\
+    （覆盖前自动备份到 <游戏>\_vrm_backup_<时间>\）
+  · 模型 KANZI.vrm + settings_KaNzI.txt → <游戏>\ValheimVRM\
+  · 找不到游戏目录时会问你要路径（就是含 valheim.exe 和 valheim_Data 的那一层）
+手动做法：见 ValheimVRM_手动安装\说明_ValheimVRM.txt（三步 + 完整 dll 清单）。
+
+三个必须知道的点：
+  1) 模型按【角色名】生效：<角色名>.vrm 与 settings_<角色名>.txt。
+     我们给的这套对应角色名 KaNzI；你的角色不叫这个，就把这两个文件改名（两个都要改），改完重启游戏。
+  2) Steam「验证游戏文件完整性」会把 Managed 里那些 dll 清掉 → 之后重跑一次 一键安装.bat 就能恢复。
+  3) 模型只有本机可见（别人看到的是他自己的模型）。想互相看到，两边都装同一套。
+
+================================================================
+有问题把具体现象（截图 + BepInEx\LogOutput.log 里的报错行）发过来。
+================================================================
+
+──────────────────────────────────────────────
+【2026-09-15 补充：自制插件与存档说明】
+──────────────────────────────────────────────
+1) 本包内有 3 个自制插件（不在 Thunderstore 上）：
+     SafeBox（随身保险柜）、KeepBuffsOnDeath（死亡保留 buff）、VRMGhostFix（修 VRM 传送分身）
+   → 它们不需要额外安装，装上本包就有；**别用 r2modman 对它们做 Update/Reinstall**（会找不到包或覆盖）。
+   → install.ps1 装完会核对出厂 md5，日志里能看到是否一致。
+2) 保险柜数据只在本机：BepInEx\config\SafeBox\<玩家ID>_<角色名>.box
+   · 服务端完全不感知柜内物品（所以不计负重、也不占背包容量）
+   · **换机器 / 删配置目录会丢** → 建议和角色档一起备份；升级本包不会动这个文件
+   · 每台电脑各自一份（同一角色在两台机器上玩会出现两份、互不同步）
+3) 联机相关：
+   · 保险柜/死亡保留 buff 都是客户端插件，服务端不用装；别人看不到你的柜子
+   · Hooked 建议只装客户端（服务端装了才会同步并锁定它的配置）
+   · 带 [Synced with Server] 的配置（AzuEPI 快捷栏行数、EpicLoot baseconfig、Endurance 阈值）以房主为准

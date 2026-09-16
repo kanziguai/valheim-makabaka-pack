@@ -1,0 +1,117 @@
+﻿Valheim mod 清单（r2modman 档名：MAKABAKA）
+导出时间：2026-09-15   游戏：Valheim（Steam buildid 25253764，2026-09 正式版）
+启用 36 个 / 已装禁用 5 个 / 自制插件（不在 Thunderstore 上）3 个（SafeBox / KeepBuffsOnDeath / VRMGhostFix）
+
+======================================================================
+【一、启用中（36 个）】—— 前面带 * 的表示“别在 r2modman 里点 Update/Reinstall”
+======================================================================
+  1. Advize-PlantEasily  v2.2.0   by Advize
+     说明：Allows you to plant evenly spaced crops, either one at a time or in any amount of rows and columns, with grid snapping features and invalid crop place
+* 2. Azumatt-AzuExtendedPlayerInventory  v2.4.13   by Azumatt
+     说明：AzuEPI (Extended Player Inventory) is a comprehensive inventory expansion mod that adds more rows to inventory, equipment slots, quick slots, vanity c
+     ⚠ 本地改动：自编译 2.4.13（官方只有 2.4.8） → 点 Update/Reinstall 会覆盖，别点
+  3. Azumatt-Build_Camera_Custom_Hammers_Edition  v1.2.10   by Azumatt
+     说明：Adds a build camera to your vanilla and custom hammers. Taken over from the original mod by Azumatt.
+* 4. Azumatt-Minimal_UI  v2.3.12   by Azumatt
+     说明：A mod I made to hide the wooden panels, change the color of them, or use your own pngs because I am not fond of them. Optionally move your windows aro
+     ⚠ 本地改动：本地汉化 + IL 补丁 → 点 Update/Reinstall 会覆盖，别点
+* 5. Azumatt-PetPantry  v1.0.5   by Azumatt
+     说明：Mod to automatically feed tamed animals from nearby containers, ensuring your pets stay happy and healthy without manual intervention.
+     ⚠ 本地改动：IL 补丁（1.0 适配） → 点 Update/Reinstall 会覆盖，别点
+* 6. Azumatt-Recycle_N_Reclaim  v1.4.4   by Azumatt
+     说明：A mod that allows you to recycle items back into resources used to make them. Adds a 'Reclaim' tab/button to the crafting menu. Additionally can be us
+     ⚠ 本地改动：自编译 1.4.4（官方 1.4.1），且已按需求摘掉“丢弃”功能 → 点 Update/Reinstall 会覆盖，别点
+* 7. BetterUI_ForeverMaintained-BetterUI_ForeverMaintained  v2.5.12   by BetterUI_ForeverMaintained
+     说明：BetterUI once again fixed up for the masses. This time, it won't be abandoned.
+     ⚠ 本地改动：本地汉化 + IL 补丁 → 点 Update/Reinstall 会覆盖，别点
+* 8. blacks7ar-Endurance  v1.1.2   by blacks7ar
+     说明：A simple skill mod that increases your stamina and stamina regen as the skill levels up.
+     ⚠ 本地改动：本地简体汉化版（官方 1.1.2 是英文） → 点 Update/Reinstall 会覆盖，别点
+* 9. cjayride-InstantMonsterLootDrop  v0.7.1   by cjayride
+     说明：Fork of aedenthorn/InstantMonsterDrop. Monsters drop loot and despawn immediately. Updated for Valheim 1.0.
+     ⚠ 本地改动：9/9 适配 1.0 的分支版 → 点 Update/Reinstall 会覆盖，别点
+ 10. CN-EpicLoot_Chinese  v1.0.3   by CN
+     说明：Epic Loot translation file for Chinese simple Lang./Epic Loot 汉化
+ 11. coemt-Surtling_Boats  v2.0.8   by coemt
+     说明：Allows you to use Surtling cores to speed up boats, can now choose a different item in the config
+ 12. denikson-BepInExPack_Valheim  v5.4.2350   by denikson
+ 13. Digitalroot-Digitalroots_Slope_Combat_Assistance  v2.0.30   by Digitalroot
+     说明：Digitalroot's take on the Slope Combat Fix mod. DoD compatible.
+ 14. DrummerCraig-OneMapToRuleThemAll  v2.8.1   by DrummerCraig
+     说明：Shared map exploration (fog of war) and player map pins across all players. Create automatic map pins and/or use client-side radar...highly configurab
+ 15. Hex_Viking-HexEquipWhileRunning  v1.1.1   by Hex_Viking
+     说明：Allows equip, unequip, and reload actions while running.
+*16. jg224-ChestFlow  v0.5.7   by jg224
+     说明：Shared multiplayer chests, automatic animal feeding, crafting, restocking, upgrades, storage rules, stacking, and sorting.
+     ⚠ 本地改动：本地汉化版 + 自研性能补丁 → 点 Update/Reinstall 会覆盖，别点
+ 17. jg224-ModCore  v0.5.0   by jg224
+     说明：Gameplay-neutral coordination, compatibility, diagnostics, and shared service core for JG224 Valheim mods.
+ 18. JoelOliMclean-NoRainDamage  v1.3.0   by JoelOliMclean
+     说明：Valheim 1.0 Release Support!
+ 19. KompjoeFriek-FermenterUtilities  v1.1.4   by KompjoeFriek
+     说明：A few customisation options for fermenters including percentage progress, not requiring cover and custom fermentation time
+ 20. Korppis-Spearfishing  v1.0.5   by Korppis
+     说明：Catch fish with projectile weapons such as spear, harpoon and bow.
+ 21. RandyKnapp-EpicLoot  v0.14.5   by RandyKnapp
+     说明：Adds loot drops, magic items, and enchanting to Valheim.
+ 22. Searica-DodgeShortcut  v1.3.1   by Searica
+     说明：Simple mod to add a configurable dodge button. Allows you to dodge with a single key press.
+*23. ShelledGhost-PlanBuild  v0.18.8   by ShelledGhost
+     说明：Fork of sirskunkalot's PlanBuild, updated for Valheim 1.0. Plan, copy and share your building creations with ease. Includes terrain tools and immersio
+     ⚠ 本地改动：1.0 兼容分支版 → 点 Update/Reinstall 会覆盖，别点
+ 24. shudnal-ConditionalConfigSync  v1.0.6   by shudnal
+     说明：Shared config synchronization and server policy library for Valheim mods. Installed as a dependency and compatible with Jotunn and ServerSync.
+ 25. shudnal-ConfigurationManager  v1.1.18   by shudnal
+     说明：Localized, recolored, refined. Split view mode. Config files editor. Setting edit window. Changed values are highlighted. Prevent user input or pause 
+ 26. shudnal-ItemStacksItemWeights  v1.1.1   by shudnal
+     说明：Control item stack sizes and weights. Dynamic server-to-client synchronization. Works globally or per item.
+ 27. Skarif-AutoRepairBuilding  v1.2.16   by Skarif
+     说明：Simple mod for auto repair buildings
+*28. Smoothbrain-TargetPortal  v1.2.3   by Smoothbrain
+     说明：Lets you target any portal, instead of having to connect two portals via a tag.
+     ⚠ 本地改动：作者源码自编译（dll 内版本 1.2.6 > Thunderstore 1.2.3） → 点 Update/Reinstall 会覆盖，别点
+ 29. Stonaar-ValheimSkipIntro  v1.0.0   by Stonaar
+     说明：Client-side Valheim plugin that skips the startup cinematic, Coffee Stain and Iron Gate logos, Valheim loading logo and first-start developer intro.
+ 30. TastyChickenLegs-HoneyPlease  v1.3.1   by TastyChickenLegs
+     说明：Update and cleaned up code. Automate your Beehives.  Change honey production speed and store the honey when full
+ 31. ValheimModding-HookGenPatcher  v0.0.4   by ValheimModding
+     说明：Generates MonoMod.RuntimeDetour.HookGen's MMHOOK file during the BepInEx preloader phase.
+ 32. ValheimModding-Jotunn  v2.30.0   by ValheimModding
+     说明：Jötunn (/ˈjɔːtʊn/, 'giant'), the Valheim Library was created with the goal of making the lives of mod developers easier. It enables you to create mods
+ 33. ValheimModding-JsonDotNET  v13.0.4   by ValheimModding
+     说明：Shared version 13.0.3 of Json.NET from Newtonsoft, net45 package for use in Valheim mods. Maintained by the ValheimModding team.
+ 34. ValheimModding-YamlDotNet  v16.3.1   by ValheimModding
+     说明：Shared version 16.3.0 of YamlDotNet from Antoine Aubry and contributors, net47 package for use in Valheim mods. Maintained by the ValheimModding team.
+ 35. ValheimVRM_1.2.2  v1.2.2   by yoship1639
+     说明：yoship1639 ValheimVRM 1.2.2 - custom VRM player model for Valheim
+
+======================================================================
+  36. Azumatt-Hooked  v1.1.1   by Azumatt   （2026-09-15 新增：钓鱼小游戏；本包已收敛收益，见更新说明）
+
+【二、已装但禁用（5 个）】—— 文件在档里（.old），想用可在 r2modman 里启用
+======================================================================
+ 1. Azumatt-AzuCraftyBoxes  v1.8.18   by Azumatt
+ 2. Goldenrevolver-Quick_Stack_Store_Sort_Trash_Restock  v1.4.13   by Goldenrevolver
+ 3. Hex_Viking-HexQuickStackStorage  v1.0.1   by Hex_Viking
+ 4. hyr-ItemStacks  v1.2.0   by hyr
+ 5. KuboNinja_Squad-QuickStackStore_Valheim1_Compat  v1.0.0   by KuboNinja_Squad
+
+======================================================================
+【三、自制 / 本地插件（3 个，不在 Thunderstore 上，r2modman 不会更新它们）】
+======================================================================
+ 1. ChestFlowTweaks.dll  15872 B
+     说明：自研性能补丁 0.3.1：把 ChestFlow 每帧的反射查找改成启动时缓存（旧版掉帧的真凶，48ms/帧 → 修好后 65fps）
+ 2. InventorySortOnly.dll  16896 B
+     说明：自研 1.0.1：只整理 AzuEPI 的常规行，热键栏/收藏格/装备行不动
+ 3. VRMGhostFix.dll  9216 B
+     说明：自研 1.0.0：修 ValheimVRM 传送后残留/多出的人物模型（上游 1.2.2 自 2024 年起未修）
+
+======================================================================
+【附：需要更新的 md5 出厂校验值（install.ps1 用）】
+======================================================================
+    "BepInEx\plugins\jg224-ChestFlow\ChestFlow.dll" = "a749310465c4fa9a260f66a4b91f11ff"
+    "BepInEx\plugins\ChestFlowTweaks\ChestFlowTweaks.dll" = "4c7460dc819a46bd1905f5ef5bc0fb7b"
+    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "56c35cd9125ef7f9e43c90c77f9dfa6e"
+    "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll" = "4ba6372ed659ec18f897f2dcf9e2e6d8"
+    "BepInEx\plugins\VRMGhostFix\VRMGhostFix.dll" = "297936525d808cfdd38b33da54eeb87c"
+    "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"

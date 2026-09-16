@@ -1,0 +1,13 @@
+版本：v1.0
+日期：2026-09-15
+包文件：MAKABAKA_profile_v1.0_20260915.zip
+
+命名规则（从 v1.0 起）：安装包文件名一律带版本号，格式
+  MAKABAKA_profile_v<主.次>_<打包日期>.zip
+  升级包 → 版本号递增（v1.1、v1.2…），日期为打包当天。
+安装脚本会自动识别任意版本的包名，并在 [1/7] 那一步打印"包版本：vX.Y"。
+
+v1.0 含：Valheim 1.0 联机档 MAKABAKA —— Thunderstore 42 包（37 启用 / 5 禁用）
+  + 自制插件 3 个（SafeBox 0.5.4、KeepBuffsOnDeath 1.0.1、ChestFlow 及界面汉化）
+  + Azumatt-Hooked 1.1.1（已按平衡设置调好）
+  + RobgobStuff-Achievement_Enabler_Plus 2.0.3（清作弊标记 + 恢复成就）

@@ -1,0 +1,31 @@
+英灵神殿 MAKABAKA 整合档 —— 2026-09-14 更新说明
+（上一版：2026-09-13）
+
+【mod 更新】
+  · EpicLoot 0.14.4 → 0.14.5
+      官方改动：世界升级的额外安全检查 / 修商人（Haldor）界面偶尔不出现 / 修已存在的掉落池里含无效物品。
+      汉化：0.14.4 与 0.14.5 的文案键完全一致，原来的汉化包直接通用。
+  · AutoRepairBuilding 1.2.14 → 1.2.16（自动修建筑；包里没带 changelog，功能未变）
+
+【新增】
+  · blacks7ar-Endurance 1.1.2（耐力技能）+ 本地简体汉化
+      消耗耐力练级，100 级时 +75 最大耐力、耐力回复 5→15；死亡默认不掉经验。
+      技能名保留英文 Endurance（内部标识），描述/升级提示/配置说明已汉化。
+  · VRMGhostFix 1.0.0（自制插件）
+      修 ValheimVRM 传送后多出人物模型的 bug。ValheimVRM 上游自 2024-08 起未更新，官方未修。
+
+【改动 / 注意】
+  · AzuCraftyBoxes 保持禁用（不再从附近箱子取材料）；原版合成/建造/熔炉照旧由 ChestFlow 负责。
+  · EpicLoot 附魔台“前 3 次升级只要 1 金币”——这是本地改动，已包含在本包：
+      想还原官方价，用 BepInEx\config\EpicLoot\baseconfig\enchantingupgrades.json.bak-before-1coin-* 覆盖回去。
+      联机时 baseconfig 以服务端（房主）那份为准。
+  · 别在 r2modman 里对下面这些点 Update / Reinstall（会被官方版覆盖，功能或汉化回退）：
+      AzuExtendedPlayerInventory 2.4.13（自编译）、Recycle_N_Reclaim 1.4.4（自编译+去掉丢弃功能）、
+      MinimalUI / BetterUI / PetPantry / ChestFlow / TargetPortal / PlanBuild / InstantMonsterLootDrop（本地汉化或补丁）、
+      Endurance 1.1.2（汉化版）、以及三个自制插件。
+  · 装了新版后如果想“原地升级”：直接双击本目录的 一键安装.bat，脚本会保留你的设置（BepInEx\config 不动）。
+
+【已知与版本无关的现象（不用慌）】
+  · 日志里 MinimalUI 的 `Could not load type 'EpicLoot_UnityLib.EnchantingTable'` —— 它想给附魔台换皮肤找不到类型，
+    纯外观，EpicLoot 0.14.5 里同样没有这个类型；功能不受影响。
+  · 日志里 MMHOOK / HarmonyX 的类型加载警告、ValheimVRM 的 `Missing attach item … Helmet_attach` 都是老噪音。

@@ -1,0 +1,162 @@
+==============================================================================
+键位自定义指南（客户端）    —— MAKABAKA 整合包 / Valheim 1.0
+==============================================================================
+生成日期：2026-09-15    适用：本整合包的客户端（r2modman 档 MAKABAKA）
+本指南只讲一件事：怎么把任何功能改成你想用的键。键位全在你自己的电脑上，
+改坏了可以一键还原，也不会被整合包更新覆盖。
+
+【0. 一句话结论】
+  本包 55 个功能键里，42 个是“按键组合”类（游戏内按 F1 → 点一下 → 按你想用的键，立刻生效），
+  13 个是“单个键名”类（在同一菜单里输入键名，如 Mouse3 / F9）。没有一个是服务端锁定的。
+
+【1. 键位文件在哪】
+  你的档目录：C:\Users\<你的用户名>\AppData\Roaming\r2modmanPlus-local\Valheim\profiles\MAKABAKA\BepInEx\config\
+  也可以：r2modman → Settings → Browse profile folder，然后进 BepInEx\config。
+  每个 mod 一个 .cfg 文件，键位就是其中“名字 = 键”的那一行，例如：
+      DodgeShortcut = LeftAlt          → 翻滚键是左 Alt
+      QuickStackNearby = P             → 附近快速入库是 P
+
+【2. 最省事的改法：游戏内按 F1（推荐，不用手改文件）】
+  1) 游戏里按 F1 打开 Configuration Manager（再按一次关闭）。
+     如果 F1 打不开：说明被别的功能占了，先到本指南第 3 节表 A 里找到“打开/关闭配置管理器”那一项，
+     或者直接改文件 _shudnal.ConfigurationManager.cfg 里的 Show config manager。
+  2) 左侧按 mod 分组列出所有设置。想只看键位：勾上 Filtering → Show only keybinds。
+     ⚠ 注意：这个过滤只筛“按键组合(KeyboardShortcut)”类。表 B 那 13 个“单键名(KeyCode)”类要取消勾选后再找。
+  3) 改按键组合类：点那一项后面的键位按钮 → 界面提示 Press any key → 直接按下你想要的键或组合 → 完成，立即生效。
+  4) 改单键名类：点输入框，输入键名（写法见第 6 节），回车；个别项需要重启游戏。
+  5) 想恢复默认：同一项右键/取消，或删掉对应的 .cfg 文件（见第 9 节）。
+  6) 标着 [Synced with Server] 的项以服务器为准，客户端改了没用（本包的键位项里没有这种，只有几个功能开关是）。
+
+【3. 表 A：按键组合类（42 项，F1 里点一下就能捕获新键）】
+  功能                                          当前键                  所在文件
+  --------------------------------------------------------------------------------------------------------------------
+  一键填满（熔炉/篝火）修饰键【已禁用】         LeftShift               Azumatt.AzuCraftyBoxes.cfg
+  禁止从附近容器取料【已禁用】                  O + LeftAlt             Azumatt.AzuCraftyBoxes.cfg
+  收藏修饰键（按住+左键点物品/右键点格子）      LeftAlt                 Azumatt.AzuExtendedPlayerInventory.cfg
+  拖动摆放快捷槽栏（鼠标+修饰键）               Mouse0 + LeftControl    Azumatt.AzuExtendedPlayerInventory.cfg
+  快捷槽 1                                      Z + LeftAlt             Azumatt.AzuExtendedPlayerInventory.cfg
+  快捷槽 2                                      X + LeftAlt             Azumatt.AzuExtendedPlayerInventory.cfg
+  快捷槽 3                                      C + LeftAlt             Azumatt.AzuExtendedPlayerInventory.cfg
+  快捷槽 4                                      V + LeftAlt             Azumatt.AzuExtendedPlayerInventory.cfg
+  快捷槽 5                                      B + LeftAlt             Azumatt.AzuExtendedPlayerInventory.cfg
+  快捷槽 6                                      N + LeftAlt             Azumatt.AzuExtendedPlayerInventory.cfg
+  快捷槽 7                                      Alpha1 + LeftAlt        Azumatt.AzuExtendedPlayerInventory.cfg
+  快捷槽 8                                      Alpha2 + LeftAlt        Azumatt.AzuExtendedPlayerInventory.cfg
+  建筑相机模式开关（Build Camera）              B                       Azumatt.BuildCameraCHE.cfg
+  UI 编辑：按住拖动面板位置                     LeftControl             Azumatt.MinimalUI.cfg
+  UI 编辑：按住旋转面板                         LeftControl + LeftShif  Azumatt.MinimalUI.cfg
+  UI 编辑模式开关（本包已改 F6）                F6                      Azumatt.MinimalUI.cfg
+  UI 编辑：切换编辑层（右键）                   Mouse1                  Azumatt.MinimalUI.cfg
+  UI 编辑：网格开关（与 g 撞）                  G                       Azumatt.MinimalUI.cfg
+  丢弃物品                                      Delete                  Azumatt.Recycle_N_Reclaim.cfg
+  标记待回收                                    Mouse2                  Azumatt.Recycle_N_Reclaim.cfg
+  标记待回收的修饰键（与右键一起按住）          X                       Azumatt.Recycle_N_Reclaim.cfg
+  撤销上一次回收                                Z + LeftControl         Azumatt.Recycle_N_Reclaim.cfg
+  打开/关闭配置管理器（改键入口）               F1                      _shudnal.ConfigurationManager.cfg
+  配置管理器窗口复位                            F1 + LeftControl        _shudnal.ConfigurationManager.cfg
+  配置管理器窗口缩放复位                        F1 + LeftShift          _shudnal.ConfigurationManager.cfg
+  批量种植/收成总开关（与 F8 撞）               F8                      advize.PlantEasily.cfg
+  种植网格吸附开关（与 ModCore 的 F10 撞）      F10                     advize.PlantEasily.cfg
+  收成后自动补种开关（与 MinimalUI 的 F6 撞）   F6                      advize.PlantEasily.cfg
+  种植网格列数 +                                RightArrow              advize.PlantEasily.cfg
+  种植网格行数 +                                UpArrow                 advize.PlantEasily.cfg
+  种植网格列数 -                                LeftArrow               advize.PlantEasily.cfg
+  种植网格行数 -                                DownArrow               advize.PlantEasily.cfg
+  批量模式修饰键（键盘）                        RightControl            advize.PlantEasily.cfg
+  批量模式修饰键（手柄）                        JoystickButton4         advize.PlantEasily.cfg
+  批量收割修饰键                                LeftShift               advize.PlantEasily.cfg
+  边跑边装备 开关（与 BetterUI 的 F7 撞）       F7                      hex.EquipWhileRunning.cfg
+  同类物品快速存进附近箱子（与 P 撞）           P                       jg224.chestflow.cfg
+  整理当前打开的箱子（Alt+S，与翻滚共用 Alt）   LeftAlt + S             jg224.chestflow.cfg
+  兼容性状态面板（与 F10 撞）                   F10                     jg224.modcore.cfg
+  整理背包热键（自研插件，默认留空）            （留空）                local.inventory.sort.only.cfg
+  传送门交互修饰键                              LeftShift               org.bepinex.plugins.targetportal.cfg
+  地图上显示传送门图标（与 ChestFlow 的 P 撞）  P                       org.bepinex.plugins.targetportal.cfg
+
+【4. 表 B：单键名类（13 项，F1 里要输入键名）】
+  功能                                          当前键                  所在文件
+  --------------------------------------------------------------------------------------------------------------------
+  外观(Vanity)面板开关（手柄）                  JoystickButton8         Azumatt.AzuExtendedPlayerInventory.cfg
+  配装(Loadout)面板开关（手柄）                 None                    Azumatt.AzuExtendedPlayerInventory.cfg
+  属性(Stats)面板开关（手柄）                   JoystickButton3         Azumatt.AzuExtendedPlayerInventory.cfg
+  HUD 编辑模式开关（与 F7 撞）                  F7                      MK_BetterUI.cfg
+  HUD 编辑：按住拖动位置                        Mouse0                  MK_BetterUI.cfg
+  HUD 编辑：按住缩放                            LeftControl             MK_BetterUI.cfg
+  翻滚（按一下朝移动方向翻滚）                  LeftAlt                 Searica.Valheim.DodgeShortcut.cfg
+  蓝图市场界面                                  End                     marcopogo.PlanBuild.cfg
+  建造工具修饰键 1                              LeftShift               marcopogo.PlanBuild.cfg
+  建造工具修饰键 2                              LeftControl             marcopogo.PlanBuild.cfg
+  建造工具修饰键 3（用了 Alt）                  LeftAlt                 marcopogo.PlanBuild.cfg
+  建造工具模式切换                              Q                       marcopogo.PlanBuild.cfg
+  宝石插槽（Alt+Use 打开）                      LeftAlt                 randyknapp.mods.epicloot.cfg
+
+【4.5 表 C：文本型键位（3 项，F1 里当普通文本框改，不在键位过滤里）】
+  这些是 EpicLoot 的技能热键，设置类型是“文本”，F1 里直接输入字母即可；改完记得确认没跟表 A 撞：
+  EpicLoot 技能槽 1 / 2 / 3       当前 g / h / j        randyknapp.mods.epicloot.cfg
+  另：AzuEPI 改过快捷槽的键后，HUD 上显示的提示文字是独立设置的（Hotkey 1..8 Display Text，
+     当前分别是 Alt + Z / X / C / V / B / N / 1 / 2）。只改键不改这个的话，界面上提示的还是旧键，
+     在 F1 里把它们一起改成一致即可（这个不影响实际按键，只影响 HUD 上显示的文字）。
+
+【5. 已知“一键两用”（默认值层面，不改也能玩，但同键会同时响应）】
+  Alt（最挤的键，5 个功能）：翻滚(DodgeShortcut) / 收藏修饰(AzuEPI) / 建造工具修饰(PlanBuild)
+                            / 宝石插槽修饰(EpicLoot) / 整理打开的箱子(ChestFlow: Alt+S)
+     建议：翻滚换成鼠标侧键——DodgeShortcut 里把 DodgeShortcut 改成 Mouse3(中键) 或 Mouse4(后侧键)。
+           （作者本人也在配置说明里推荐这么干：Alt 会跟别的 mod 撞。）
+  F6：MinimalUI 编辑模式 / PlantEasily 收成后自动补种      → 建议 MinimalUI 改 F9
+  F7：BetterUI 的 HUD 编辑 / EquipWhileRunning 开关        → 建议 EquipWhileRunning 改 F11
+  F8：只有 PlantEasily 的总开关在用（另一个 F8 来自已移除 mod 的残留 cfg，不生效）
+  F10：PlantEasily 吸附开关 / ModCore 状态面板             → 建议 ModCore 改 BackQuote(`)
+  P：ChestFlow 附近入库 / TargetPortal 地图图标             → 建议 TargetPortal 改 N
+  G：MinimalUI 网格开关 / EpicLoot 技能热键 1(g，在 EpicLoot 自己的界面里) → 建议 MinimalUI 改 H
+  X：Recycle 标记待回收修饰 / AzuEPI 快捷槽 2(Alt+X)        → 若要分清，可把 Recycle 改成 Y
+  Z：Recycle 撤销(Ctrl+Z) / AzuEPI 快捷槽 1(Alt+Z)          → 一般不用改（一个是 Ctrl+Z，一个是 Alt+Z）
+
+【6. 键名写法（表 B 要输入，手改 cfg 时也用）】
+  字母/数字：A B C ... Z、Alpha0..Alpha9（主键盘数字）、Keypad0..Keypad9（小键盘）
+  功能键：F1..F12、Tab、Space、Return（回车）、Escape、BackQuote(`)、Minus(-)、Equals(=)
+  方向/编辑：UpArrow DownArrow LeftArrow RightArrow、Home End、PageUp PageDown、Insert Delete
+  修饰键：LeftShift RightShift LeftControl RightControl LeftAlt RightAlt
+  鼠标：Mouse0=左键、Mouse1=右键、Mouse2=中键、Mouse3=后侧键、Mouse4=前侧键
+  手柄：JoystickButton0..JoystickButton19（对应手柄按键）
+  组合写法（表 A 用）：主键 + 修饰键，例如 “X + LeftAlt”；修饰键可多个：“LeftControl + LeftShift”
+  不使用：None（部分项支持）、留空（个别项：留空表示只用界面按钮）
+
+【7. 这些文件里的键位别管（对应 mod 已禁用，改了不生效）】
+  shudnal.ExtraSlots.cfg、goldenrevolver.quick_stack_store.cfg、sighsorry.InventoryActions.cfg、
+  ZenDragon.Zen.ModLib.cfg、ZenDragon.ZenPlayer.cfg、aedenthorn.AutoBuildingRepair.cfg、
+  com.hex.quickstackstorage.cfg、hyr.ItemStacks.cfg、local.chestflow.cut.cfg、eu.mydayyy.plugins.serversidemap.cfg
+  （想清爽可以直接删掉，游戏下次启动有需要会重建；删错也不影响游戏。）
+
+【8. 原版键位（WASD、E、空格、Tab、AltPlace 等）在哪改】
+  游戏内 设置 → 控制 里改，这些不在 mod 的 cfg 里（改完存到你本机的设置里）。
+  只有少数 mod 把键写死在代码里（本包已尽量避开这种 mod），若遇到“某个功能找不到可改的键”，
+  在群里说明是哪个功能，我们再想办法。
+
+【9. 备份 / 还原 / 改文件的规矩】
+  · 备份：把整个 BepInEx\config 目录复制一份（改键前建议做一次，几十 MB 以内）。
+  · 还原单个 mod：删掉它的 .cfg（下次启动会用默认值重建），或用备份覆盖回来。
+  · 手改文件时：只改 “名字 = 键” 这一行；以 # 开头的是说明，别动；存成 UTF-8。
+  · 生效时机：绝大多数改完回游戏即生效（mod 会监听配置文件）；个别项需重启游戏。
+  · 关键：r2modman 的“更新/重装 mod”不会覆盖 cfg。只有你手动删 config 目录才会回到默认。
+    所以放心改，改乱了也能轻易还原。
+
+【10. 联机注意】
+  键位是纯本地设置，你跟谁联机都随便改，不影响别人。
+  只有标 [Synced with Server] 的设置以服务器为准（本包那是功能开关，不是键位）。
+
+【11. 遇到“按了 Alt 之后方向键失灵 / 卡一下”怎么办】
+  现象：战斗中按住方向键走路，按 Alt 翻滚，偶尔会卡一下，然后必须松开方向键再按才恢复移动。
+  原因：Valheim 1.0 换用 Unity 新输入系统，按键的“按住”状态是事件驱动的（不再每帧读物理键）；
+        Windows 对 Alt 有系统级窗口菜单/焦点处理，偶尔会让游戏漏掉一次输入状态 ——
+        于是你按着的那颗方向键在游戏眼里“松开了”，必须真的松开重按才会重新上报。
+        游戏本体和 mod 都不会去重置移动键（我们已在代码层逐项排查过），所以这不是某个 mod 的 bug。
+  处置（按性价比）：
+   1) 把翻滚键从 Alt 换掉 —— 表 A 第一行 DodgeShortcut，改成 Mouse3(中键) 或 Mouse4(后侧键)；
+      这样 Alt 不再被“单键即触发”的功能占用，踩到这个坑的概率大幅下降。
+   2) 显示设置里把“全屏模式”从 无边框 改成 独占全屏，减少 Windows 对 Alt 的接管。
+   3) 真出现时：松开方向键再按一次即可恢复，不用重开游戏。
+
+【12. 本表怎么来的（可复现）】
+  扫描档内 BepInEx\config 下所有启用 mod 的 .cfg，按 “# Setting type: KeyboardShortcut/KeyCode”
+  逐项抽出键位项（跳过已禁用 mod 的残留 cfg），共 55 条。扫描脚本与原始数据：
+  ~/valheim-modfix-20260910/scripts/keybind_clean_list.py、~/valheim-modfix-20260910/alt-probe/keybind-live.json

@@ -1,0 +1,16 @@
+# ---- 安装包本体：一律走 GitHub Release 附件，绝不进 git 历史 ----
+MAKABAKA_profile*.zip
+MAKABAKA_profile*.zip.bak-*
+英灵神殿mod分享_*.zip
+
+# ---- 任意备份文件 ----
+*.bak-*
+
+# ---- 解压出来的档本体（约 102MB，由附件解压得到，不入库）----
+MAKABAKA/
+
+# ---- 安装脚本运行时产物 ----
+install-path.txt
+MAKABAKA安装日志.txt
+MAKABAKA_backup-*/
+_vrm_backup_*/

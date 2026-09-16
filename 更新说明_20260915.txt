@@ -1,0 +1,47 @@
+英灵神殿 MAKABAKA 整合档 —— 2026-09-15 更新说明
+（上一版：2026-09-14）
+
+【新增 mod】
+  · Azumatt-Hooked 1.1.1（钓鱼玩法重做，客户端向，服务端不装也能用）
+      把原版"拔河式"钓鱼换成浮标条小游戏；钓鱼技能终于有实际收益
+      （耐力消耗 100%→20%、填充 1x→2x、条高 96→176、抛距 50→54m）。
+      鱼饵附带效果：热鱼饵 25% 双鱼、Misty 宝箱率更高、Cold +1 品质…
+      本包已按"手感保留、收益收敛"调过平衡（BepInEx\config\Azumatt.Hooked.cfg）：
+        · 4 - Rewards / Fresh Catch → Enabled = Off（关掉 +50 负重 5 分钟那个 buff）
+        · 5 - Treasure → Chance = 0.05（原 0.15）、Rolls Max = 1（原 2）
+        · 护栏保持开启：Block Progression Items / Known Items Only（钓不上来矿石，也不会提前给没见过的物品）
+      想恢复官方默认：把上面三项改回 On / 0.15 / 2 即可（即时生效）。
+
+【新增自制插件】
+  · SafeBox 0.5.4（随身保险柜：3x3 共 9 格）
+      · 独立容器，不占背包容量、不计负重；**死亡不掉落**，复活后仍在，随存随取自动落盘
+      · 面板挂在装备栏下方（箱子材质 UI + 标题「保险柜」）
+      · 鼠标交互与原版箱子一致：左键拿起/放下、格内可任意摆放（占用自动对调）、
+        Shift+左键 = 原版分拆对话框、右键 = 使用/装备
+      · Ctrl+左键（LeftAlt 同效）= 快速存取：
+          没开箱子时：背包 ⇄ 保险柜
+          开着箱子时：背包 ⇄ 箱子（箱子物品 → 背包、背包物品 → 箱子）
+      · 拾取自动堆叠：捡到的东西如果保险柜里**已有同名可堆叠**且没堆满，会直接并进柜里；
+        柜里没有的一律进背包（不会自动占格）；你手动取出的东西不会被吸回
+      · 数据文件：BepInEx\config\SafeBox\<玩家ID>_<角色名>.box（**只在本机**，
+        换机/删档会丢 → 建议跟角色档一起备份；服务端不感知柜内物品）
+      · 命令行：F5 里 safebox list / take <序号> / take all / ui / cells / reload / help
+  · KeepBuffsOnDeath 1.0.1（死亡保留正面状态效果）
+      · 死亡时快照、复活后恢复：Rested（休息）等正面 buff 的剩余时间、等级、变体
+      · 默认只保留正面效果（毒/燃烧/湿/霜/减速等负面一律不带）
+      · 配置：BepInEx\config\local.zuiaiyan.keepbuffsondeath.cfg
+
+【本版其它同步】
+  · 现役档 09-14 之后更新过的 mod（AzuEPI 2.4.13、MinimalUI、BuildCameraCHE、
+    ConfigurationManager、ConditionalConfigSync、AutoRepairBuilding 等）已一并打进本包
+  · 新增《键位自定义指南.txt》（键位/配置类需求：客户端各自改，说明文档见包内）
+
+【注意】
+  · 别在 r2modman 里对下面这些点 Update / Reinstall（会被官方版覆盖，功能/汉化/自研修改回退）：
+      AzuExtendedPlayerInventory（自编译）、Recycle_N_Reclaim（自编译+去掉丢弃）、
+      MinimalUI / BetterUI / PetPantry / ChestFlow / TargetPortal / PlanBuild / InstantMonsterLootDrop（本地汉化或补丁）、
+      Endurance（汉化版）、以及**三个自制插件**（SafeBox / KeepBuffsOnDeath / VRMGhostFix）。
+      install.ps1 里已列出厂校验值，装完可核对。
+  · 原地升级：直接双击本目录的 一键安装.bat，脚本保留你的设置（BepInEx\config 不动）。
+  · 服务端配置项（带 [Synced with Server]）以房主那份为准：AzuEPI 快捷栏行数、EpicLoot baseconfig、
+    Endurance 阈值等，客户端改了不生效。

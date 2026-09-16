@@ -1,0 +1,153 @@
+================================================================
+r2modman 使用说明（Valheim 场景，Windows）
+适用：r2modman 3.2.x（本说明按 3.2.19 界面写）
+================================================================
+
+【0. 一句话】
+r2modman 是一个"mod 管理器"：它把 mod 安装在你自己的用户目录里，启动游戏时再注入进去。
+好处是：游戏目录保持干净、可以同时保存多套 mod 组合（叫"档 / profile"）、随时开关和更新
+mod。玩 mod 的 Valheim 基本都是用它（或它的变体）。
+
+----------------------------------------------------------------
+【1. 下载与安装】
+----------------------------------------------------------------
+官方只认两个下载渠道（其他"镜像站/重打包"都有风险，别下）：
+  · Thunderstore：https://thunderstore.io/c/valheim/p/ebkr/r2modman/
+    → 点 "Manual Download" 下载 zip，解压后运行里面的 "r2modman Setup X.X.X.exe"
+  · GitHub Releases：https://github.com/ebkr/r2modmanPlus/releases
+    → 有两种文件：
+        r2modman-Setup-X.X.X.exe  安装版（装到 C:\Users\你的用户名\AppData\Local\Programs\r2modman）
+        r2modman-X.X.X.exe        免安装绿色版（双击即用，不写注册表）
+建议：右键 → 以管理员身份运行（部分电脑不这样就无法写入游戏目录）。
+Linux / Steam Deck 用 .deb/.rpm/.pacman/AppImage 等对应包，不要用 .exe。
+
+----------------------------------------------------------------
+【2. 首次启动要做的三件事】
+----------------------------------------------------------------
+1) 选游戏：启动后先是游戏列表，用搜索框找 "Valheim" 点进去。
+2) 指定游戏目录：r2modman 会尝试自动识别 Steam 库；识别错了会弹 "Incorrect game
+   directory"，此时手动选到 ...\steamapps\common\Valheim 这一层（不是 Valheim\valheim.exe）。
+3) 建档：在 Profile 下拉里 "Create new profile" 建一个（名字随意，例如 Default）。
+
+以后想换游戏：界面顶部的游戏切换按钮（game-switch-button）回到游戏列表重选。
+
+----------------------------------------------------------------
+【3. 界面结构（3.2.x）】
+----------------------------------------------------------------
+顶部：游戏切换、Profile（档）下拉、Import/Update（导入 / 更新）相关按钮。
+左侧竖排页签：
+  · Online      在线浏览 Thunderstore：搜索 mod → Install（会自动装依赖）
+  · Installed   已安装列表：开关 mod、看依赖、卸载、下载指定版本
+  · Config Editor 图形化编辑 mod 的配置文件（.cfg / json 等）
+  · Download Monitor 下载队列与进度
+  · Help        官方帮助 / FAQ
+  · Settings    设置（主题、语言、导出档、启动参数等）
+底部/侧边按钮：Start modded（带 mod 启动）、Start vanilla（原版启动）。
+
+----------------------------------------------------------------
+【4. "档（Profile）"是怎么回事 —— 最重要的一节】
+----------------------------------------------------------------
+- 一个档 = 一套独立的 mod 组合 + 独立配置。切换档不会互相影响。
+- 档的实际存放位置：
+      C:\Users\你的用户名\AppData\Roaming\r2modmanPlus-local\<游戏名>\profiles\<档名>\
+  例如本分享包就是 ...\r2modmanPlus-local\Valheim\profiles\MAKABAKA\
+- 档里的内容（看懂这个就懂 r2modman 了）：
+      mods.yml                这个档装了哪些 mod、什么版本、启用/禁用状态
+      BepInEx\plugins\        mod 的 dll 文件（每个 mod 一个文件夹）
+      BepInEx\config\         mod 的配置文件（.cfg 等）
+      BepInEx\core\ patchers\ BepInEx 本体与补丁
+      winhttp.dll doorstop_config.ini doorstop_libs\
+                              注入器（让游戏启动时加载 BepInEx）
+- 启动游戏时，r2modman 把该档的这些文件同步/链接到游戏目录，再启动 valheim.exe。
+  所以：直接双击 Steam 里的 Valheim 是不带 mod 的（而且容易和 r2modman 的状态打架）。
+- 档管理：Profile 下拉里可以 新建(Create) / 重命名(Rename) / 删除(Delete) /
+  导入(Import) / 导出(Export)。
+- 备份与迁移：整个档文件夹拷走就是完整备份（本分享包用的就是这个办法）。
+- 数据文件夹的位置可以改：设置 → Locations → Change data folder（官方不会把已有的档搬过去，
+  要在新位置用就先把档导出再导入）。挪到别的盘后，本包的 一键安装.bat 也能自动找到（见《安装指南.txt》）。
+
+----------------------------------------------------------------
+【5. 安装 mod 的三种方式】
+----------------------------------------------------------------
+方式 A（最常用）：Online 页搜索 mod 名 → 点 Install（或 Install with dependencies）。
+  会自动装好该 mod 依赖的库（例如 Jotunn、JsonDotNET 等）。
+方式 B：Import local mod —— 装本地 zip / 单个 dll 的 mod（Thunderstore 之外的 mod，
+  例如自制插件）。选文件后按提示确认即可。
+方式 C：Clone/下载指定版本 —— Installed 页里对某个 mod 选择 "Download <版本>"，
+  用于"更新后出问题了，退回旧版本"。
+
+开关 mod：Installed 页每个 mod 右侧的开关。禁用不是删除——文件会被改名成 *.old，
+仍然留在档里，随时可以再打开（本分享包里就有 5 个这种"已装但禁用"的 mod）。
+
+----------------------------------------------------------------
+【6. 启动游戏】
+----------------------------------------------------------------
+- 点 Start modded：带 mod 启动（会先同步档文件到游戏目录）。
+- 点 Start vanilla：原版启动（用来对比排查）。
+- 玩 mod 时永远用 r2modman 启动，不要直接点 Steam 的"开始游戏"。
+- 启动参数：Settings 里的 launch arguments（少数 mod 或分辨率设置会用到）。
+- 更新 mod：Online / Installed 页有 "Update all"，建议看完更新日志再点，mod 更新有时会带来
+  不兼容；更新后进不去游戏就退回旧版本。
+
+----------------------------------------------------------------
+【7. 配置（改设置）】
+----------------------------------------------------------------
+优先级从方便到彻底：
+  1) 游戏内 F1 打开"配置管理器"（本档装了 ConfigurationManager），改完立即生效，最推荐。
+  2) r2modman 的 Config Editor 页：图形化改 .cfg，改完记得保存（Save）。
+  3) 记事本直接编辑 ...\profiles\<档名>\BepInEx\config\*.cfg，改完重启游戏。
+注意：某些配置标注 [Synced with Server]，联机时以服务器（房主）的值为准。
+
+----------------------------------------------------------------
+【8. 日志与排错】
+----------------------------------------------------------------
+- 日志位置：游戏目录\BepInEx\LogOutput.log（r2modman 也有日志/帮助面板）。
+  搜 "Error"、"Failed to load"、"Exception" 能看到是哪个 mod 出的问题。
+- 游戏起不来 / 卡加载：
+  ① 先看日志里报错 mod；
+  ② 在 Installed 页把可疑 mod 关掉再试；
+  ③ 用 Start vanilla 确认是 mod 问题还是游戏本身问题；
+  ④ mod 是不是比游戏本体版本旧/新 —— 更新或回退 mod/游戏版本。
+- 提示缺少依赖：装的时候按提示把依赖一起装上（Install with dependencies）。
+- 杀毒软件报 winhttp.dll 有毒：这是 BepInEx 的注入器，误报，加信任即可。
+- 目录识别错误 / 写入失败：以管理员身份运行 r2modman，或重新指定游戏目录。
+- 界面/物品栏错乱：先试删除对应 mod 的 .cfg（会重建默认配置），再试禁用该 mod。
+
+----------------------------------------------------------------
+【9. 分享 / 导入别人的档】
+----------------------------------------------------------------
+导出（给别人）：
+  · Settings → Export profile as file：生成 .r2z 文件，可离线发给别人（推荐）。
+  · Settings → Export profile as code：生成一串"分享码"，需要联网上传，且只适合小档
+    （r2modman 限制约 20MB；配置里带大文件时会被拒绝）。
+  两种导出都只含"mod 清单 + 配置文件"，不含 mod 的 dll 本体 —— 别人导入后会从
+  Thunderstore 重新下载这些 mod。所以：不在 Thunderstore 上的自制 mod 不会被带走，
+  需要另外单独发文件（本分享包采取的是"整个档文件夹打包"的方式，就是为了避免这个问题）。
+导入（收别人的档）：
+  · 顶部 Import/Update → 从文件(.r2z) 或 从分享码(profile code) 导入；
+    它会显示将安装哪些 mod，确认后自动下载并生成一个新档。
+  · 如果收到的是"整个档文件夹"（如本分享包），做法不同：双击包里的 一键安装.bat 最省事
+    （自动定位 profiles 目录、自动区分"全新安装/升级"、并校验关键文件）；
+    手动做法见《安装指南.txt》第 1 节。
+
+----------------------------------------------------------------
+【10. 缓存、目录与彻底卸载】
+----------------------------------------------------------------
+- 下载缓存：C:\Users\你的用户名\AppData\Roaming\r2modmanPlus-local\<游戏>\cache\
+  （存 mod 包，删了不影响使用，只是以后重装要重新下载）
+- 导出文件默认放在 ...\<游戏>\exports\
+- 删档：Profile 下拉里 Delete，或直接删 profiles\<档名> 文件夹。
+- 档里的文件不会被拷进游戏目录（r2modman 只同步 winhttp.dll、doorstop_config.ini、doorstop_libs、
+  .doorstop_version 这几个启动文件）。所以需要往游戏目录放文件的 mod 要单独装：
+  本包的 ValheimVRM 就是这种（见 ValheimVRM_手动安装\ 与《安装指南.txt》第 9 节）。
+- mods.yml.bak-* 是本包自带的备份文件（可忽略）；一键安装脚本生成的备份放在包目录，
+  不会进游戏目录。
+- 彻底卸载：删掉 r2modman 程序 + r2modmanPlus-local 整个目录；再到 Steam →
+  Valheim 属性 → 已安装文件 → 验证文件完整性，把注入进去的 BepInEx/winhttp.dll 等
+  清掉，游戏就回到纯净状态（存档不受影响，存档在
+  C:\Users\你的用户名\AppData\LocalLow\IronGate\Valheim\ 里）。
+
+================================================================
+一句话总结：选游戏 → 建档 → 装 mod → Start modded。
+剩下的（多档切换、导入导出、Config Editor、日志）都是围绕这个流程的辅助。
+================================================================
