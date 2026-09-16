@@ -139,7 +139,8 @@ def main():
              % (ver, args.date[:4], args.date[4:6], args.date[6:8], zname, size, md5, sha))
     text = hist.read_text(encoding="utf-8") if hist.exists() else "MAKABAKA 整合档 —— 安装包校验值\n============================\n"
     if ("[ %s ]" % ver) in text:
-        text = re.sub(r"\n\[ %s \].*?(?=\n\[ |\Z)" % re.escape(ver), entry.rstrip() + "\n", text, flags=re.S)
+        # 只替换这一条（到下一个空行为止），不要吃掉后面的说明段落
+        text = re.sub(r"\[ %s \].*?(?=\n[ \t]*\n|\Z)" % re.escape(ver), entry.strip() + "\n", text, flags=re.S)
     else:
         text = text.rstrip() + "\n" + entry
     hist.write_text(text, encoding="utf-8")
