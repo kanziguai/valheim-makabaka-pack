@@ -1,13 +1,25 @@
-版本：v1.0
-日期：2026-09-15
-包文件：MAKABAKA_profile_v1.0_20260915.zip
+﻿版本：v1.1
+日期：2026-09-16
+包文件：MAKABAKA_profile_v1.1_20260916.zip
 
 命名规则（从 v1.0 起）：安装包文件名一律带版本号，格式
   MAKABAKA_profile_v<主.次>_<打包日期>.zip
   升级包 → 版本号递增（v1.1、v1.2…），日期为打包当天。
 安装脚本会自动识别任意版本的包名，并在 [1/7] 那一步打印"包版本：vX.Y"。
 
-v1.0 含：Valheim 1.0 联机档 MAKABAKA —— Thunderstore 42 包（37 启用 / 5 禁用）
+v1.1 含：Valheim 1.0 联机档 MAKABAKA —— Thunderstore 42 包（37 启用 / 5 禁用）
   + 自制插件 3 个（SafeBox 0.5.4、KeepBuffsOnDeath 1.0.1、ChestFlow 及界面汉化）
   + Azumatt-Hooked 1.1.1（已按平衡设置调好）
   + RobgobStuff-Achievement_Enabler_Plus 2.0.3（清作弊标记 + 恢复成就）
+  （mod 内容与 v1.0 相同，本版主要是"一键安装 + ValheimVRM 角色模型"流程升级）
+
+v1.1 新增/改动：
+  · ValheimVRM 流程完善：两处落点分别安装（插件 → r2modman 档；15 个 dll → 游戏本体
+    valheim_Data\Managed），逐个文件比对 MD5，缺的补、不一样的换（换前备份）
+  · 角色模型二选一：金乌（59.8MB，默认）/ 辰星（36.7MB）；角色名在脚本里自己输入，
+    脚本自动生成 <角色名>.vrm 与 settings_<角色名>.txt（不用自己找文件改名）
+  · 新增「换模型.bat / 换模型.ps1」：只换模型或换角色名，不重装整个档
+  · 装完打印「VRM 三处自检」（① 插件 ② Managed dll ③ 模型），出问题照那三行排查
+  · 新增「安装步骤.txt」：可直接转发给别人的完整安装步骤（含三种装法）
+  · 升级备份更耐错：目标档缺 mods.yml（半装坏档）时不再中断，只备份 plugins 并提示
+  · 去个人化：包内不再包含按玩家 SteamID 的状态文件，也不含任何个人角色名
