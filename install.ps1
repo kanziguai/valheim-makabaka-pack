@@ -232,23 +232,60 @@ function Save-FileWithMirrors([string]$url, [string]$outFile, [string]$label) {
             $wc = New-Object System.Net.WebClient
             $wc.Headers.Add("User-Agent", "makabaka-install")
             if ($useDirect) { $wc.Proxy = $null }
-            $script:dlLastPct = -5
-            $script:dlLastAt  = Get-Date
-            $wc.add_DownloadProgressChanged({
-                param($s, $e)
-                $pct = 0
-                if ($e.TotalBytesToReceive -gt 0) { $pct = [int](100 * $e.BytesReceived / $e.TotalBytesToReceive) }
-                $now = Get-Date
-                if (($pct -ge ($script:dlLastPct + 5)) -or ($pct -ge 100) -or (($now - $script:dlLastAt).TotalSeconds -ge 10)) {
-                    $script:dlLastPct = $pct
-                    $script:dlLastAt  = $now
-                    $mb = [math]::Round($e.BytesReceived / 1MB, 1)
-                    $tot = if ($e.TotalBytesToReceive -gt 0) { [math]::Round($e.TotalBytesToReceive / 1MB, 1) } else { "?" }
-                    Write-Host ("          $pct%   $mb MB / $tot MB") -ForegroundColor DarkGray
+            # 说明：WebClient 的同步 DownloadFile 不触发进度事件（旧写法等于没显示），
+            #       所以这里自己读流写文件 —— 进度/速度必然可显示，还能发现"下到一半断了"
+            $req = [System.Net.HttpWebRequest]::Create($u)
+            $req.UserAgent = "makabaka-install"
+            $req.Timeout = 30000
+            $req.ReadWriteTimeout = 60000
+            if ($useDirect) { $req.Proxy = $null }
+            $resp = $req.GetResponse()
+            $total = $resp.ContentLength
+            $rs = $resp.GetResponseStream()
+            $fs = [System.IO.File]::Create($outFile)
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            $buf = New-Object byte[] 1048576
+            $read = 0L
+            $lastAt = 0.0
+            try {
+                while ($true) {
+                    $n = $rs.Read($buf, 0, $buf.Length)
+                    if ($n -le 0) { break }
+                    $fs.Write($buf, 0, $n)
+                    $read += $n
+                    $secNow = $sw.Elapsed.TotalSeconds
+                    if (($secNow - $lastAt) -ge 0.5) {
+                        $lastAt = $secNow
+                        if ($secNow -le 0) { continue }
+                        $mb   = [math]::Round($read / 1MB, 1)
+                        $spd  = [math]::Round(($read / 1MB) / $secNow, 1)
+                        $pct  = 0
+                        if ($total -gt 0) { $pct = [int](100 * $read / $total) }
+                        $totTxt = "?"
+                        if ($total -gt 0) { $totTxt = "$([math]::Round($total / 1MB, 1)) MB" }
+                        $etaTxt = ""
+                        if (($spd -gt 0.05) -and ($total -gt $read)) {
+                            $left = ($total - $read) / 1MB / $spd
+                            if ($left -lt 60) { $etaTxt = "，剩约 " + [math]::Round($left) + " 秒" }
+                            else { $etaTxt = "，剩约 " + [math]::Round($left / 60, 1) + " 分钟" }
+                        }
+                        Write-Host ("`r          $pct%   $mb MB / $totTxt   $spd MB/s$etaTxt                    ") -NoNewline -ForegroundColor DarkGray
+                    }
                 }
-            })
-            $wc.DownloadFile($u, $outFile)
-            $wc.Dispose()
+            } finally {
+                try { $fs.Close() } catch {}
+                try { $rs.Close() } catch {}
+                try { $resp.Close() } catch {}
+            }
+            $secAll = $sw.Elapsed.TotalSeconds
+            $szMB = [math]::Round($read / 1MB, 1)
+            $avgAll = 0
+            if ($secAll -gt 0) { $avgAll = [math]::Round($szMB / $secAll, 1) }
+            Write-Host ""
+            if (($total -gt 0) -and ($read -ne $total)) {
+                throw "下载不完整（收到 $read / 应有 $total 字节）"
+            }
+            Say ("        下载完成：$szMB MB，用时 " + [math]::Round($secAll, 1) + " 秒（平均 $avgAll MB/s）") "Green"
             return $true
             } catch {
                 if ($wc) { try { $wc.Dispose() } catch {} }

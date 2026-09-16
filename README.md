@@ -42,19 +42,34 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $s
 镜像前缀可以换成 `https://ghproxy.net/`，或者干脆不挂前缀直连 `raw.githubusercontent.com`。
 
 > 在跑着 Clash / 机场加速器的机器上，脚本下载会先走系统代理、失败会自动绕开代理直连；
-> 首装要下 138MB，几分钟属正常，别中途关窗口。
+> 首装要下 138MB，几分钟属正常，别中途关窗口；**下载时会实时显示百分比、当前速度、剩余时间**。
 > 镜像（ghfast / ghproxy）对 raw 文件有几分钟缓存：脚本刚更新完的头几分钟，
 > 从镜像拿到的可能还是旧副本 —— 脚本开头会打印「脚本日期」，对不上就等几分钟或改用直连。
 
-### B. clone 仓库 + 双击（推荐，以后更新最方便）
+### B. git 一段命令（推荐，以后更新最方便）
+
+先装 [git](https://git-scm.com/download/win)（一路默认「下一步」即可）。然后打开 PowerShell，
+把下面这段**整段粘进去回车**：会自动 clone（目录已存在就 `git pull` 更新），**直接接着开始安装**
+—— 不用手动 `cd`，也不用去双击 bat：
 
 ```powershell
-git clone https://github.com/kanziguai/valheim-makabaka-pack.git
-cd valheim-makabaka-pack
+$d = "$env:USERPROFILE\valheim-makabaka-pack"
+if (Test-Path "$d\.git") { git -C $d pull }
+elseif (Test-Path $d) { $d = "$d-git"; git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
+else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
+& "$d\一键安装.bat"
 ```
 
-然后**双击 `一键安装.bat`**。仓库里没有安装包 —— 脚本会自动去 Release 下最新版
-（镜像优先、失败自动换线路，下完核对 MD5 才解压安装）。
+也可以压成一行（用 `;` 分隔，效果一样）：
+
+```powershell
+$d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $d pull } elseif (Test-Path $d) { $d="$d-git"; git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }; & "$d\一键安装.bat"
+```
+
+代码放在 `C:\Users\<你的用户名>\valheim-makabaka-pack\`。**以后更新就是把同一段再粘一次**。
+仓库里没有安装包 —— 脚本会自己从 Release 下最新版（镜像优先、失败自动换线路，下完核对 MD5 才解压；
+**下载时会实时显示百分比、当前速度、剩余时间**）。
+想手动来也行：`git clone` → 进目录 → 双击 `一键安装.bat`。
 
 ### C. 完全手动（不用 git、不用命令行）
 

@@ -35,22 +35,26 @@
      powershell -NoProfile -ExecutionPolicy Bypass -File $s
 
   3) 接着跟着提示回答（问什么见【2】）
-  提示：首装要下 118MB，几分钟属正常，别关窗口；卡住不动就 Ctrl+C 停掉，改用方法二或三。
+  提示：首装要下 138MB，几分钟属正常，别关窗口；下载时会实时显示【百分比 / 当前速度 / 剩余时间】。
+       卡住不动就 Ctrl+C 停掉，改用方法二或三。
        镜像前缀 https://ghfast.top/ 可以换成 https://ghproxy.net/，或去掉前缀走直连。
 
-■ 方法二 · git 命令（推荐，以后更新最方便）
+■ 方法二 · git 一段命令（推荐，以后更新最方便）
   1) 先装 git（没装过的话）：https://git-scm.com/download/win
      一路默认「下一步」装完即可
-  2) 按 Win+X → 选「终端」或「Windows PowerShell」，粘贴这两行并回车：
+  2) 按 Win+X → 选「终端」或「Windows PowerShell」，把下面这段【整段粘进去回车】：
 
-     git clone https://github.com/kanziguai/valheim-makabaka-pack.git
-     cd valheim-makabaka-pack
+     $d = "$env:USERPROFILE\valheim-makabaka-pack"
+     if (Test-Path "$d\.git") { git -C $d pull }
+     elseif (Test-Path $d) { $d = "$d-git"; git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
+     else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
+     & "$d\一键安装.bat"
 
-  3) 打开这个文件夹（一般在 C:\Users\你的用户名\valheim-makabaka-pack），
-     【双击「一键安装.bat」】
-     —— 仓库里不含 118MB 的大包，脚本会自己去 GitHub 下载（下完自动核对 MD5）
-
-  4) 以后更新：在这个文件夹里执行  git pull  ，然后再双击一次「一键安装.bat」
+     它会：clone 下来（已存在就 git pull 更新）→ 直接开始安装。
+     **不用手动 cd 进目录，也不用去双击 bat**（也可以压成一行，各句之间用 ; 分隔）。
+     仓库里不含 138MB 的大包，脚本会自己去 GitHub 下载（下完自动核对 MD5）。
+  3) 以后更新：**把同一段再粘一次**就行（它会先 pull 再装）
+     —— 想手动操作的话：进 C:\Users\你的用户名\valheim-makabaka-pack 双击「一键安装.bat」
 
 ■ 方法三 · 手动下载（不用 git、不用命令行）
   1) 打开：https://github.com/kanziguai/valheim-makabaka-pack/releases
