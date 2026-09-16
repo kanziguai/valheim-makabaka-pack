@@ -8,6 +8,9 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 
 > 仓库里只放脚本 + 文档（几百 KB）；安装包 zip 走 Release 附件，不进 git 历史。
 
+**要发给朋友？直接发 [`安装步骤.txt`](安装步骤.txt) 就行** —— 从零到进游戏的完整步骤（含三种装法：
+一行命令 / git clone + 双击 / 手动下 Release 附件），照做即可。
+
 ---
 
 ## 0. 前提（没这两样装不了）

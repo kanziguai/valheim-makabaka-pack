@@ -15,7 +15,7 @@ echo "分享包: $SHARE"
 echo
 
 changed=0; same=0
-for f in install.ps1 一键安装.bat 换模型.bat 换模型.ps1 README.md 校验值.txt \
+for f in install.ps1 一键安装.bat 换模型.bat 换模型.ps1 README.md 校验值.txt 安装步骤.txt \
          安装指南.txt 键位自定义指南.txt 游戏内功能速查.txt r2modman使用说明.txt \
          Mod清单_MAKABAKA.txt 版本号.txt EpicLoot游玩指南.md EpicLoot游玩指南.txt; do
   src="$REPO/$f"; dst="$SHARE/$f"

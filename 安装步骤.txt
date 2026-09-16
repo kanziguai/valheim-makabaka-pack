@@ -1,0 +1,157 @@
+﻿============================================================
+ 英灵神殿 MAKABAKA 整合包 · 安装步骤
+ （把这份文件发给要装的人就行，从头到尾照做即可）
+============================================================
+
+【0】装之前先准备两样东西
+------------------------------------------------------------
+1) 正版《英灵神殿 Valheim》（Steam）
+   · 本包对应游戏 1.0 版本；游戏大更新后要等新包，否则 mod 会出错
+
+2) r2modman（Valheim 的 mod 管理器，免费）
+   · 下载：https://thunderstore.io/c/valheim/p/ebkr/r2modman/
+   · 装完【打开一次】，在里面选好 Valheim 的安装位置，然后再关掉
+     （必须做过这一步：它要先建好 profiles 目录，安装脚本才能把档放进去）
+
+3) 系统与磁盘
+   · Windows 10 / 11，磁盘留 1GB 左右（安装包 118MB + 临时解压 + 档本体 + 模型）
+   · 如果装了火绒 / 腾讯管家这类，运行时弹窗要点【允许】，否则装到一半会被拦截
+
+4) 安装之前先把 r2modman 关掉
+   （脚本也会自动帮你关，自己关更稳妥 —— 它退出时会重写档信息）
+
+
+【1】安装：三种方法，随便挑一种
+------------------------------------------------------------
+
+■ 方法一 · 一行命令（最省事，不用装 git）
+  1) 按 Win+X → 选「终端」或「Windows PowerShell」
+  2) 把下面这几行【整段复制】进去，回车：
+
+     $u = "https://ghfast.top/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"
+     $s = "$env:TEMP\makabaka-install.ps1"
+     $wc = New-Object Net.WebClient; $wc.Headers.Add("User-Agent","makabaka-install")
+     try { $wc.DownloadFile($u,$s) } catch { $wc.Proxy = $null; $wc.DownloadFile("https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1",$s) }
+     powershell -NoProfile -ExecutionPolicy Bypass -File $s
+
+  3) 接着跟着提示回答（问什么见【2】）
+  提示：首装要下 118MB，几分钟属正常，别关窗口；卡住不动就 Ctrl+C 停掉，改用方法二或三。
+       镜像前缀 https://ghfast.top/ 可以换成 https://ghproxy.net/，或去掉前缀走直连。
+
+■ 方法二 · git 命令（推荐，以后更新最方便）
+  1) 先装 git（没装过的话）：https://git-scm.com/download/win
+     一路默认「下一步」装完即可
+  2) 按 Win+X → 选「终端」或「Windows PowerShell」，粘贴这两行并回车：
+
+     git clone https://github.com/kanziguai/valheim-makabaka-pack.git
+     cd valheim-makabaka-pack
+
+  3) 打开这个文件夹（一般在 C:\Users\你的用户名\valheim-makabaka-pack），
+     【双击「一键安装.bat」】
+     —— 仓库里不含 118MB 的大包，脚本会自己去 GitHub 下载（下完自动核对 MD5）
+
+  4) 以后更新：在这个文件夹里执行  git pull  ，然后再双击一次「一键安装.bat」
+
+■ 方法三 · 手动下载（不用 git、不用命令行）
+  1) 打开：https://github.com/kanziguai/valheim-makabaka-pack/releases
+     （不用注册 GitHub 账号，直接点就行）
+  2) 下载最新那个  MAKABAKA_profile_v…zip
+  3) 右键 → 【全部解压】（不要在压缩包里直接双击）
+  4) 进入解压出来的文件夹，【双击「一键安装.bat」】
+
+
+【2】安装过程中脚本会问你什么（照着答）
+------------------------------------------------------------
+[1/7] 找安装包      → 自动（本地没有就从 GitHub 下最新版，下完核对 MD5 才用）
+[2/7] 找 r2modman 目录 → 自动；要是没找到，它会让你把路径粘进去
+[3/7] r2modman 在运行吗 → 自动关闭
+[4/7] 检测到已装过吗   → 全新安装：直接过
+                        装过旧版：会问你 [1] 升级（推荐，保留你自己的设置与收藏格）
+                                              [2] 全新重装（干净一份，F1 设置回默认）
+[5/7] 复制 + 校验   → 自动（逐个文件核对 MD5、mod 启用/禁用数量）
+[6/7] 收尾          → 告诉你启动方式
+[7/7] ValheimVRM（换角色模型的 mod，可选）→ 问你「一并配置 ValheimVRM 吗？(Y/n)」
+      · 答 Y（回车）会依次问你：
+          - 选哪个模型： 1) 金乌（默认）  2) 辰星  0) 不换
+          - 【你的角色名】：填你游戏里的角色名（每人不一样）
+            （脚本会按这个名字自动生成 <角色名>.vrm 与 settings_<角色名>.txt，
+              不需要你自己去文件夹里找文件、改名）
+          - 目录里其它旧模型要不要收进备份文件夹：(y/N，默认留着)
+      · 最后会打印「VRM 三处自检」，三行都要是 [✓]
+
+  安装日志在【桌面】上：MAKABAKA安装日志.txt（要找人看问题就把这个文件发过去）
+
+
+【3】进游戏
+------------------------------------------------------------
+1) 打开 r2modman
+2) 左边选 Valheim
+3) 顶部 profile 选 MAKABAKA
+4) 点【Start modded】进游戏
+   —— 千万别点 Start vanilla，那是原版（没有 mod）
+   —— 直接点 Steam 的“开始游戏”也没有 mod，必须经 r2modman 启动
+   —— 第一次启动比较慢（要加载 40 多个 mod，1～3 分钟正常）
+
+
+【4】进游戏后要知道的几个键
+------------------------------------------------------------
+· F1              = mod 配置 / 热键面板（想查什么功能、改什么键都在这里）
+· Ctrl + 左键     = 快速存取（本包专用；原版的“Ctrl=拿一半”被拦下了）
+· 翻滚            = LeftAlt
+                    如果和 Windows 输入法的 Shift+Alt 切换热键冲突、跑动会中断：
+                    去关掉输入法的那个热键，或者在 F1 里把翻滚改成别的键
+· 更完整的键位与功能：见包里的「键位自定义指南.txt」「游戏内功能速查.txt」
+
+
+【5】联机怎么玩
+------------------------------------------------------------
+· 世界（存档）在主机那边；主机开好房间，其他人通过 Steam 好友房 / 密码加入
+· 【两边 mod 必须一致】：大家都装这一套、同一版本，否则会被踢或出现各种怪问题
+· 换角色模型是各人自己的：只在本机显示，互相看不到对方的模型（想看到就大家装同一套）
+
+
+【6】以后更新
+------------------------------------------------------------
+· 用方法一 / 方法三装的：重跑一次就行（每次都会取最新版）
+· 用方法二（git）装的：  git pull  →  再双击一次「一键安装.bat」
+· 更新会保留你自己的 F1 设置与收藏格；旧文件先备份到 MAKABAKA_backup-<时间戳>
+· 只想换角色模型 / 换角色名（不想重装整个档）：双击包里的「换模型.bat」，
+  选模型 + 输角色名即可（新版包才有这个文件）
+
+
+【7】出问题了怎么办（按顺序自查）
+------------------------------------------------------------
+1) 打开桌面上的 MAKABAKA安装日志.txt，看最后的报错行
+2) 游戏目录里的  BepInEx\LogOutput.log  里的报错行
+3) 装完进游戏没效果 → 看安装时那份「VRM 三处自检」，哪一行是 [×] 就查那一行
+4) 点了 Steam 的「验证游戏文件完整性」→ valheim_Data\Managed 里那几个 dll 会被清掉
+   → 【重跑一次安装脚本】就能恢复
+5) 脚本卡住不动 → Ctrl+C 停掉，换方法二或方法三再试
+6) 以上都看不懂：把 MAKABAKA安装日志.txt 发过来
+
+
+【8】两件千万别做的事
+------------------------------------------------------------
+1) 别在 r2modman 里对下面这些 mod 点 Update / Reinstall
+   （会被官方原版覆盖，丢掉中文化 / 自编译的改动）：
+     AzuExtendedPlayerInventory、Recycle_N_Reclaim、MinimalUI、BetterUI、PetPantry、
+     ChestFlow、TargetPortal、PlanBuild、InstantMonsterLootDrop、Endurance，
+     以及三个自制插件 SafeBox（随身保险柜）、KeepBuffsOnDeath、VRMGhostFix
+2) 别在装好 ValheimVRM 的 dll 之后点 Steam 的「验证游戏文件完整性」
+   （会清掉 valheim_Data\Managed 里的 dll；真点了就重跑一次安装脚本）
+
+
+附：包里还有这些说明文档（都在同一个文件夹里）
+------------------------------------------------------------
+· 安装指南.txt          更详细的说明（目录结构、每个 mod 干嘛的、常见问题）
+· 键位自定义指南.txt    怎么改键
+· 游戏内功能速查.txt    F1 面板里都有什么功能
+· r2modman使用说明.txt  管理器怎么用
+· Mod清单_MAKABAKA.txt  这包里到底有哪些 mod
+· 版本号.txt            当前版本与包文件名
+· ValheimVRM_手动安装\说明_ValheimVRM.txt   角色模型那部分的手动做法
+
+
+（本包内容：Thunderstore 42 个包 · 37 启用 / 5 禁用 ＋ 自制插件 3 个
+  ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked ＋ Achievement_Enabler_Plus）
+============================================================

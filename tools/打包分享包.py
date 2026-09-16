@@ -57,7 +57,7 @@ EXCLUDE_RE = [
     (re.compile(r"(^|/)_旧模型_"), "旧模型备份目录"),
 ]
 # 顶层这些文档/脚本必须存在（缺了说明分享包目录不对）
-REQUIRED = ["install.ps1", "一键安装.bat", "MAKABAKA/mods.yml", "版本号.txt"]
+REQUIRED = ["install.ps1", "一键安装.bat", "MAKABAKA/mods.yml", "版本号.txt", "安装步骤.txt"]
 
 
 def human(n: int) -> str:
