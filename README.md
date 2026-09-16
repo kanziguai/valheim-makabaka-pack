@@ -4,7 +4,7 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 ＋ 自制插件 3 个（SafeBox 0.5.4、KeepBuffsOnDeath 1.0.1、VRMGhostFix）
 ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
 
-**当前版本：v1.0（2026-09-15）** · 安装包 117.6 MB（自包含）· 见 [Releases](../../releases)
+**当前版本：v1.1（2026-09-16）** · 安装包 138.0 MB（自包含，含两个角色模型）· 见 [Releases](../../releases)
 
 > 仓库里只放脚本 + 文档（几百 KB）；安装包 zip 走 Release 附件，不进 git 历史。
 
@@ -18,7 +18,7 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 1. **正版 Valheim 1.0**（Steam）
 2. **[r2modman](https://thunderstore.io/c/valheim/p/ebkr/r2modman/)** 已安装，**并启动过一次、选好 Valheim 安装位置**
    （它得先建好 profiles 目录，安装脚本才能把档放进去）
-3. Windows 10/11，预留约 350 MB（安装包 118 MB + 解压后约 120 MB）
+3. Windows 10/11，预留约 1 GB（安装包 138 MB + 临时解压 + 档本体 + 角色模型；`%TEMP%` 里的临时文件装完会自动清）
 
 ---
 
@@ -42,7 +42,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $s
 镜像前缀可以换成 `https://ghproxy.net/`，或者干脆不挂前缀直连 `raw.githubusercontent.com`。
 
 > 在跑着 Clash / 机场加速器的机器上，脚本下载会先走系统代理、失败会自动绕开代理直连；
-> 首装要下 117MB，几分钟属正常，别中途关窗口。
+> 首装要下 138MB，几分钟属正常，别中途关窗口。
 > 镜像（ghfast / ghproxy）对 raw 文件有几分钟缓存：脚本刚更新完的头几分钟，
 > 从镜像拿到的可能还是旧副本 —— 脚本开头会打印「脚本日期」，对不上就等几分钟或改用直连。
 
