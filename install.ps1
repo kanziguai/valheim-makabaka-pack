@@ -995,19 +995,37 @@ if ($vrmPack -and -not $SkipVRM) {
                     }
                     if ([string]::IsNullOrWhiteSpace($charName) -and -not $NonInteractive) {
                         Say ""
-                        if ($existing.Count -gt 0) { Say "        （目录里现有的模型文件：$($existing -join '、')）" "DarkGray" }
-                        Say "        请输入【你在游戏里的角色名】（拼写要一模一样，区分大小写的话以游戏里显示为准）："
-                        Say "          · 模型会装成   <角色名>.vrm"
-                        Say "          · 设置会装成   settings_<角色名>.txt"
-                        Say "          · 输入 0 = 不换模型"
-                        for ($try = 0; $try -lt 3; $try++) {
+                        Say "        接下来在脚本里输入【你游戏里的角色名】就行，不用自己去文件夹里找文件改名："
+                        Say "          · 脚本会把模型复制成  <角色名>.vrm"
+                        Say "          · 并把设置复制成     settings_<角色名>.txt"
+                        Say "          （名字要和游戏里一模一样；字母别错，大小写无所谓）"
+                        if ($existing.Count -gt 0) {
+                            Say ""
+                            Say "        这个目录里已经有这些模型文件（= 以前用过的角色名）："
+                            for ($i = 0; $i -lt $existing.Count; $i++) { Say ("          {0}) {1}" -f ($i + 1), $existing[$i]) }
+                            Say "        输编号 = 直接用上面那个名字（最省事、也不会拼错）；输别的 = 当成新名字"
+                        }
+                        Say "        输入 0 = 不换模型（跳过这步）"
+                        for ($try = 0; $try -lt 4; $try++) {
                             $ansRaw = Read-Host "        角色名"
                             if ($null -eq $ansRaw) { $ansRaw = "" }
                             $ans = $ansRaw.Trim().Trim('"')
-                            if ([string]::IsNullOrWhiteSpace($ans)) { Say "        （这次没读到输入）不能为空：再输一次（或输入 0 跳过）。" "Yellow"; continue }
+                            if ([string]::IsNullOrWhiteSpace($ans)) { Say "        （这次没读到输入）请再输一次；输入 0 = 不换模型。" "Yellow"; continue }
                             if ($ans -match '^\s*0\s*$') { $charName = "skip"; break }
+                            if (($existing.Count -gt 0) -and ($ans -match '^\d+$')) {
+                                $idx = [int]$ans - 1
+                                if (($idx -ge 0) -and ($idx -lt $existing.Count)) {
+                                    $charName = $existing[$idx]
+                                    Say "        用目录里已有的名字：$charName" "Green"
+                                    break
+                                }
+                                Say "        编号超出范围（1-$($existing.Count)）；想用新名字就直接输名字。" "Yellow"
+                                continue
+                            }
                             if ($ans -match '[\\/:*?"<>|]') { Say "        含不能用于文件名的字符，换一个。" "Yellow"; continue }
-                            $charName = $ans; break
+                            $charName = $ans
+                            Say "        角色名：$charName → 会生成 $charName.vrm 与 settings_$charName.txt" "Green"
+                            break
                         }
                     }
                     if ([string]::IsNullOrWhiteSpace($charName) -and $NonInteractive -and $existing.Count -ge 1) {
@@ -1026,7 +1044,27 @@ if ($vrmPack -and -not $SkipVRM) {
                         Say "           模型： $charName.vrm（用的「$($pick.Name)」，只是复制一份改名；源文件没动）"
                         if (Test-Path $setDst) { Say "           设置： settings_$charName.txt ✓" "Green" }
                         else { Say "           设置： 缺失（插件会退回默认值：模型大小 1.1、亮度 0.8…）" "Yellow" }
-                        if ($existing.Count -gt 0) { Say "           目录里还有：$($existing -join '、')（按角色名各取所需，不要的可以自己删）" "DarkGray" }
+                        $others = @($existing | Where-Object { $_ -ne $charName } | ForEach-Object { "$_.vrm" })
+                        if ($others.Count -gt 0) {
+                            Say "           目录里还有其它角色的模型：$($others -join '、')（不影响使用：插件只按你当前角色名找文件）" "DarkGray"
+                            if (-not $NonInteractive) {
+                                $ansMove = "" + (Read-Host "           要把这些旧模型收进备份文件夹吗？(y/N，默认留着)")
+                                if ($ansMove -match '^(?i)\s*y') {
+                                    $oldDir = Join-Path $vrmTarget ("_旧模型_" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+                                    try {
+                                        New-Item -ItemType Directory -Path $oldDir -Force | Out-Null
+                                        $mv = 0
+                                        foreach ($o in $others) {
+                                            $srcF = Join-Path $vrmTarget $o
+                                            $setS = Join-Path $vrmTarget ("settings_" + [System.IO.Path]::GetFileNameWithoutExtension($o) + ".txt")
+                                            if (Test-Path $srcF) { Move-Item $srcF (Join-Path $oldDir $o) -Force; $mv++ }
+                                            if (Test-Path $setS) { Move-Item $setS $oldDir -Force }
+                                        }
+                                        Say "           已收进 $oldDir （里面 $mv 个，随时能搬回来）" "Green"
+                                    } catch { Say "           [注意] 收拾旧模型失败：$($_.Exception.Message)（不影响使用）" "Yellow" }
+                                }
+                            }
+                        }
                         $script:vrmActiveName = $charName
                         $vrmOk["模型"] = ((Test-Path (Join-Path $vrmTarget "$charName.vrm")) -and (Test-Path $setDst))
                     }
@@ -1056,7 +1094,8 @@ if ($vrmPack -and -not $SkipVRM) {
                 } catch { Say "        [注意] 模型缓存失败（不影响本次安装）：$($_.Exception.Message)" "DarkGray" }
             }
 
-            Say "        ★ 模型按【角色名】生效：<角色名>.vrm 与 settings_<角色名>.txt —— 换角色就把文件改成新角色名（或双击 换模型.bat）" "Yellow"
+            Say "        ★ 模型按【角色名】生效：<角色名>.vrm 与 settings_<角色名>.txt" "Yellow"
+            Say "          换角色名或换模型：重跑本脚本、或双击 换模型.bat 里输入新名字即可（脚本自动改名，不用自己动文件）" "Yellow"
             Say "        ★ Steam「验证游戏文件完整性」会清掉 Managed 里这些 dll；之后重跑本脚本即可恢复" "Yellow"
         }
 
@@ -1086,7 +1125,7 @@ if ($vrmPack -and -not $SkipVRM) {
             elseif ($vrmCount -gt 0) { Say "        [✓] ③ 模型（游戏里）：$vrmCount 个 .vrm 在 $(Join-Path $game 'ValheimVRM')" "Green" }
             else {
                 Say "        [×] ③ 没找到 .vrm 模型：$(Join-Path $game 'ValheimVRM')" "Red"
-                Say "            （想用自己的模型：把 <角色名>.vrm 与 settings_<角色名>.txt 放进该目录即可）" "Yellow"
+                Say "            （想装模型：重跑本脚本、或双击 换模型.bat 选一个模型并输入你的角色名；脚本会自动命名）" "Yellow"
             }
         } else {
             Say "        [—] ②③ 未检查：没找到游戏目录（插件那半已经装好；游戏侧之后重跑本脚本即可）" "Yellow"

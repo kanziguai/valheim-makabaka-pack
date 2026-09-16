@@ -83,8 +83,9 @@ cd valheim-makabaka-pack
 | 运行时 dll（15 个，`VRM10.dll`/`UniGLTF.dll`/`MToon.dll`…） | `ValheimVRM_手动安装\valheim_Data_Managedに入れる文件\` | **游戏本体里**：`<游戏>\valheim_Data\Managed\`（覆盖前自动备份到 `<游戏>\_vrm_backup_<时间>\`） |
 | 模型与设置 | `ValheimVRM_手动安装\Models\金乌\` 或 `\辰星\`（默认金乌） | **游戏本体里**：`<游戏>\ValheimVRM\<角色名>.vrm` + `settings_<角色名>.txt` |
 
-模型是**装的时候自己选、角色名自己输**的：脚本列出 `金乌`（默认）/`辰星`/`0 不换`，然后问你的角色名，
-复制成 `<角色名>.vrm` + `settings_<角色名>.txt`。**只换模型不用重装整个档** —— 双击 `换模型.bat` 即可
+模型是**装的时候自己选、角色名在脚本里自己输**的：脚本列出 `金乌`（默认）/`辰星`/`0 不换`，然后问你的角色名，
+复制成 `<角色名>.vrm` + `settings_<角色名>.txt` —— 玩家**不需要去文件夹里找文件或手动改名**。
+（目录里已有以前用过的角色名时会列出来，输编号即可；旧模型默认留着，也可选一键收进 `_旧模型_<时间>\`。）**只换模型不用重装整个档** —— 双击 `换模型.bat` 即可
 （等价 `install.ps1 -VRMOnly`，也可 `-VrmModel 辰星 -CharName 你的角色名 -NonInteractive` 直接指定）。
 
 > 文件名规则（照上游源码确认）：`<游戏>\ValheimVRM\<角色名>.vrm` 与 `settings_<角色名>.txt`。
