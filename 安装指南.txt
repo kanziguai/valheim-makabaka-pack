@@ -58,6 +58,14 @@
   3) 若双击无反应（被安全软件拦住等），就用下面的手动步骤，效果完全一样。
 
   ★ 脚本会自己找 r2modman 的档目录，所以 r2modman 的数据文件夹被挪到别的盘也能装。
+   · 如果你机器上有【多个】r2modman 数据文件夹（有人每块盘都装过一份），脚本会把它们列出来让你挑：
+     会标出哪个"已有 MAKABAKA 档"、哪个是"上次装在这"；直接回车 = 第 1 项，输 9 = 再扫描所有硬盘，
+     输 0 = 自己输入路径。只有一个数据文件夹时不会问。
+   · 安装包的【下载/解压位置】首次运行也会问一次（要下 138MB、解压再占约 140MB，装完自动清理）：
+     默认在 %TEMP%\makabaka_pack，不喜欢放 C 盘可以选别的盘。选完会记住（脚本旁的 download-path.txt）；
+     想改就删掉那个文件，或用参数 -DownloadDir D:\MAKABAKA_install 指定。
+     换模型用的模型缓存（约 100MB）也会放进你选的目录里的 VRM_Models\；用默认位置时则放
+     %LOCALAPPDATA%\MAKABAKA\VRM\Models。
     查找顺序：① 命令行 -ProfilesRoot 指定 → ② 上次记住的路径（install-path.txt）→
     ③ r2modman 自己记录过的路径 → ④ 默认位置（%APPDATA%\r2modmanPlus-local 等，含用符号链接搬家的）
     → ⑤ 逐个扫描所有固定硬盘 → ⑥ 都找不到就弹窗让你粘贴路径。

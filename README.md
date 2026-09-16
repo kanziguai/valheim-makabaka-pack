@@ -68,8 +68,8 @@ cd valheim-makabaka-pack
 
 | 步骤 | 内容 |
 |---|---|
-| 1 | 找源档：同目录的 `MAKABAKA/` 文件夹 → 同目录的 zip → **都没有就从 GitHub 下载最新版** |
-| 2 | 找 r2modman 的 profiles 目录（命令行 → 上次记住的 → r2modman 自己的记录 → 默认位置 → 扫盘 → 问你）|
+| 1 | 找源档：同目录的 `MAKABAKA/` 文件夹 → 同目录的 zip → **都没有就从 GitHub 下载最新版**（首次运行会问「安装包放哪」，可换到别的盘，选过就记住 —— 见下）|
+| 2 | 找 r2modman 的 profiles 目录（命令行 → 上次记住的 → r2modman 自己的记录 → 默认位置 → 扫盘 → 问你）。**找到多个数据文件夹时会列出来让你选**（有人每块盘都有一份），默认选上次那个，也可输 `9` 再扫盘、输 `0` 自己指定 |
 | 3 | r2modman 正在运行就先关掉（它的退出会重写档信息）|
 | 4 | 没装过 → 全新安装；装过 → **原地升级**（优先保留你的设置，旧文件先备份）|
 | 5 | 复制（升级模式跳过 `BepInEx\config`，只补缺失的配置文件）|
@@ -111,7 +111,20 @@ cd valheim-makabaka-pack
 -PackFile <路径>      用指定的本地 zip          -PackUrl <url>  从指定 URL 下载包
 -ReleaseRepo <o/r>    换仓库                   -ReleaseBase <url>  自建镜像/自测用
 -DetectOnly           只探测路径、什么都不改
+-DownloadDir <路径>   安装包下载/解压放哪（默认 %TEMP%\makabaka_pack；不喜欢 C 盘就换盘，
+                      如 -DownloadDir D:\MAKABAKA_install）。选过一次会记住（download-path.txt）
 ```
+
+> **安装包不想放 C 盘？** 首次运行时会问一次：
+> ```
+>   安装包放哪？（要下 138 MB、解压再占约 140 MB；装完脚本会自动清理）
+>     1) C:\Users\你\AppData\Local\Temp\makabaka_pack   （默认；该盘剩余 65.8 GB）
+>     2) D:\MAKABAKA_install   （另一个盘；剩余 ... GB）
+>     0) 我自己输入一个路径
+> ```
+> 选完会记在脚本旁的 `download-path.txt`；想改就删掉它、或用 `-DownloadDir` 指定。
+> 模型缓存（换模型用，约 100MB）也会跟着放到你选的目录里的 `VRM_Models\`；用默认位置时则放
+> `%LOCALAPPDATA%\MAKABAKA\VRM\Models`（因为临时目录会被系统清理）。
 
 ---
 

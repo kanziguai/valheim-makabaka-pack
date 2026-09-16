@@ -14,6 +14,8 @@
     -VRMOnly               只换模型：不重装档，只做 VRM 的模型与设置（配合 换模型.bat 用）
     -VrmModel <名字|路径>  指定用哪个模型（名字=Models 下的目录名，如 金乌/辰星；也可以给 .vrm 路径）
     -CharName <角色名>     指定角色名（模型会被复制成 <角色名>.vrm + settings_<角色名>.txt）
+    -DownloadDir <路径>    安装包下载/解压放哪（默认 %TEMP%\makabaka_pack；不喜欢放 C 盘就换盘，
+                           例如 -DownloadDir D:\MAKABAKA_install）。选过一次会记住
     -NonInteractive        不提问：自动关 r2modman、已装过则默认走"升级"
     -Fresh                 已装过时强制"全新重装"（旧档改名备份）
     -DetectOnly            只显示"探测到的 profiles 目录"然后退出（不动任何文件）
@@ -44,7 +46,8 @@ param(
     [string]$ReleaseBase = "",
     [switch]$VRMOnly,
     [string]$VrmModel = "",
-    [string]$CharName = ""
+    [string]$CharName = "",
+    [string]$DownloadDir = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -74,7 +77,101 @@ $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.1_20260916.zip"
 $FallbackMd5     = "7c5a65eaa42d9f072bb6822d5f6952cd"
-$script:CacheDir = Join-Path $env:TEMP "makabaka_pack"
+$script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
+$script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
+$script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
+$script:DlRememberFile = Join-Path $PSScriptRoot "download-path.txt"   # 记住你选过的下载位置
+
+# 某个位置所在盘还剩多少 GB（路径不存在就往上找最近的已存在目录）
+function Get-FreeGB([string]$path) {
+    try {
+        $q = $path
+        while ($q -and -not (Test-Path $q)) {
+            $up = Split-Path $q -Parent
+            if (-not $up -or $up -eq $q) { break }
+            $q = $up
+        }
+        if (-not $q) { return $null }
+        $root = [System.IO.Path]::GetPathRoot($q)
+        if ([string]::IsNullOrWhiteSpace($root)) { return $null }
+        $di = New-Object System.IO.DriveInfo($root)
+        return [math]::Round($di.AvailableFreeSpace / 1GB, 1)
+    } catch { return $null }
+}
+
+# 模型缓存放哪：自己指定的下载目录（不在临时目录里）就放那儿，否则放 %LOCALAPPDATA%（临时目录会被系统清理）
+function Get-ModelCacheDir([string]$workDir) {
+    if ($workDir -and ($workDir -notlike "$env:TEMP*") -and ($workDir -notlike "$env:LOCALAPPDATA\Temp*")) {
+        return (Join-Path $workDir "VRM_Models")
+    }
+    return (Join-Path $env:LOCALAPPDATA "MAKABAKA\VRM\Models")
+}
+
+# r2modman 数据文件夹候选（有人每块盘都装过一份；同一个目录的不同写法只算一个）
+$script:ProfCands = New-Object System.Collections.Generic.List[string]
+function Add-ProfCand([string]$p) {
+    if ([string]::IsNullOrWhiteSpace($p)) { return }
+    foreach ($x in $script:ProfCands) { if ($x -ieq $p) { return } }
+    $script:ProfCands.Add($p)
+}
+function Get-ProfCandNote([string]$root) {
+    $yml = Join-Path (Join-Path $root $ProfileName) "mods.yml"
+    if (Test-Path $yml) {
+        $tm = ""
+        try { $tm = (Get-Item $yml).LastWriteTime.ToString("yyyy-MM-dd HH:mm") } catch {}
+        return "已有 $ProfileName 档（$tm）"
+    }
+    $n = 0
+    if (Test-Path $root) { try { $n = @(Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue).Count } catch {} }
+    return "没有 $ProfileName 档，会新建（该数据文件夹里现有 $n 个档）"
+}
+
+# 选"安装包放哪"：不喜欢下到 C 盘的人可以换盘；选过一次就记住（下次不再问）
+function Resolve-WorkDir([string]$Given, [switch]$NoPrompt) {
+    $defaultDir = Join-Path $env:TEMP "makabaka_pack"
+    if (-not [string]::IsNullOrWhiteSpace($Given)) { return $Given.Trim().Trim('"').TrimEnd('\') }
+    $prevDl = $null
+    if (Test-Path $script:DlRememberFile) { try { $prevDl = (Get-Content $script:DlRememberFile -Raw).Trim() } catch {} }
+    if (-not [string]::IsNullOrWhiteSpace($prevDl)) { return $prevDl }
+    if ($NonInteractive -or $NoPrompt) { return $defaultDir }
+
+    $freeD = Get-FreeGB $defaultDir
+    $cands = New-Object System.Collections.Generic.List[object]
+    $cands.Add([pscustomobject]@{ Path = $defaultDir; Note = "默认（当前用户临时目录）；该盘剩余 " + $(if ($freeD -ne $null) { "$freeD GB" } else { "未知" }) })
+    foreach ($dv in @([System.IO.DriveInfo]::GetDrives() | Where-Object { $_.DriveType -eq 'Fixed' -and $_.IsReady })) {
+        $dvRoot = $dv.RootDirectory.FullName
+        if ($dvRoot -like "$env:SystemDrive*") { continue }
+        $cands.Add([pscustomobject]@{ Path = (Join-Path $dvRoot "MAKABAKA_install"); Note = "另一个盘；剩余 $([math]::Round($dv.AvailableFreeSpace / 1GB, 1)) GB" })
+    }
+    Say ""
+    Say "  安装包放哪？（要下 138 MB、解压再占约 140 MB；装完脚本会自动清理。不喜欢放 C 盘就选别的）" "Cyan"
+    for ($i = 0; $i -lt $cands.Count; $i++) { Say ("    {0}) {1}   （{2}）" -f ($i + 1), $cands[$i].Path, $cands[$i].Note) }
+    Say "    0) 我自己输入一个路径（例如 D:\MAKABAKA_install；只写 D: 也行）"
+    $ansW = "" + (Read-Host "  选哪个？(直接回车 = 1)")
+    $pick = $cands[0].Path
+    if ($ansW -match '^\s*$') { $pick = $cands[0].Path }
+    elseif ($ansW -match '^\s*0\s*$') {
+        $typedW = ("" + (Read-Host "  把路径粘进来（只写盘符如 D: 也行）")).Trim().Trim('"')
+        if ($typedW -match '^[A-Za-z]:$') { $typedW = Join-Path ($typedW + "\") "MAKABAKA_install" }
+        if (-not [string]::IsNullOrWhiteSpace($typedW)) { $pick = $typedW }
+    }
+    elseif ($ansW -match '^\d+$' -and [int]$ansW -ge 1 -and [int]$ansW -le $cands.Count) { $pick = $cands[[int]$ansW - 1].Path }
+    else { Say "  输入看不懂，按默认来。" "Yellow" }
+    $freeW = Get-FreeGB $pick
+    if ($freeW -ne $null -and $freeW -lt 1.2) { Say "  [注意] 这个位置所在盘只剩 $freeW GB，可能不够（约需 1 GB）；不够会在下载/解压时报错。" "Yellow" }
+    try { [System.IO.File]::WriteAllText($script:DlRememberFile, $pick, (New-Object System.Text.UTF8Encoding($false))) } catch {}
+    Say "  ✓ 记住这个位置了（下次不再问；想改就删掉脚本旁的 download-path.txt，或用 -DownloadDir 指定）" "DarkGray"
+    return $pick
+}
+
+# 真正要用到"下载/解压"时才解析（-VRMOnly 不弹问、本地文件夹也不需要）
+function Ensure-WorkDir {
+    if ([string]::IsNullOrWhiteSpace($script:WorkDir)) {
+        $script:WorkDir = Resolve-WorkDir $DownloadDir
+        $script:CacheDir = Join-Path $script:WorkDir "pack"
+        $script:ModelCacheDir = Get-ModelCacheDir $script:WorkDir
+    }
+}
 
 if (-not [string]::IsNullOrWhiteSpace($ReleaseRepo)) {
     $ReleasesRepo  = $ReleaseRepo.Trim()
@@ -181,7 +278,9 @@ function Expand-PackZip([string]$zipPath, [string]$zipLeaf) {
         $script:packVer = "v" + $Matches[1]
         if ($Matches[2]) { $script:packVer = $script:packVer + "（" + $Matches[2] + "）" }
     } else { $script:packVer = "无版本号（旧包）" }
-    $tmp = Join-Path $env:TEMP ("makabaka_" + (Get-Date -Format "HHmmss"))
+    Ensure-WorkDir
+    $tmp = Join-Path $script:WorkDir ("unpack_" + (Get-Date -Format "HHmmss"))
+    Say "        安装包目录：$script:WorkDir" "DarkGray"
     try {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $tmp)
@@ -295,6 +394,7 @@ elseif ($Offline) {
 }
 else {
     # ---- 在线安装：从 GitHub Release 取最新版（镜像优先 + 下载后校验）----
+    Ensure-WorkDir
     Say "  [1/7] 本目录没有安装包 → 从 GitHub 获取最新版" "Green"
     if ($ReleasesRepo -notmatch '^[\w.-]+/[\w.-]+$' -or $ReleasesRepo -like 'OWNER/*' -or $ReleasesRepo -like '*/REPO') {
         Fail "本脚本里的仓库地址还没填对（现在是 `"$ReleasesRepo`"）。用 -ReleaseRepo owner/仓库名 指定，或找分享者要一份填好的 install.ps1。"
@@ -450,6 +550,17 @@ function Find-DataFolderOnDrives {
     return ($hits | Select-Object -Unique)
 }
 
+function Scan-ProfCands {
+    # 扫描所有固定硬盘，找 r2modman 数据文件夹（只加候选，不动任何东西）
+    $before = $script:ProfCands.Count
+    foreach ($d in (Find-DataFolderOnDrives)) {
+        $c = Try-ProfilesRoot $d
+        if (-not $c) { $c = Try-AnyProfilesRoot $d }
+        if ($c) { Add-ProfCand $c }
+    }
+    return ($script:ProfCands.Count - $before)
+}
+
 function Find-ValheimGameDir {
     # 找 Valheim 游戏目录（含 valheim_Data\Managed 的那一层）：Steam 注册表 + 库文件，再兜底扫盘
     $cands = New-Object System.Collections.Generic.List[string]
@@ -482,6 +593,8 @@ function Find-ValheimGameDir {
 
 if ($VRMOnly) {
     # 只换模型：只做"轻量探测"（不扫盘、不写 install-path.txt），探测不到也不阻断
+    $script:WorkDir = Resolve-WorkDir $DownloadDir -NoPrompt
+    $script:ModelCacheDir = Get-ModelCacheDir $script:WorkDir
     $resolved = $null
     if (-not [string]::IsNullOrWhiteSpace($ProfilesRoot)) {
         $resolved = Try-ProfilesRoot $ProfilesRoot
@@ -503,56 +616,116 @@ if ($VRMOnly) {
 }
 else {
 $resolved = $null
+$remembered = $null
+$scanned = $false
 
-# ① 命令行指定（宽松：当成数据文件夹 / profiles 目录都行；不存在就按给定的用，稍后新建）
+# ① 命令行指定（宽松：数据文件夹 / profiles 目录都行；不存在就按给定的用，稍后新建）
+#    —— 明确指定了就不再问
 if (-not [string]::IsNullOrWhiteSpace($ProfilesRoot)) {
     $given = $ProfilesRoot.Trim().Trim('"').TrimEnd('\')
     $asData = Try-ProfilesRoot $given
     if ($asData) { $resolved = $asData } else { $resolved = $given }
     $script:PathSource = "命令行指定"
 }
-# ② 上次记住的
-if (-not $resolved -and -not $NoRemember -and (Test-Path $rememberFile)) {
-    try {
-        $prev = (Get-Content $rememberFile -Raw).Trim()
-        $resolved = Try-ProfilesRoot $prev
-        if ($resolved) { $script:PathSource = "上次记住的位置" }
-    } catch {}
-}
-# ③ r2modman 自己记录过的路径（改过数据文件夹时会在这里留下痕迹）
-#    注意：配置里路径可能被 JSON 转义成双反斜杠（D:\\x\\r2modmanPlus-local），所以两种写法都试
+
 if (-not $resolved) {
+    # ② 上次记住的位置 —— 只当"默认选项"，不当最终答案（有人每块盘都有一份 r2modman）
+    if (-not $NoRemember -and (Test-Path $rememberFile)) {
+        try {
+            $prevTxt = (Get-Content $rememberFile -Raw).Trim()
+            $rPrev = Try-ProfilesRoot $prevTxt
+            if (-not $rPrev) { $rPrev = Try-AnyProfilesRoot $prevTxt }
+            if ($rPrev) { $remembered = $rPrev }
+        } catch {}
+    }
+    # ③ r2modman 自己记录过的路径（换过数据文件夹的人可能留下好几个）
     foreach ($hit in (Get-PathsFromAppFiles)) {
         $variants = @($hit)
         if ($hit -match '\\\\') { $variants += ($hit -replace '\\\\', '\') }
         foreach ($v in $variants) {
-            $cand = $null
-            if ($v -match '(?i)^(.*?r2modmanPlus-local)') { $cand = Try-AnyProfilesRoot $Matches[1] }
-            if (-not $cand -and $v -match '(?i)^(.*?)\\Valheim(\\profiles)?') { $cand = Try-AnyProfilesRoot $Matches[1] }
-            if ($cand) { $resolved = $cand; $script:PathSource = "从 r2modman 的设置里读到"; break }
+            if ($v -match '(?i)^(.*?r2modmanPlus-local)') { $c1 = Try-AnyProfilesRoot $Matches[1]; if ($c1) { Add-ProfCand $c1 } }
+            if ($v -match '(?i)^(.*?)\Valheim(\profiles)?') { $c2 = Try-AnyProfilesRoot $Matches[1]; if ($c2) { Add-ProfCand $c2 } }
         }
-        if ($resolved) { break }
     }
-}
-# ④ 默认位置（符号链接/联结点搬家的情况也在这里覆盖）
-if (-not $resolved) {
-    $defaults = @()
-    if ($env:APPDATA)      { $defaults += (Join-Path $env:APPDATA "r2modmanPlus-local") }
-    if ($env:LOCALAPPDATA) { $defaults += (Join-Path $env:LOCALAPPDATA "r2modmanPlus-local") }
-    if ($env:USERPROFILE)  { $defaults += (Join-Path $env:USERPROFILE "AppData\Roaming\r2modmanPlus-local") }
-    foreach ($d in $defaults) {
-        $cand = Try-ProfilesRoot $d
-        if (-not $cand) { $cand = Try-AnyProfilesRoot $d }
-        if ($cand) { $resolved = $cand; $script:PathSource = "r2modman 默认位置"; break }
+    # ④ 默认位置（APPDATA / LOCALAPPDATA / USERPROFILE）
+    foreach ($d in @((Join-Path $env:APPDATA "r2modmanPlus-local"), (Join-Path $env:LOCALAPPDATA "r2modmanPlus-local"), (Join-Path $env:USERPROFILE "AppData\Roaming\r2modmanPlus-local"))) {
+        $c = Try-ProfilesRoot $d
+        if (-not $c) { $c = Try-AnyProfilesRoot $d }
+        if ($c) { Add-ProfCand $c }
     }
-}
-# ⑤ 扫盘
-if (-not $resolved) {
-    Say "  [2/7] 默认位置没有 r2modman 的档，正在扫描各硬盘（最多十几秒）…" "Yellow"
-    foreach ($d in (Find-DataFolderOnDrives)) {
-        $cand = Try-ProfilesRoot $d
-        if (-not $cand) { $cand = Try-AnyProfilesRoot $d }
-        if ($cand) { $resolved = $cand; $script:PathSource = "扫描硬盘找到（$d）"; break }
+    # 一个都没找到 → 扫盘
+    if ($script:ProfCands.Count -eq 0) {
+        Say "  [2/7] 默认位置没有 r2modman 的档，正在扫描各硬盘（最多十几秒）…" "Yellow"
+        $null = Scan-ProfCands
+        $scanned = $true
+    }
+    # 上次装的那个排最前（多半就是要升级的那份）
+    if ($remembered) {
+        $idxR = -1
+        for ($i = 0; $i -lt $script:ProfCands.Count; $i++) { if ($script:ProfCands[$i] -ieq $remembered) { $idxR = $i; break } }
+        if ($idxR -gt 0) { $script:ProfCands.RemoveAt($idxR); $script:ProfCands.Insert(0, $remembered) }
+        elseif ($idxR -lt 0) { $script:ProfCands.Insert(0, $remembered) }
+    }
+
+    if ($script:ProfCands.Count -eq 1) {
+        $resolved = $script:ProfCands[0]
+        $script:PathSource = "自动找到"
+    }
+    elseif (($script:ProfCands.Count -gt 1) -and $NonInteractive) {
+        $resolved = $script:ProfCands[0]
+        $script:PathSource = "自动选了第 1 个（-NonInteractive）"
+        Say "  [非交互] 检测到 $($script:ProfCands.Count) 个 r2modman 数据文件夹，用了第 1 个：" "Yellow"
+        for ($i = 0; $i -lt $script:ProfCands.Count; $i++) { Say ("          {0}) {1}   （{2}）" -f ($i + 1), $script:ProfCands[$i], (Get-ProfCandNote $script:ProfCands[$i])) "DarkGray" }
+        Say "        想指定别的：-ProfilesRoot <路径>" "DarkGray"
+    }
+    elseif ($script:ProfCands.Count -gt 1) {
+        # ---- 交互：把所有找到的数据文件夹列出来让你选（装在哪个盘、哪一份，由你定）----
+        function Show-ProfCands {
+            Say "  现在有 $($script:ProfCands.Count) 个候选（数据文件夹）：" "Cyan"
+            for ($i = 0; $i -lt $script:ProfCands.Count; $i++) {
+                $tagP = ""
+                if ($remembered -and ($script:ProfCands[$i] -ieq $remembered)) { $tagP = "   ← 上次装在这" }
+                Say ("    {0}) {1}{2}" -f ($i + 1), $script:ProfCands[$i], $tagP)
+                Say ("        {0}" -f (Get-ProfCandNote $script:ProfCands[$i])) "DarkGray"
+            }
+            if (-not $scanned) { Say "    9) 再扫描所有硬盘，找找别的数据文件夹" }
+            Say "    0) 我自己输入路径（r2modman → 左下 Settings → Locations → Browse data folder 能看到）"
+        }
+        Say ""
+        Say "  检测到 $($script:ProfCands.Count) 个 r2modman 数据文件夹（有人每块盘都装过一份，所以要你确认一次）" "Cyan"
+        Show-ProfCands
+        while (-not $resolved) {
+            $ansP = "" + (Read-Host "  装到哪个？(直接回车 = 1)")
+            if ($ansP -match '^\s*$') { $resolved = $script:ProfCands[0]; $script:PathSource = "你选的（第 1 项）" }
+            elseif (($ansP -match '^\s*9\s*$') -and (-not $scanned)) {
+                Say "        扫描中（最多十几秒）…" "Yellow"
+                $added = Scan-ProfCands
+                $scanned = $true
+                if ($remembered) {
+                    $idxR = -1
+                    for ($i = 0; $i -lt $script:ProfCands.Count; $i++) { if ($script:ProfCands[$i] -ieq $remembered) { $idxR = $i; break } }
+                    if ($idxR -gt 0) { $script:ProfCands.RemoveAt($idxR); $script:ProfCands.Insert(0, $remembered) }
+                }
+                Say "        扫描完成：新增 $added 个候选" "Gray"
+                Show-ProfCands
+                continue
+            }
+            elseif ($ansP -match '^\s*0\s*$') {
+                $typedP = ("" + (Read-Host "  把数据文件夹路径粘进来（回车=放弃）")).Trim().Trim('"').TrimEnd('\')
+                if ([string]::IsNullOrWhiteSpace($typedP)) { continue }
+                $rT = Try-ProfilesRoot $typedP
+                if (-not $rT) { $rT = Try-AnyProfilesRoot $typedP }
+                if (-not $rT -and (Test-Path $typedP)) { $rT = $typedP }
+                if ($rT) { $resolved = $rT; $script:PathSource = "你手动指定" }
+                else { Say "        这个路径用不了（不存在，或不是 r2modman 数据文件夹），再试一次。" "Yellow" }
+                continue
+            }
+            elseif (($ansP -match '^\d+$') -and ([int]$ansP -ge 1) -and ([int]$ansP -le $script:ProfCands.Count)) {
+                $resolved = $script:ProfCands[[int]$ansP - 1]
+                $script:PathSource = "你选的（第 $ansP 项）"
+            }
+            else { Say "        输入看不懂：回车 = 第 1 项，0 = 自己输入路径，9 = 再扫一遍。" "Yellow" }
+        }
     }
 }
 # ⑥ 问用户
@@ -652,7 +825,7 @@ if (Test-Path $dst) {
     else {
         # 在线安装时 $packRoot 在 %TEMP% 里（结束时会被清理），所以备份要放到能留住的位置
         $bakParent = $packRoot
-        if ($env:TEMP -and ($bakParent -like "$env:TEMP*")) {
+        if ($script:packTmpExtract -or ($env:TEMP -and ($bakParent -like "$env:TEMP*"))) {
             $bakParent = if (Test-Path (Join-Path $env:USERPROFILE "Desktop")) { Join-Path $env:USERPROFILE "Desktop" } else { $env:USERPROFILE }
         }
         $bakRoot = Join-Path $bakParent ("MAKABAKA_backup-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
@@ -907,7 +1080,8 @@ if ($vrmPack -and -not $SkipVRM) {
             $modelsDir = Join-Path $vrmPack "Models"
             if (-not (Test-Path $modelsDir)) { $modelsDir = Join-Path $packRoot "Models" }
             if (-not (Test-Path $modelsDir)) {
-                $cm = Join-Path $env:LOCALAPPDATA "MAKABAKA\VRM\Models"   # 本机缓存（在线安装时缓存下来的）
+                $cm = $script:ModelCacheDir
+                if ([string]::IsNullOrWhiteSpace($cm)) { $cm = Join-Path $env:LOCALAPPDATA "MAKABAKA\VRM\Models" }   # 本机缓存（在线安装时缓存下来的）
                 if (Test-Path $cm) { $modelsDir = $cm }
             }
             $modelList = @()
@@ -1076,7 +1250,8 @@ if ($vrmPack -and -not $SkipVRM) {
 
             # ---- 3d) 包是从 zip 解出来的（在线安装 / -PackFile）时，把模型缓存到本机 ----
             #      （源在 %TEMP% 里，装完就没了；缓存后 换模型.bat 就不用再下 100MB）
-            $cacheModels = Join-Path $env:LOCALAPPDATA "MAKABAKA\VRM\Models"
+            $cacheModels = $script:ModelCacheDir
+            if ([string]::IsNullOrWhiteSpace($cacheModels)) { $cacheModels = Join-Path $env:LOCALAPPDATA "MAKABAKA\VRM\Models" }
             if ((Test-Path $modelsDir) -and $script:packTmpExtract -and ($modelsDir -notlike "$cacheModels*")) {
                 try {
                     New-Item -ItemType Directory -Path $cacheModels -Force | Out-Null
