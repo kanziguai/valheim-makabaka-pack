@@ -59,7 +59,7 @@ $Expect = @{
 }
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
-$ReleasesRepo   = "OWNER/valheim-makabaka-pack"      # ← GitHub 仓库（owner/repo）
+$ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owner/repo）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
@@ -273,6 +273,10 @@ elseif ($Offline) {
 else {
     # ---- 在线安装：从 GitHub Release 取最新版（镜像优先 + 下载后校验）----
     Say "  [1/7] 本目录没有安装包 → 从 GitHub 获取最新版" "Green"
+    if ($ReleasesRepo -notmatch '^[\w.-]+/[\w.-]+$' -or $ReleasesRepo -like 'OWNER/*' -or $ReleasesRepo -like '*/REPO') {
+        Fail "本脚本里的仓库地址还没填对（现在是 `"$ReleasesRepo`"）。用 -ReleaseRepo owner/仓库名 指定，或找分享者要一份填好的 install.ps1。"
+    }
+    Say "        仓库：$ReleasesRepo" "DarkGray"
     if (-not (Test-Path $script:CacheDir)) { New-Item -ItemType Directory -Path $script:CacheDir -Force | Out-Null }
 
     $man = $null

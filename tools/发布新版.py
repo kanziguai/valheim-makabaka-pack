@@ -123,6 +123,17 @@ def main():
         repo = m.group(1)
     log("仓库：%s   版本：%s   包：%s" % (repo, ver, zname))
 
+    # ---- 0) 先确认 install.ps1 里的仓库地址跟要发布的仓库一致（防止发了包但脚本还指着占位符）----
+    psfile = ROOT / "install.ps1"
+    pstext0 = psfile.read_text(encoding="utf-8")
+    m = re.search(r'\$ReleasesRepo\s*=\s*"([^"]+)"', pstext0)
+    if not m:
+        die("install.ps1 里找不到 $ReleasesRepo，无法确认在线下载指向哪个仓库")
+    if m.group(1).strip().lower() != repo.lower():
+        die("install.ps1 里的 $ReleasesRepo = %r，与目标仓库 %r 不一致 —— 先改对再发（否则安装脚本会 404）"
+            % (m.group(1), repo))
+    log("install.ps1 的 $ReleasesRepo 与目标仓库一致 ✓")
+
     # ---- 1) 算哈希，写 SHA256SUMS.txt ----
     size, md5, sha = hashes(zpath)
     log("包：%s  %d 字节  MD5 %s" % (zname, size, md5))
