@@ -14,3 +14,7 @@ install-path.txt
 MAKABAKA安装日志.txt
 MAKABAKA_backup-*/
 _vrm_backup_*/
+
+# Python 编译产物
+__pycache__/
+*.pyc
