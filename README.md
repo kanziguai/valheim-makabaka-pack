@@ -71,7 +71,23 @@ cd valheim-makabaka-pack
 | 4 | 没装过 → 全新安装；装过 → **原地升级**（优先保留你的设置，旧文件先备份）|
 | 5 | 复制（升级模式跳过 `BepInEx\config`，只补缺失的配置文件）|
 | 6 | 校验：9 个关键文件 MD5 ＋ mod 启用/禁用计数 ＋ ChestFlow 版本 |
-| 7 | 收尾：告诉你怎么启动（r2modman 里选 `MAKABAKA` → `Start modded`）+ 可选配置 ValheimVRM |
+| 7 | 收尾：告诉你怎么启动（r2modman 里选 `MAKABAKA` → `Start modded`）+ 可选配置 ValheimVRM（见下） |
+
+### ValheimVRM（角色换模型）：文件要落在两个不同位置
+
+这是本包里唯一一个**不能只靠 r2modman 装**的 mod —— 它的文件分两处（选 Y 时脚本会全部自动做好）：
+
+| 放什么 | 源目录 | 装到哪里 |
+|---|---|---|
+| 插件 `ValheimVRM.dll` + `ValheimVRM.shaders` | `ValheimVRM_手动安装\BepInEx_pluginsに入れるファイル\` | **r2modman 的档里**：`<档>\BepInEx\plugins\ValheimVRM_1.2.2\` |
+| 运行时 dll（15 个，`VRM10.dll`/`UniGLTF.dll`/`MToon.dll`…） | `ValheimVRM_手动安装\valheim_Data_Managedに入れる文件\` | **游戏本体里**：`<游戏>\valheim_Data\Managed\`（覆盖前自动备份到 `<游戏>\_vrm_backup_<时间>\`） |
+| 模型与设置 | `ValheimVRM_手动安装\ValheimVRM.zip` | **游戏本体里**：`<游戏>\ValheimVRM\<角色名>.vrm` + `settings_<角色名>.txt` |
+
+脚本对每个文件都比对 MD5：缺的补上、内容不一样的换掉（换之前先备份），装完还会打一份**三处自检**，
+三行都得是 `[✓]`：`① 插件（档里）` / `② Managed dll（游戏里）` / `③ 模型（游戏里）`。
+游戏目录没找到也不影响 ①，之后重跑一次就能补 ②③。
+
+> 常见故障排查、手动三步做法、以及「改名要跟着角色名」这条，见 `ValheimVRM_手动安装\说明_ValheimVRM.txt`。
 
 日志写到桌面：`MAKABAKA安装日志.txt`。
 

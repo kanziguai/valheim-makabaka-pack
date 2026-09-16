@@ -722,23 +722,73 @@ Say "  如果帧率还是 15fps 左右（明显卡）：" "Yellow"
 Say "   → 那是旧版自研插件 ChestFlowTweaks 0.3.0 的 bug，本包是 0.3.1。" "Yellow"
 Say "   → 上面第 [6/7] 步若显示""校验通过""就说明已经修好；若显示不一致，把日志发我们。" "Yellow"
 
-# ---------- 附加：ValheimVRM（角色自定义模型；需要往游戏目录放文件） ----------
-$vrmPack = Join-Path $packRoot "ValheimVRM_手动安装"
-if ((Test-Path $vrmPack) -and -not $SkipVRM) {
+# ---------- 附加：ValheimVRM（角色自定义模型；两处不同落点）----------
+# 源目录里两个子目录名（「…に入れるファイル」/「…に入れる文件」两种写法都认）：
+#   BepInEx_pluginsに入れるファイル      → 装进 r2modman 的档：<档>\BepInEx\plugins\ValheimVRM_1.2.2\
+#   valheim_Data_Managedに入れるファイル → 装进游戏本体：<游戏>\valheim_Data\Managed\
+# 模型与设置（ValheimVRM.zip 里的 .vrm + settings_*.txt）→ <游戏>\ValheimVRM\
+function Resolve-VrmSub([string]$parent, [string]$baseName) {
+    foreach ($suffix in @("ファイル", "文件")) {
+        $p = Join-Path $parent ($baseName + $suffix)
+        if (Test-Path $p) { return $p }
+    }
+    return $null
+}
+$vrmPack = $null
+foreach ($cand in @((Join-Path $packRoot "ValheimVRM_手动安装"), (Join-Path $packRoot "vrm"), $packRoot)) {
+    if ([string]::IsNullOrWhiteSpace($cand) -or -not (Test-Path $cand)) { continue }
+    if ((Resolve-VrmSub $cand "BepInEx_pluginsに入れる") -or (Resolve-VrmSub $cand "valheim_Data_Managedに入れる")) { $vrmPack = $cand; break }
+}
+$srcVrmPlugins = $null
+$srcVrmManaged = $null
+if ($vrmPack) {
+    $srcVrmPlugins = Resolve-VrmSub $vrmPack "BepInEx_pluginsに入れる"
+    $srcVrmManaged = Resolve-VrmSub $vrmPack "valheim_Data_Managedに入れる"
+}
+
+if ($vrmPack -and -not $SkipVRM) {
     Section "附加：ValheimVRM（角色换模型）"
-    Say "  这个 mod 和别的不一样：它必须往【游戏目录】放文件（r2modman 不会同步这些），"
-    Say "  所以要单独配置一次："
-    Say "    · vrm/gltf 相关 dll（15 个） → <游戏>\valheim_Data\Managed\"
-    Say "    · 模型 + 设置文件           → <游戏>\ValheimVRM\"
+    Say "  这个 mod 和别的不一样：它要放【两个不同的地方】，r2modman 只负责其中一个。"
+    Say "    ① 插件   → r2modman 的档里 : <档>\BepInEx\plugins\ValheimVRM_1.2.2\"
+    Say "    ② 运行时 dll → 游戏本体里   : <游戏>\valheim_Data\Managed\"
+    Say "    ③ 模型与设置 → 游戏本体里   : <游戏>\ValheimVRM\<角色名>.vrm + settings_<角色名>.txt"
     $doVrm = $true
     if (-not $NonInteractive) {
         $ansV = Read-Host "  一并配置 ValheimVRM 吗？(Y/n)"
         if ($ansV -match "^[Nn]") { $doVrm = $false }
     }
     if (-not $doVrm) {
-        Say "  已跳过。之后想装：重跑本脚本，或按 ValheimVRM_手动安装\说明_ValheimVRM.txt 手动做。" "DarkGray"
+        Say "  已跳过。之后想装：重跑本脚本，或按 $((Split-Path $vrmPack -Leaf))\说明_ValheimVRM.txt 手动做。" "DarkGray"
     } else {
+        $vrmOk = @{ "插件" = $false; "Managed" = $false; "模型" = $false }
 
+        # ---- ① 插件：装进 r2modman 的档（这一步不依赖游戏目录，先做）----
+        $profRootThis = Join-Path $ProfilesRoot $ProfileName
+        $plugDst = Join-Path $profRootThis "BepInEx\plugins\ValheimVRM_1.2.2"
+        if ($srcVrmPlugins) {
+            $pCopy = 0; $pSame = 0; $pBak = 0
+            $pBakDir = Join-Path (Join-Path $profRootThis "BepInEx") ("_vrm_backup_" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+            try { New-Item -ItemType Directory -Path $plugDst -Force | Out-Null } catch {}
+            foreach ($f in (Get-ChildItem -Path $srcVrmPlugins -File)) {
+                $t = Join-Path $plugDst $f.Name
+                if (Test-Path $t) {
+                    if ((Get-FileHash $f.FullName -Algorithm MD5).Hash -eq (Get-FileHash $t -Algorithm MD5).Hash) { $pSame++; continue }
+                    New-Item -ItemType Directory -Path $pBakDir -Force | Out-Null
+                    Copy-Item $t (Join-Path $pBakDir $f.Name) -Force; $pBak++
+                }
+                Copy-Item $f.FullName $t -Force; $pCopy++
+            }
+            Say "        ① 插件 → $plugDst" "Green"
+            Say "           新放/更新 $pCopy 个（本来就一致 $pSame 个；替换前备份 $pBak 个）"
+            if ($pBak -gt 0) { Say "           备份目录：$pBakDir" "DarkGray" }
+            $vrmOk["插件"] = (Test-Path (Join-Path $plugDst "ValheimVRM.dll"))
+        } else {
+            $hasPlug = Test-Path (Join-Path $plugDst "ValheimVRM.dll")
+            if ($hasPlug) { Say "        ① 插件：包内没有插件源目录，但档里已经有 ValheimVRM 插件了 ✓" "Green"; $vrmOk["插件"] = $true }
+            else { Say "        ① 插件：[注意] 包内没有 BepInEx_pluginsに入れるファイル，档里也没有 ValheimVRM 插件。" "Yellow" }
+        }
+
+        # ---- ②③ 游戏侧：Managed dll 与模型（需要游戏目录）----
         $game = ""
         if (-not [string]::IsNullOrWhiteSpace($GameDir)) { $game = $GameDir.Trim().Trim('"').TrimEnd('\') }
         if (-not $game) { $game = Find-ValheimGameDir }
@@ -752,7 +802,7 @@ if ((Test-Path $vrmPack) -and -not $SkipVRM) {
                 }
             }
             if (-not $game -or -not (Test-Path (Join-Path $game "valheim_Data\Managed"))) {
-                Say "  [跳过] 没找到游戏目录，ValheimVRM 的游戏侧文件没放（之后重跑本脚本即可）。" "Yellow"
+                Say "        [跳过] 没找到游戏目录，② Managed dll 与 ③ 模型没放（之后重跑本脚本即可）。" "Yellow"
                 $game = ""
             }
         }
@@ -760,11 +810,10 @@ if ((Test-Path $vrmPack) -and -not $SkipVRM) {
         if ($game) {
             Say "  游戏目录：$game" "Green"
             $managed   = Join-Path $game "valheim_Data\Managed"
-            $srcManaged = Join-Path $vrmPack "valheim_Data_Managedに入れる文件"
             $bakDir    = Join-Path $game ("_vrm_backup_" + (Get-Date -Format "yyyyMMdd-HHmmss"))
             $copied = 0; $replaced = 0; $same = 0
-            if (Test-Path $srcManaged) {
-                foreach ($f in (Get-ChildItem -Path $srcManaged -File)) {
+            if ($srcVrmManaged) {
+                foreach ($f in (Get-ChildItem -Path $srcVrmManaged -File)) {
                     $t = Join-Path $managed $f.Name
                     if (Test-Path $t) {
                         if ((Get-FileHash $f.FullName -Algorithm MD5).Hash -eq (Get-FileHash $t -Algorithm MD5).Hash) { $same++; continue }
@@ -773,15 +822,17 @@ if ((Test-Path $vrmPack) -and -not $SkipVRM) {
                     }
                     Copy-Item $f.FullName $t -Force; $copied++
                 }
-                Say "        Managed：新放/更新 $copied 个 dll（原本就一致的 $same 个；替换前备份 $replaced 个 → $((Split-Path $bakDir -Leaf))）"
+                Say "        ② Managed dll → $managed" "Green"
+                Say "           新放/更新 $copied 个 dll（本来就一致 $same 个；替换前备份 $replaced 个 → $((Split-Path $bakDir -Leaf))）"
             } else {
-                Say "        [注意] 包里缺少 valheim_Data_Managedに入れる文件 目录，未能放 dll。" "Yellow"
+                Say "        ② [注意] 包里缺少 valheim_Data_Managedに入れるファイル 目录，未能放 dll。" "Yellow"
             }
 
             $vrmTarget = Join-Path $game "ValheimVRM"
             try { New-Item -ItemType Directory -Path $vrmTarget -Force | Out-Null } catch {}
-            $zipModel = Join-Path $vrmPack "ValheimVRM.zip"
             $got = @()
+            # 3a) 从 ValheimVRM.zip 里取 .vrm 与 settings_*.txt
+            $zipModel = Join-Path $vrmPack "ValheimVRM.zip"
             if (Test-Path $zipModel) {
                 $tmpX = Join-Path $env:TEMP ("vrmx_" + (Get-Date -Format "HHmmss"))
                 try {
@@ -789,14 +840,51 @@ if ((Test-Path $vrmPack) -and -not $SkipVRM) {
                     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipModel, $tmpX)
                     foreach ($f in (Get-ChildItem -Path $tmpX -Recurse -File | Where-Object { $_.Extension -eq ".vrm" -or $_.Name -like "settings_*.txt" })) {
                         Copy-Item $f.FullName (Join-Path $vrmTarget $f.Name) -Force
-                        $got += $f.Name
+                        if ($got -notcontains $f.Name) { $got += $f.Name }
                     }
                     Remove-Item $tmpX -Recurse -Force -ErrorAction SilentlyContinue
                 } catch { Say "        [注意] 模型解压失败：$($_.Exception.Message)" "Yellow" }
             }
-            Say "        模型目录 $vrmTarget ：$($got -join '、')"
+            # 3b) 源目录里直接放着的 .vrm / settings_*.txt（有人习惯自己放）也一并复制
+            #     （模板/示例文件不算：settings_player* 与带「模板」字样的跳过，免得在游戏目录里堆垃圾）
+            foreach ($f in (Get-ChildItem -Path $vrmPack -File | Where-Object {
+                        ($_.Extension -eq ".vrm" -or $_.Name -like "settings_*.txt") -and
+                        ($_.Name -notlike "settings_player*") -and ($_.Name -notlike "*模板*") })) {
+                Copy-Item $f.FullName (Join-Path $vrmTarget $f.Name) -Force
+                if ($got -notcontains $f.Name) { $got += $f.Name }
+            }
+            Say "        ③ 模型 → $vrmTarget"
+            if ($got.Count -gt 0) { Say "           本次放入：$($got -join '、')" "Green" }
+            else { Say "           [注意] 没有可放的模型（包内 ValheimVRM.zip 或源目录里应有 .vrm）" "Yellow" }
+            $vrmOk["模型"] = (@(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm").Count -gt 0)
+
             Say "        ★ 模型按【角色名】生效：<角色名>.vrm 与 settings_<角色名>.txt（角色不叫 KaNzI 就把这两个文件改名）" "Yellow"
             Say "        ★ Steam「验证游戏文件完整性」会清掉 Managed 里这些 dll；之后重跑本脚本即可恢复" "Yellow"
+        }
+
+        # ---- ④ 三处自检（照说明文档里那三条排查项自动核一遍）----
+        Say ""
+        Say "        —— VRM 三处自检 ——"
+        $plugFile = Join-Path $plugDst "ValheimVRM.dll"
+        if (Test-Path $plugFile) { Say "        [✓] ① 插件（档里）：$plugDst" "Green" }
+        else { Say "        [×] ① 插件缺失：$plugDst（BepInEx\plugins\ 下应有 ValheimVRM.dll + ValheimVRM.shaders）" "Red" }
+        if ($game) {
+            $mOk = $true
+            if ($srcVrmManaged) {
+                foreach ($f in (Get-ChildItem -Path $srcVrmManaged -File)) {
+                    if (-not (Test-Path (Join-Path (Join-Path $game "valheim_Data\Managed") $f.Name))) { $mOk = $false; break }
+                }
+            }
+            if ($mOk) { Say "        [✓] ② Managed dll（游戏里）：$((@(Get-ChildItem -Path $srcVrmManaged -File)).Count) 个都在" "Green" }
+            else { Say "        [×] ② Managed 里缺 dll（Steam 验证文件完整性会清掉，重跑本脚本即可）" "Red" }
+            $vrmCount = @(Get-ChildItem -Path (Join-Path $game "ValheimVRM") -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count
+            if ($vrmCount -gt 0) { Say "        [✓] ③ 模型（游戏里）：$vrmCount 个 .vrm 在 $(Join-Path $game 'ValheimVRM')" "Green" }
+            else {
+                Say "        [×] ③ 没找到 .vrm 模型：$(Join-Path $game 'ValheimVRM')" "Red"
+                Say "            （想用自己的模型：把 <角色名>.vrm 与 settings_<角色名>.txt 放进该目录即可）" "Yellow"
+            }
+        } else {
+            Say "        [—] ②③ 未检查：没找到游戏目录（插件那半已经装好；游戏侧之后重跑本脚本即可）" "Yellow"
         }
     }
 }
