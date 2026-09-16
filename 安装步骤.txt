@@ -45,13 +45,17 @@
   2) 按 Win+X → 选「终端」或「Windows PowerShell」，把下面这段【整段粘进去回车】：
 
      $d = "$env:USERPROFILE\valheim-makabaka-pack"
-     if (Test-Path "$d\.git") { git -C $d pull }
-     elseif (Test-Path $d) { $d = "$d-git"; git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
-     else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
+     if (-not (Test-Path "$d\.git") -and (Test-Path $d)) { $d = "$d-git" }
+     if (Test-Path "$d\.git") { git -C $d pull } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
      & "$d\一键安装.bat"
 
      它会：clone 下来（已存在就 git pull 更新）→ 直接开始安装。
-     **不用手动 cd 进目录，也不用去双击 bat**（也可以压成一行，各句之间用 ; 分隔）。
+     **不用手动 cd 进目录，也不用去双击 bat**。
+     ★ 注意：别把 if / elseif / else 拆成三行分开粘 —— PowerShell 控制台是逐行执行的，
+       "if (...) { ... }" 那一行本身已是完整语句，下一行的 elseif 会被当成新命令，报
+       「无法将"elseif"项识别为 cmdlet」。上面这段每行都是独立完整语句，逐行粘或整段粘都安全。
+     想更省事可以压成一行（各句用 ; 分隔）：
+       $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $d pull } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }; & "$d\一键安装.bat"
      仓库里不含 138MB 的大包，脚本会自己去 GitHub 下载（下完自动核对 MD5）。
   3) 以后更新：**把同一段再粘一次**就行（它会先 pull 再装）
      —— 想手动操作的话：进 C:\Users\你的用户名\valheim-makabaka-pack 双击「一键安装.bat」
@@ -141,9 +145,11 @@
 4) 点了 Steam 的「验证游戏文件完整性」→ valheim_Data\Managed 里那几个 dll 会被清掉
    → 【重跑一次安装脚本】就能恢复
 5) 脚本卡住不动 → Ctrl+C 停掉，换方法二或方法三再试
+6) 报「无法将"elseif"项识别为 cmdlet」→ 你把 if / elseif / else 分成三行粘了
+   （PowerShell 控制台是逐行执行的）→ 改用方法二那段写法，或那一行版命令
 6) 提示磁盘空间不足 / 下载老是失败 → 重跑一次，在问"安装包放哪"时换到空间大的盘
    （或加参数：-DownloadDir D:\MAKABAKA_install）
-6) 以上都看不懂：把 MAKABAKA安装日志.txt 发过来
+7) 以上都看不懂：把 MAKABAKA安装日志.txt 发过来
 
 
 【8】两件千万别做的事

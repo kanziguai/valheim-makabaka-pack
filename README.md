@@ -54,16 +54,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $s
 
 ```powershell
 $d = "$env:USERPROFILE\valheim-makabaka-pack"
-if (Test-Path "$d\.git") { git -C $d pull }
-elseif (Test-Path $d) { $d = "$d-git"; git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
-else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
+if (-not (Test-Path "$d\.git") -and (Test-Path $d)) { $d = "$d-git" }
+if (Test-Path "$d\.git") { git -C $d pull } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
 & "$d\一键安装.bat"
 ```
 
-也可以压成一行（用 `;` 分隔，效果一样）：
+> ⚠️ **别把 `if / elseif / else` 写成三行分开粘**：PowerShell 控制台是**逐行**执行的，
+> `if (...) { ... }` 那一行本身就是完整语句，下一行的 `elseif` 会被当成新命令，报
+> `无法将"elseif"项识别为 cmdlet…`。上面这段每一行都是完整语句，**逐行粘或整段粘都安全**。
+
+也可以压成一行（`;` 分隔，效果一样）：
 
 ```powershell
-$d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $d pull } elseif (Test-Path $d) { $d="$d-git"; git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }; & "$d\一键安装.bat"
+$d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $d pull } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }; & "$d\一键安装.bat"
 ```
 
 代码放在 `C:\Users\<你的用户名>\valheim-makabaka-pack\`。**以后更新就是把同一段再粘一次**。
