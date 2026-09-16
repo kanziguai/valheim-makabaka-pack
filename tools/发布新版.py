@@ -49,6 +49,19 @@ def git(*args, check=True):
     return p.stdout.strip()
 
 
+def git_push():
+    """推送；镜像加速（git 的 insteadOf 改写，如 ghfast.top）抖动时自动改用直连再试一次。"""
+    p = subprocess.run(["git", "push", "origin", "HEAD"], cwd=ROOT, capture_output=True, text=True)
+    if p.returncode == 0:
+        return
+    last = (p.stderr.strip().splitlines() or ["?"])[-1][:140]
+    log("  push 走镜像失败（%s）→ 改用直连重试…" % last)
+    env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull)   # 屏蔽用户全局 config 里的 insteadOf 改写
+    p2 = subprocess.run(["git", "push", "origin", "HEAD"], cwd=ROOT, capture_output=True, text=True, env=env)
+    if p2.returncode != 0:
+        die("push 直连仍失败：%s" % p2.stderr[-400:])
+
+
 def api(repo, token, path, method="GET", payload=None, raw=None, ctype="application/json"):
     url = path if path.startswith("http") else "https://api.github.com" + path
     data = None
@@ -175,7 +188,7 @@ def main():
     git("add", "-A")
     if git("status", "--porcelain"):
         git("commit", "-m", "发布 %s：%s（%s 字节）" % (ver, zname, size))
-        git("push", "origin", "HEAD")
+        git_push()
         log("已提交并推送")
     else:
         log("仓库没有改动，跳过提交")
