@@ -26,19 +26,19 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 PowerShell 窗口里粘这一行、回车：
 
 ```powershell
-$s="$env:TEMP\makabaka-install.ps1"; iwr "https://raw.githubusercontent.com/__OWNER__/valheim-makabaka-pack/main/install.ps1" -OutFile $s; powershell -NoProfile -ExecutionPolicy Bypass -File $s
+$s="$env:TEMP\makabaka-install.ps1"; iwr "https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1" -OutFile $s; powershell -NoProfile -ExecutionPolicy Bypass -File $s
 ```
 
 raw 连不上就换镜像前缀（两个都行）：
 
 ```powershell
-$u="https://ghfast.top/https://raw.githubusercontent.com/__OWNER__/valheim-makabaka-pack/main/install.ps1"
+$u="https://ghfast.top/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"
 ```
 
 ### B. clone 仓库 + 双击（推荐，以后更新最方便）
 
 ```powershell
-git clone https://github.com/__OWNER__/valheim-makabaka-pack.git
+git clone https://github.com/kanziguai/valheim-makabaka-pack.git
 cd valheim-makabaka-pack
 ```
 
