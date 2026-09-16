@@ -933,6 +933,8 @@ if ($vrmPack -and -not $SkipVRM) {
                         if ($v) {
                             $s = Get-ChildItem -Path $vrmLegacyTmp -Recurse -File -Filter "settings_*.txt" -ErrorAction SilentlyContinue | Select-Object -First 1
                             $modelList += @{ Name = "默认模型（旧版包内）"; Vrm = $v.FullName; Settings = $(if ($s) { $s.FullName } else { $null }) }
+                            Say "        [说明] 这个安装包是旧版布局（只带 1 个模型，就是默认那个）；" "DarkGray"
+                            Say "              新版包会提供 金乌 / 辰星 两个可选，到时菜单里会出现第 2 项。" "DarkGray"
                         }
                     } catch { Say "        [注意] ValheimVRM.zip 解压失败：$($_.Exception.Message)" "Yellow" }
                 }
