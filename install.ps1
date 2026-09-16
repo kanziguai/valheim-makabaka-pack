@@ -932,7 +932,7 @@ if ($vrmPack -and -not $SkipVRM) {
                         $v = Get-ChildItem -Path $vrmLegacyTmp -Recurse -File -Filter "*.vrm" -ErrorAction SilentlyContinue | Select-Object -First 1
                         if ($v) {
                             $s = Get-ChildItem -Path $vrmLegacyTmp -Recurse -File -Filter "settings_*.txt" -ErrorAction SilentlyContinue | Select-Object -First 1
-                            $modelList += @{ Name = ($v.BaseName + "（包内 ValheimVRM.zip）"); Vrm = $v.FullName; Settings = $(if ($s) { $s.FullName } else { $null }) }
+                            $modelList += @{ Name = "默认模型（旧版包内）"; Vrm = $v.FullName; Settings = $(if ($s) { $s.FullName } else { $null }) }
                         }
                     } catch { Say "        [注意] ValheimVRM.zip 解压失败：$($_.Exception.Message)" "Yellow" }
                 }
