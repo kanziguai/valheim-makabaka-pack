@@ -5,9 +5,10 @@ MAKABAKA 整合档 —— 安装包校验值（每个版本发布时更新）
 
 [ v1.0 ]  2026-09-15
   文件：MAKABAKA_profile_v1.0_20260915.zip
-  大小：117618008 字节（117.6 MB / 112.2 MiB）
+  大小：117618008 字节
   MD5 ：b6e36ae8b042344f0da02ddb4d93d844
   SHA256：399e2b45bb3d48ab2ecb80ee95e8cc7bbbbbeee9a49e6d422728f086a8a6580b
+
 
 说明：这个 zip 是【自包含】的 —— 里面除了 MAKABAKA 档本体，还带着 install.ps1、
 一键安装.bat、全部说明文档和 ValheimVRM_手动安装 目录。所以你也可以完全不用 git：
