@@ -26,7 +26,7 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 
 ### A. 一行命令（不用装 git，最省事）
 
-PowerShell 窗口里把这四行整段粘进去、回车（镜像优先，失败自动改直连）：
+PowerShell 窗口里把下面这几行整段粘进去、回车（镜像优先，失败自动改直连）：
 
 ```powershell
 $u = "https://ghfast.top/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"
