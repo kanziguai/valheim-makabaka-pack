@@ -12,6 +12,16 @@ if not exist "%PS1%" (
   pause
   exit /b 1
 )
+findstr /c:"VRMOnly" "%PS1%" >nul 2>&1
+if errorlevel 1 (
+  echo.
+  echo [x] 这个 install.ps1 是旧版（不支持只换模型）。
+  echo     请把新版 install.ps1 放到本目录（仓库里那份），或直接从仓库运行：
+  echo       git clone https://github.com/kanziguai/valheim-makabaka-pack
+  echo.
+  pause
+  exit /b 1
+)
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" -VRMOnly %*
 if errorlevel 1 (
   echo.
