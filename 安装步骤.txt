@@ -28,16 +28,19 @@
   1) 按 Win+X → 选「终端」或「Windows PowerShell」
   2) 把下面这几行【整段复制】进去，回车：
 
-     $u = "https://ghfast.top/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"
+     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+     $u = 'https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1'
      $s = "$env:TEMP\makabaka-install.ps1"
-     $wc = New-Object Net.WebClient; $wc.Headers.Add("User-Agent","makabaka-install")
-     try { $wc.DownloadFile($u,$s) } catch { $wc.Proxy = $null; $wc.DownloadFile("https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1",$s) }
-     powershell -NoProfile -ExecutionPolicy Bypass -File $s
+     $ms = @('https://ghfast.top/','https://ghproxy.net/','https://gh-proxy.com/','')
+     $ok = $false
+     foreach ($m in $ms) { $t = if ($m) { $m + $u } else { $u }; Write-Host "试：$t" -ForegroundColor DarkGray; try { Invoke-WebRequest -Uri $t -OutFile $s -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item $s).Length -gt 20000) { $ok = $true; break } } catch { Write-Host ("  这条不通：" + $_.Exception.Message.Split([char]10)[0]) -ForegroundColor DarkYellow } }
+     if ($ok) { powershell -NoProfile -ExecutionPolicy Bypass -File $s } else { Write-Host '四条线路都没连上 → 检查杀软/代理，或改用方法三（手动下载 zip）' -ForegroundColor Yellow }
 
   3) 接着跟着提示回答（问什么见【2】）
   提示：首装要下 138MB，几分钟属正常，别关窗口；下载时会实时显示【百分比 / 当前速度 / 剩余时间】。
-       卡住不动就 Ctrl+C 停掉，改用方法二或三。
-       镜像前缀 https://ghfast.top/ 可以换成 https://ghproxy.net/，或去掉前缀走直连。
+       上面这段对每条线路都有 15 秒超时：连不上会明确打印「这条不通：...」，不会一直卡着不动。
+       镜像前缀 https://ghfast.top/ 可以换成 https://ghproxy.net/ 或 https://gh-proxy.com/，
+       最后一条是直连；四条全不通说明是本机网络/杀软拦了，改走方法二或方法三。
 
 ■ 方法二 · git 一段命令（推荐，以后更新最方便）
   1) 先装 git（没装过的话）：https://git-scm.com/download/win
@@ -145,6 +148,10 @@
 4) 点了 Steam 的「验证游戏文件完整性」→ valheim_Data\Managed 里那几个 dll 会被清掉
    → 【重跑一次安装脚本】就能恢复
 5) 脚本卡住不动 → Ctrl+C 停掉，换方法二或方法三再试
+   ★ 卡在「方法一第 4 行（下载 install.ps1 那行）」不动 = 老写法用 Net.WebClient 同步下载、没有超时，
+     网络或杀软把连接"黑洞"掉时它既不报错也不返回；而且它没先开 TLS 1.2，部分 Windows 上会卡在握手。
+     处理：把【方法一】换成上面那段新命令（先开 TLS 1.2 + 每条线路 15 秒超时 + 自动换线路），
+     或直接改走方法二（git）／方法三（手动下 zip）。
 6) 报「无法将"elseif"项识别为 cmdlet」→ 你把 if / elseif / else 分成三行粘了
    （PowerShell 控制台是逐行执行的）→ 改用方法二那段写法，或那一行版命令
 7) 提示磁盘空间不足 / 下载老是失败 → 重跑一次，在问"安装包放哪"时换到空间大的盘

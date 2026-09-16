@@ -29,17 +29,23 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 PowerShell 窗口里把下面这几行整段粘进去、回车（镜像优先，失败自动改直连）：
 
 ```powershell
-$u = "https://ghfast.top/https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$u = 'https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1'
 $s = "$env:TEMP\makabaka-install.ps1"
-$wc = New-Object Net.WebClient; $wc.Headers.Add("User-Agent","makabaka-install")
-try { $wc.DownloadFile($u,$s) } catch { $wc.Proxy = $null; $wc.DownloadFile("https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1",$s) }
-powershell -NoProfile -ExecutionPolicy Bypass -File $s
+$ms = @('https://ghfast.top/','https://ghproxy.net/','https://gh-proxy.com/','')
+$ok = $false
+foreach ($m in $ms) { $t = if ($m) { $m + $u } else { $u }; Write-Host "试：$t" -ForegroundColor DarkGray; try { Invoke-WebRequest -Uri $t -OutFile $s -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item $s).Length -gt 20000) { $ok = $true; break } } catch { Write-Host ("  这条不通：" + $_.Exception.Message.Split([char]10)[0]) -ForegroundColor DarkYellow } }
+if ($ok) { powershell -NoProfile -ExecutionPolicy Bypass -File $s } else { Write-Host '四条线路都没连上 → 检查杀软/代理，或改用 C（手动下载 zip）' -ForegroundColor Yellow }
 ```
 
-（这里用 `Net.WebClient` 而不是 `iwr`：实测同一台机器上 WebClient 1 秒拿到，
-`Invoke-WebRequest` 有时会卡住十几分钟。卡住就 Ctrl+C，改用 B 或 C 两种装法。）
+这段有意做成永不静默卡住：先开 TLS 1.2，再对 4 条线路（ghfast / ghproxy / gh-proxy / 直连）
+逐条尝试，每条最多等 15 秒；连不上就明确打印「这条不通：原因」并换下一条。
 
-镜像前缀可以换成 `https://ghproxy.net/`，或者干脆不挂前缀直连 `raw.githubusercontent.com`。
+- 之前那版用 `Net.WebClient` 同步下载：**它没有超时**，连接被网络或杀软黑洞掉时既不报错也不返回，
+  表现就是卡在第 4 行一直等（它同时也没先开 TLS 1.2，部分 Windows 上会卡在握手）。
+- 这里改用 `Invoke-WebRequest` + `-UseBasicParsing`：老版 PowerShell 的 `iwr` 默认走 IE 引擎解析页面，
+  那才是有时卡十几分钟的原因；补上 `-UseBasicParsing` 和 `-TimeoutSec` 之后不会卡。
+- 卡住了就 Ctrl+C，改用 B 或 C 两种装法。
 
 > 在跑着 Clash / 机场加速器的机器上，脚本下载会先走系统代理、失败会自动绕开代理直连；
 > 首装要下 138MB，几分钟属正常，别中途关窗口；**下载时会实时显示百分比、当前速度、剩余时间**。
