@@ -34,6 +34,6 @@ MAKABAKA 整合档 —— 安装包校验值（每个版本发布时更新）
 
 [ v1.4 ]  2026-09-17
   文件：MAKABAKA_profile_v1.4_20260917.zip
-  大小：85631736 字节
-  MD5 ：a68da40702a6800162bd67cfa3295c5d
-  SHA256：b0197a3fc46734998ffc2b90c152421db12de41ec2c6bb1bdebe58f0f427c7fc
+  大小：85632690 字节
+  MD5 ：8b9f36c1fcda4ab6706bd505128fca3d
+  SHA256：fa55b849cf66cb093c8615af65f7a3feb7e99904cdc771703877e53f96a9d885
