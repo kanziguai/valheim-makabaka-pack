@@ -82,14 +82,14 @@ $Expect = @{
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
 $ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owner/repo）
-$ScriptBuild    = "2026-09-16"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
+$ScriptBuild    = "2026-09-17"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
 $VrmDefaultModel = "金乌-毛绒派对"                    # VRM 默认模型（Models\ 下的目录名，会排在清单第一位）
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.3_20260916.zip"
-$FallbackMd5     = "36daa3db047c6248a01585ad7fe8f11e"
+$FallbackAsset   = "MAKABAKA_profile_v1.4_20260917.zip"
+$FallbackMd5     = "e835bf8690aa6b3c9df647715c2a7f9b"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
