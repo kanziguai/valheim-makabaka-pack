@@ -96,8 +96,8 @@ $script:EnforcedConfig = @(
 )
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.8_20260917.zip"
-$FallbackMd5     = "d47a54687a3b456aad8fc44e86e4dd1b"
+$FallbackAsset   = "MAKABAKA_profile_v1.9_20260917.zip"
+$FallbackMd5     = "634030fc2d373d9b20287c9c10a058d2"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
