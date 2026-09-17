@@ -35,6 +35,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import re
 import zipfile
 from pathlib import Path
 from typing import NoReturn
@@ -76,6 +77,15 @@ def desc_of(name):
     return name
 
 
+def slug_of(vrm_name):
+    """附件名用 ASCII：GitHub 的 Release 附件名对非 ASCII 不友好（中文会被吞成 "-.zip"）。
+    jinwu_armfix_v3_compat_v053.vrm -> jinwu ; anka_ye_wei_armfix_v1_compat_v053.vrm -> anka_ye_wei"""
+    stem = Path(vrm_name).stem
+    stem = re.sub(r"_(armfix_v\d+|compat_v?\d+|ds|tpose)$", "", stem, flags=re.I)
+    stem = re.sub(r"_+$", "", stem)
+    return stem or "model"
+
+
 def discover(only=None):
     out = []
     if not MODELS.is_dir():
@@ -91,14 +101,16 @@ def discover(only=None):
             continue
         vrm = vrms[0]
         sets = sorted(d.glob("settings*.txt"))
-        out.append({"name": d.name, "vrm": vrm, "settings": sets[0] if sets else None})
+        slug = slug_of(vrm.name)
+        out.append({"name": d.name, "slug": slug, "asset": slug + ".zip",
+                    "vrm": vrm, "settings": sets[0] if sets else None})
     return out
 
 
 def build_zip(item, force=False):
     """打成 Models/_dist/<名>.zip，内含 <名>/<xxx.vrm>（+ settings.txt）。返回 (zip路径, 是否新建)"""
     DIST.mkdir(exist_ok=True)
-    zpath = DIST / ("%s.zip" % item["name"])
+    zpath = DIST / item["asset"]
     vrm_sha = sha256_file(item["vrm"])
     if zpath.exists() and not force:
         try:
@@ -119,13 +131,13 @@ def build_zip(item, force=False):
         except Exception:
             pass
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
-        info = zipfile.ZipInfo("%s/%s" % (item["name"], item["vrm"].name), date_time=ZIP_DATE)
+        info = zipfile.ZipInfo("%s/%s" % (item["slug"], item["vrm"].name), date_time=ZIP_DATE)
         info.compress_type = zipfile.ZIP_DEFLATED
         info.external_attr = 0o644 << 16
         with open(item["vrm"], "rb") as f:
             z.writestr(info, f.read())
         if item["settings"]:
-            si = zipfile.ZipInfo("%s/settings.txt" % item["name"], date_time=ZIP_DATE)
+            si = zipfile.ZipInfo("%s/settings.txt" % item["slug"], date_time=ZIP_DATE)
             si.compress_type = zipfile.ZIP_DEFLATED
             si.external_attr = 0o644 << 16
             z.writestr(si, item["settings"].read_bytes())
@@ -135,11 +147,12 @@ def build_zip(item, force=False):
 def write_manifest(items, repo, tag, default=None):
     models = []
     for it in items:
-        zpath = DIST / ("%s.zip" % it["name"])
+        zpath = DIST / it["asset"]
         models.append({
             "name": it["name"],
             "vrm": it["vrm"].name,
-            "asset": zpath.name,
+            "asset": it["asset"],
+            "dir": it["slug"],
             "size": it["vrm"].stat().st_size,          # .vrm 本体大小（显示用）
             "zipSize": zpath.stat().st_size if zpath.exists() else None,
             "sha256": sha256_file(it["vrm"]),          # 解压后校验用
@@ -194,7 +207,7 @@ def upload_assets(items, repo, tag, token, force=False):
                          "安装脚本按 Models/models.json 里的 asset 名按需下载，并校验 sha256。")
     have = {a["name"]: a for a in rel.get("assets", []) or []}
     for it in items:
-        zpath = DIST / ("%s.zip" % it["name"])
+        zpath = DIST / it["asset"]
         if not zpath.exists():
             die("先跑 --pack（缺 %s）" % zpath)
         name = zpath.name
@@ -213,6 +226,13 @@ def upload_assets(items, repo, tag, token, force=False):
         blob = zpath.read_bytes()
         api(up, token, "POST", raw=blob, ctype="application/octet-stream")
         log("    完成（%.1fs，%.2f MB/s）" % (time.time() - t0, len(blob) / 1e6 / max(time.time() - t0, .001)))
+        # 上传后立即核对附件名（曾出现 GitHub 把中文名吞成 "-.zip" 的情况）
+        rel2 = api("/repos/%s/releases/tags/%s" % (repo, tag), token)
+        got = {a["name"]: a.get("size", 0) for a in (rel2.get("assets") or [])}
+        if got.get(name) != size:
+            same = [n for n, s in got.items() if s == size]
+            die("附件名没对上：期望 %s（%d 字节）；Release 上同大小的名字是 %s\n"
+                "  附件名保持 ASCII（中文名会被 GitHub 改坏）" % (name, size, same or "无"))
     log("  Release：https://github.com/%s/releases/tag/%s" % (repo, tag))
 
 
@@ -221,7 +241,7 @@ def check(items, man):
     by_name = {m["name"]: m for m in man["models"]}
     for it in items:
         m = by_name.get(it["name"])
-        zpath = DIST / ("%s.zip" % it["name"])
+        zpath = DIST / it["asset"]
         if not m:
             log("  [×] %s 不在清单里" % it["name"]); ok = False; continue
         sha = sha256_file(it["vrm"])

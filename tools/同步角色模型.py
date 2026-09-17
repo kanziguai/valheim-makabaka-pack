@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-把 I:\\000工作台\\英灵神殿mod\\工作区 里做好的角色模型放进整合包仓库 Models\\<模型名>\\<模型名>.vrm
+把 I:\\000工作台\\英灵神殿mod\\工作区 里做好的角色模型放进 仓库\\Models\\<模型名>\\<模型名>.vrm
+
+【v1.4 起的新定位】模型实体**不进 git、也不进安装包**：
+  · 本脚本 = 第一步：把工作区成品汇集到 Models\\（该目录已被 .gitignore 忽略，只是本地暂存）
+  · 第二步：python3 tools/发布模型.py --pack    （打 zip 到 Models\\_dist\\ + 生成 Models\\models.json）
+  · 第三步：GITHUB_TOKEN=xxx python3 tools/发布模型.py --upload（传到私有仓库 kanziguai/valheim-makabaka-models 的 Release 附件）
+  也就是说：跑完本脚本后**不要** git add Models/（清单 models.json 才进 git）
 
 规则（本次任务口径）：
   · 每个模型目录只放一个文件 —— 最终游戏用 VRM（单面 compat_v053；金乌取已验收的 armfix_v3）
