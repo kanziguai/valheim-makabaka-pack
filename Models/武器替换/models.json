@@ -1,0 +1,17 @@
+{
+ "manifestVersion": 1,
+ "repo": "kanziguai/valheim-makabaka-models",
+ "tag": "models-v1",
+ "note": "武器/物品外观模型：仅供本地自用（禁二次配布）。模型实体不进公开包，经私有仓库 Release 附件按需下载，安装脚本会校验 sha256。",
+ "models": [
+  {
+   "name": "灵跃心弦",
+   "dir": "灵跃心弦",
+   "asset": "skin-lingyue.zip",
+   "zipSize": 1038320,
+   "sha256": "a5601706afa6e87d94594bc506150b505d18278819a3768255fdc609583abe3c",
+   "defTarget": "BowDraugrFang",
+   "desc": "弓 · 灵跃心弦（原版尸鬼之牙外观替换）"
+  }
+ ]
+}

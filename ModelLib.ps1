@@ -399,3 +399,40 @@ function Show-ModelPreview {
         return $false
     }
 }
+
+# ---------- 配置文件：只改某一项的值（保留注释/行尾/BOM）----------
+# 用途：像 ChestFlow 的 AllowConcurrentChestUse 这种不带 [Synced with Server] 的开关，
+#       升级模式会保留玩家自己的 config，必须在安装后强制校正，才能保证人人一致。
+function Set-IniValue([string]$path, [string]$section, [string]$key, [string]$value) {
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($path)
+        $hasBom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
+        $raw = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+        $nl = if ($raw -match "`r`n") { "`r`n" } else { "`n" }
+        $lines = New-Object System.Collections.Generic.List[string]
+        foreach ($l in ($raw -split "`r?`n")) { [void]$lines.Add($l) }
+        $secIdx = -1; $keyIdx = -1
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            $tl = $lines[$i].Trim()
+            if ($tl -eq "[$section]") { $secIdx = $i; continue }
+            if ($secIdx -ge 0) {
+                if ($tl -match ("^\s*" + [regex]::Escape($key) + "\s*=")) { $keyIdx = $i; break }
+                if ($tl.StartsWith("[") -and $tl.EndsWith("]")) { break }
+            }
+        }
+        $line = "$key = $value"
+        if ($keyIdx -ge 0) {
+            if ($lines[$keyIdx].Trim() -eq $line) { return $false }
+            $lines[$keyIdx] = $line
+        } elseif ($secIdx -ge 0) {
+            $lines.Insert($secIdx + 1, $line)
+        } else {
+            if ($lines.Count -gt 0 -and $lines[$lines.Count - 1].Trim() -ne "") { [void]$lines.Add("") }
+            [void]$lines.Add("[$section]")
+            [void]$lines.Add($line)
+        }
+        $enc = New-Object System.Text.UTF8Encoding($hasBom)
+        [System.IO.File]::WriteAllText($path, ($lines -join $nl), $enc)
+        return $true
+    } catch { return $false }
+}

@@ -59,7 +59,10 @@ param(
     [string]$Models = "",
     [string]$ModelPath = "",
     [string]$ModelSource = "",
-    [string]$ModelToken = ""
+    [string]$ModelToken = "",
+    [string]$SkinTarget = "",    # 武器/物品外观替换：要替换的原版 prefab 名（如 BowDraugrFang）
+    [string]$SkinModel = "",     # 武器/物品外观替换：模型库里的模型目录名（如 灵跃心弦）
+    [switch]$SkipSkin            # 跳过外观替换模块
 )
 
 $ErrorActionPreference = "Stop"
@@ -86,6 +89,11 @@ $ScriptBuild    = "2026-09-17"                        # ← 本脚本的日期�
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
 $VrmDefaultModel = ""                                   # 已取消默认模型（清单里 default 为空 → 不重排；菜单顺序=清单顺序=参考图编号）
+
+# 必须人人一致的配置项（安装/升级后强制校正；升级模式会保留玩家自己的 config，所以必须在这里兜住）
+$script:EnforcedConfig = @(
+    @{ File = "jg224.chestflow.cfg"; Section = "Multiplayer"; Key = "AllowConcurrentChestUse"; Value = "false" }
+)
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.4_20260917.zip"
@@ -416,6 +424,23 @@ foreach ($libTry in @($script:ModelLibPath, (Join-Path $env:TEMP "MAKABAKA-Model
 if (-not $script:ModelLibLoaded) {
     Say "  [注意] 模型功能不可用（缺 ModelLib.ps1，且没下下来）；只更新 mod 完全不受影响。" "Yellow"
     Say "         想装/换模型：以后双击 换模型.bat，或在有网时重跑本脚本即可。" "DarkGray"
+}
+
+# ---------- 外观替换模块载入：SkinLib.ps1（模块化：选物品 → 选模型 → 或 不替换）----------
+$script:SkinLibPath = Join-Path $PSScriptRoot "SkinLib.ps1"
+if (-not (Test-Path $script:SkinLibPath)) {
+    $rawBaseS = "https://raw.githubusercontent.com/$ReleasesRepo/main"
+    Say "  没找到 SkinLib.ps1（外观替换模块）→ 从仓库取一份…" "DarkGray"
+    $tmpLibS = Join-Path $env:TEMP "MAKABAKA-SkinLib.ps1"
+    if (Save-FileWithMirrors "$rawBaseS/SkinLib.ps1" $tmpLibS "外观替换模块 SkinLib.ps1") {
+        try { Copy-Item $tmpLibS $script:SkinLibPath -Force -ErrorAction Stop } catch {}
+    }
+}
+foreach ($skinTry in @($script:SkinLibPath, (Join-Path $env:TEMP "MAKABAKA-SkinLib.ps1"))) {
+    if ($script:SkinLibLoaded) { break }
+    if (Test-Path $skinTry) {
+        try { . $skinTry; $script:SkinLibLoaded = $true } catch { Say "  [注意] SkinLib.ps1 载入失败：$($_.Exception.Message)" "Yellow" }
+    }
 }
 
 # ---------- -ListModels：只列模型清单就退出（不下载、不动任何文件）----------
@@ -984,6 +1009,23 @@ if ($mode -eq "upgrade") {
     Say "        复制完成。" "Green"
 }
 
+
+# ---------- 5b) 强制统一的配置项 ----------
+# 升级模式会跳过 BepInEx\config（保留你的设置），所以这类"不带 [Synced with Server]"的开关
+# 必须安装后强制校正，否则每人各自为政（例：多人同时开同一个箱子 → 并发搬运容易物品不同步）
+$cfgDir = Join-Path $dst "BepInEx\config"
+$ensured = 0; $ensuredList = @()
+foreach ($e in $script:EnforcedConfig) {
+    $cf = Join-Path $cfgDir $e.File
+    if (-not (Test-Path $cf)) { continue }
+    if (Set-IniValue -path $cf -section $e.Section -key $e.Key -value $e.Value) { $ensured++; $ensuredList += $e.File }
+}
+if ($ensured -gt 0) {
+    Say ("        已校正必须一致的配置项 $ensured 处：" + ($ensuredList -join "、")) "Green"
+} else {
+    Say "        必须一致的配置项已符合（无需校正）。" "DarkGray"
+}
+
 # ---------- 6) 校验 ----------
 Say "  [6/7] 校验中…"
 $srcFiles = @(Get-ChildItem -Path $src -Recurse -File | Where-Object {
@@ -1487,6 +1529,63 @@ if ($vrmPack -and -not $SkipVRM) {
             }
         } else {
             Say "        [—] ②③ 未检查：没找到游戏目录（插件那半已经装好；游戏侧之后重跑本脚本即可）" "Yellow"
+        }
+    }
+}
+
+# ---------- ④ 武器/物品外观替换（独立模块）----------
+if (-not $SkipSkin) {
+    if (-not $script:SkinLibLoaded) {
+        Say "  [—] 外观替换模块不可用（缺 SkinLib.ps1）→ 跳过（不影响 mod 更新）" "Yellow"
+    } else {
+        Say ""
+        Say "  [外观] 武器/物品外观替换（纯客户端外观：不改数值、不发网络包、不写存档）" "Cyan"
+        $skinLibDir = Get-SkinLibDir -PackRoot $packRoot
+        if (-not $skinLibDir) {
+            Say "        包内没有 Models\武器替换\ → 跳过这一步" "DarkGray"
+        } else {
+            $skinModels = @(Get-SkinModels -LibDir $skinLibDir)
+            $skinTargets = @(Get-SkinTargets -LibDir $skinLibDir)
+            Say "        模型库：$skinLibDir（$($skinModels.Count) 个模型 / $($skinTargets.Count) 个可选目标）" "DarkGray"
+            $skinCfg = Join-Path $dst "BepInEx\config\local.itemskin.cfg"
+            if (Test-Path -LiteralPath $skinCfg) {
+                $curE = "?"; $curT = "?"; $curM = "?"
+                foreach ($cl in (Get-Content -LiteralPath $skinCfg -Encoding UTF8)) {
+                    if ($cl -match "^\s*Enabled\s*=\s*(\S+)")      { $curE = $Matches[1] }
+                    elseif ($cl -match "^\s*TargetPrefab\s*=\s*(\S+)") { $curT = $Matches[1] }
+                    elseif ($cl -match "^\s*Model\s*=\s*(\S+)")        { $curM = $Matches[1] }
+                }
+                if ($curE -eq "true") { Say "        当前：$curT  ←  $curM" "DarkGray" } else { Say "        当前：不替换（原版外观）" "DarkGray" }
+            }
+            # 外观模型的凭据（模型实体在私有仓库，按需下载）——与角色模型同一套解析：-ModelToken → 环境变量 → 模型凭据.txt
+            $skinToken = ""
+            if (Get-Command Get-ModelToken -ErrorAction SilentlyContinue) { $skinToken = Get-ModelToken -given $ModelToken -packRoot $packRoot }
+            if (-not $skinToken) { Say "        [注意] 没找到模型凭据：只有本地已有的模型可用，需下载的模型会跳过" "DarkGray" }
+            $skinLog = { param($m) Say $m }
+            if ($NonInteractive) {
+                if ($SkinTarget -and $SkinModel) {
+                    $r = Install-Skin -ProfileDir $dst -LibDir $skinLibDir -Prefab $SkinTarget -ModelName $SkinModel -PackProfileDir $src -PackRoot $packRoot -Token $skinToken -Log $skinLog
+                    if (-not $r.Ok) { Say "        [×] 外观替换失败（模型名或 prefab 名不对？）" "Yellow" }
+                    else { Say "        配置文件：$($r.Cfg)" "DarkGray" }
+                } elseif ($SkinTarget -or $SkinModel) {
+                    Say "        [注意] -SkinTarget 与 -SkinModel 要一起给；本次不改动外观设置" "Yellow"
+                } else {
+                    Say "        （非交互：未指定 -SkinTarget/-SkinModel → 保持现有外观设置不动）" "DarkGray"
+                }
+            } else {
+                $pick = Select-SkinInteractive -LibDir $skinLibDir
+                if ([string]::IsNullOrEmpty($pick.Prefab) -or [string]::IsNullOrEmpty($pick.Model)) {
+                    $skinR = Install-Skin -ProfileDir $dst -LibDir $skinLibDir -Prefab "" -ModelName "" -PackProfileDir $src -PackRoot $packRoot -Token $skinToken -Log $skinLog
+                    Say "        已按「不替换」处理（想换：重跑本脚本、或游戏里按 F1 改 local.itemskin）" "DarkGray"
+                } else {
+                    $skinR = Install-Skin -ProfileDir $dst -LibDir $skinLibDir -Prefab $pick.Prefab -ModelName $pick.Model -PackProfileDir $src -PackRoot $packRoot -Token $skinToken -Log $skinLog
+                    if ($skinR.Ok) {
+                        Say "        ✓ 已应用：$($pick.Prefab)  ←  $($pick.Display)（$($pick.Model)）" "Green"
+                        Say "        游戏里可在 F1 → Item Skin Replacer 里微调（缩放/旋转/光泽/发光颜色）" "DarkGray"
+                    } else { Say "        [×] 应用失败（模型库里的目录没了？）" "Yellow" }
+                }
+            }
+            Say "        适用：静态网格物品（弓/剑/斧/盾/镐/工具…）；带骨骼的盔甲不适用" "DarkGray"
         }
     }
 }

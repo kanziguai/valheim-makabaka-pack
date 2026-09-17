@@ -66,10 +66,12 @@ EXCLUDE_RE = [
     (re.compile(r"(^|/)ValheimVRM_手动安装/Models/.*\.vrm$", re.I), "角色模型（改为按需下载）"),
     (re.compile(r"^Models/.*\.vrm$", re.I), "角色模型（改为按需下载）"),
     (re.compile(r"^Models/_dist/", re.I), "模型发布 zip（本机产物，不上传 git/包）"),
-    (re.compile(r"(^|/)模型凭据\.txt$"), "模型下载凭据（绝不能进包）"),
+    (re.compile(r"(^|/)模型凭据\.txt$"), "模型下载凭据（绝不能进包）"),    # ---- 本机诊断探针：只在作者本机跑，永不进包（用户要求：检测仅本地）----
+    (re.compile(r"(^|/)(LongRunProbe|VrmCloneDiag|PerfProbe|ModTimer|ModScope|ChestFlowCut|ChestFlowPerfFix)(/|$)"), "本机诊断探针（仅本地）"),
+    (re.compile(r"(^|/)longrun_probe\.csv$", re.I), "本机诊断数据（仅本地）"),
 ]
 # 模型目录内容：默认排除（--with-models 可改回"整包带模型"）——注意不能误伤 Models/models.json
-EXCLUDE_MODELS = (re.compile(r"^Models/(?!预览/)[^/]+/", re.I), "模型目录内容（模型改走按需下载；Models/预览/ 例外，参考图随包分发）")
+EXCLUDE_MODELS = (re.compile(r"^Models/(?!预览/|武器替换/)[^/]+/", re.I), "模型目录内容（模型改走按需下载；Models/预览/ 与 Models/武器替换/ 例外，随包分发）")
 # 额外瘦身项：**默认不排除**，想更瘦就加对应 --strip-* 开关
 EXCLUDE_STRIP = {
     "ui_backgrounds": (re.compile(r"(^|/)BepInEx/config/Azumatt\.MinimalUI_Backgrounds/", re.I), "MinimalUI 背景包"),
@@ -122,6 +124,8 @@ def collect(share: Path, with_models: bool = False, strip: set[str] | None = Non
     rules = list(EXCLUDE_RE)
     if not with_models:              # 默认：模型不进包
         rules.append(EXCLUDE_MODELS)
+        # 武器/物品外观模型：实体"本地自用、不外传"→ 只保留根部的 models.json / 目标清单.txt / README.txt
+        rules.append((re.compile(r"^Models/武器替换/(?!models\.json$|目标清单\.txt$|README\.txt$)", re.I), "武器外观模型实体（改走私有仓库按需下载）"))
     for key in strip:                # 额外瘦身：只有显式指定才排除
         if key in EXCLUDE_STRIP:
             rules.append(EXCLUDE_STRIP[key])

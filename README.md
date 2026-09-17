@@ -25,6 +25,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\联机一致性自检.ps1 
 逐项比对 **mod 名称/版本/启用状态、插件 DLL 的 MD5、BepInEx core、关键配置**；
 不一致的人用完整安装包覆盖一次即可。原因与完整隐患清单见 `联机数据同步排查_20260917.md`。
 
+## 0.5 武器/物品外观替换（可选，独立模块）
+
+安装脚本里可以**换任意静态网格物品的外观**（弓/剑/斧/盾/镐/工具…），步骤是「选物品 → 选模型」，也可以选「不替换」：
+
+- 目标物品清单：`Models\武器替换\目标清单.txt`（50 个游戏内真实存在的物品，可自行增删；安装时也能直接手输 prefab 名）
+- 模型库：`Models\武器替换\<模型名>\` = `*.obj` + `textures\*.png` + 可选 `模型.json`
+  - 丢一个新文件夹进去，菜单就自动多一个选项（无需改脚本、无需重编译）
+  - `模型.json` 可精确指定贴图槽位、缩放/旋转/平移、发光槽位与颜色
+- 插件本体：`BepInEx\plugins\ItemSkin\`（配置 `local.itemskin.cfg`，游戏里按 F1 也能改）
+- 非交互参数：`-SkinTarget BowDraugrFang -SkinModel 灵跃心弦`；`-SkipSkin` 跳过
+
 ## 0. 前提（没这两样装不了）
 
 1. **正版 Valheim 1.0**（Steam）

@@ -15,7 +15,7 @@ echo "分享包: $SHARE"
 echo
 
 changed=0; same=0
-for f in install.ps1 ModelLib.ps1 一键安装.bat 换模型.bat 换模型.ps1 README.md 校验值.txt 安装步骤.txt \
+for f in install.ps1 ModelLib.ps1 SkinLib.ps1 一键安装.bat 换模型.bat 换模型.ps1 README.md 校验值.txt 安装步骤.txt \
          安装指南.txt 键位自定义指南.txt 游戏内功能速查.txt r2modman使用说明.txt \
          Mod清单_MAKABAKA.txt 版本号.txt 模型说明.txt EpicLoot游玩指南.md EpicLoot游玩指南.txt \
          联机一致性自检.ps1 联机一致性自检.bat; do
@@ -80,3 +80,12 @@ echo
 echo "完成：更新 $changed 个，一致 $same 个。"
 echo "提醒：角色模型实体不在本流程里 —— 用 tools/发布模型.py --pack / --upload 走私有仓库附件。"
 echo "提醒：更新说明_*.txt 里的本版说明只写在分享包/Release notes 里，脚本清单不含它们（要带就手动确认）。"
+
+# 武器/物品外观替换模型库（递归：obj + textures + 模型.json）—— 跟着仓库走
+SRC_SK="$REPO/Models/武器替换"; DST_SK="$SHARE/Models/武器替换"
+if [ -d "$SRC_SK" ]; then
+  mkdir -p "$DST_SK"
+  cp -ru "$SRC_SK/." "$DST_SK/" 2>/dev/null && echo "  [已同步] Models/武器替换（递归，含 obj/贴图/模型.json）"
+else
+  echo "  [注意] 仓库里没有 Models/武器替换"
+fi
