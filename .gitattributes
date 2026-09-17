@@ -2,4 +2,3 @@
 * -text
 # Windows 双击入口必须是 CRLF，否则某些 cmd 环境会解析异常
 *.bat text eol=crlf
-Models/菲比-反和谐/feibi_armfix_v1_compat_v053.vrm filter=lfs diff=lfs merge=lfs -text
