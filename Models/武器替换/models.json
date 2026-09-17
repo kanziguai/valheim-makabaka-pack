@@ -14,6 +14,17 @@
    "desc": "弓 · 灵跃心弦（原版尸鬼之牙外观替换）",
    "type": "弓",
    "preview": "灵跃心弦.jpg"
+  },
+  {
+   "name": "昔涟弓",
+   "dir": "昔涟弓",
+   "asset": "skin-xilian-bow.zip",
+   "zipSize": 2254559,
+   "sha256": "8279bf88c3c8c5d2fb09f6262276e2d2ce8e5a7b462cc6dd41e99ed78088198b",
+   "defTarget": "BowDraugrFang",
+   "type": "弓",
+   "preview": "昔涟弓.jpg",
+   "desc": "弓 · 昔涟弓（星穹铁道 昔涟的弓）"
   }
  ]
 }
