@@ -4,7 +4,7 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 ＋ 自制插件 3 个（SafeBox 0.5.4、KeepBuffsOnDeath 1.0.1、VRMGhostFix）
 ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
 
-**当前版本：v1.4（2026-09-17）** · 安装包约 60 MB（不含模型；模型按需下载）· 见 [Releases](../../releases)
+**当前版本：v1.4（2026-09-17）** · 安装包 81.7 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
 
 > 仓库里只放脚本 + 文档（几百 KB）；安装包 zip 走 Release 附件，不进 git 历史。
 
@@ -18,7 +18,7 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 1. **正版 Valheim 1.0**（Steam）
 2. **[r2modman](https://thunderstore.io/c/valheim/p/ebkr/r2modman/)** 已安装，**并启动过一次、选好 Valheim 安装位置**
    （它得先建好 profiles 目录，安装脚本才能把档放进去）
-3. Windows 10/11，预留约 1 GB（安装包 138 MB + 临时解压 + 档本体 + 角色模型；`%TEMP%` 里的临时文件装完会自动清）
+3. Windows 10/11，预留约 1 GB（安装包 81.7 MB + 临时解压 + 档本体；另按需下载模型，每个 13–77 MB；`%TEMP%` 里的临时文件装完会自动清）
 
 ---
 
@@ -48,7 +48,7 @@ if ($ok) { powershell -NoProfile -ExecutionPolicy Bypass -File $s } else { Write
 - 卡住了就 Ctrl+C，改用 B 或 C 两种装法。
 
 > 在跑着 Clash / 机场加速器的机器上，脚本下载会先走系统代理、失败会自动绕开代理直连；
-> 首装要下 138MB，几分钟属正常，别中途关窗口；**下载时会实时显示百分比、当前速度、剩余时间**。
+> 首装要下 82MB（不含模型），几分钟属正常，别中途关窗口；**下载时会实时显示百分比、当前速度、剩余时间**。
 > 镜像（ghfast / ghproxy）对 raw 文件有几分钟缓存：脚本刚更新完的头几分钟，
 > 从镜像拿到的可能还是旧副本 —— 脚本开头会打印「脚本日期」，对不上就等几分钟或改用直连。
 
@@ -158,7 +158,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 
 > **安装包不想放 C 盘？** 首次运行时会问一次：
 > ```
->   安装包放哪？（要下 138 MB、解压再占约 140 MB；装完脚本会自动清理）
+>   安装包放哪？（要下 82 MB、解压再占约 105 MB；装完脚本会自动清理）
 >     1) C:\Users\你\AppData\Local\Temp\makabaka_pack   （默认；该盘剩余 65.8 GB）
 >     2) D:\MAKABAKA_install   （另一个盘；剩余 ... GB）
 >     0) 我自己输入一个路径
