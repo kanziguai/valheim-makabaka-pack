@@ -30,12 +30,14 @@ PowerShell 窗口里把下面这几行整段粘进去、回车（镜像优先，
 
 ```powershell
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$u = 'https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1'
-$s = "$env:TEMP\makabaka-install.ps1"
+$base = 'https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/'
 $ms = @('https://ghfast.top/','https://ghproxy.net/','https://gh-proxy.com/','')
+$dir = $env:TEMP
 $ok = $false
-foreach ($m in $ms) { $t = if ($m) { $m + $u } else { $u }; Write-Host "试：$t" -ForegroundColor DarkGray; try { Invoke-WebRequest -Uri $t -OutFile $s -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item $s).Length -gt 20000) { $ok = $true; break } } catch { Write-Host ("  这条不通：" + $_.Exception.Message.Split([char]10)[0]) -ForegroundColor DarkYellow } }
-if ($ok) { powershell -NoProfile -ExecutionPolicy Bypass -File $s } else { Write-Host '四条线路都没连上 → 检查杀软/代理，或改用 C（手动下载 zip）' -ForegroundColor Yellow }
+foreach ($m in $ms) { $t = $m + $base + 'install.ps1'; Write-Host "试：$t" -ForegroundColor DarkGray; try { Invoke-WebRequest -Uri $t -OutFile "$dir\makabaka-install.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\makabaka-install.ps1").Length -gt 20000) { $ok = $true; break } } catch { Write-Host ("  这条不通：" + $_.Exception.Message.Split([char]10)[0]) -ForegroundColor DarkYellow } }
+$okLib = $false
+foreach ($m in $ms) { try { Invoke-WebRequest -Uri ($m + $base + 'ModelLib.ps1') -OutFile "$dir\ModelLib.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\ModelLib.ps1").Length -gt 5000) { $okLib = $true; break } } catch {} }
+if ($ok) { if (-not $okLib) { Write-Host '[提示] ModelLib.ps1 没下下来（模型功能会自动跳过；只更新 mod 不受影响）' -ForegroundColor Yellow }; powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\makabaka-install.ps1" } else { Write-Host '四条线路都没连上 → 检查杀软/代理，或改用 C（手动下载 zip）' -ForegroundColor Yellow }
 ```
 
 这段有意做成永不静默卡住：先开 TLS 1.2，再对 4 条线路（ghfast / ghproxy / gh-proxy / 直连）

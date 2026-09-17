@@ -89,7 +89,7 @@ $VrmDefaultModel = "金乌-毛绒派对"                    # VRM 默认模型�
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.4_20260917.zip"
-$FallbackMd5     = "8b9f36c1fcda4ab6706bd505128fca3d"
+$FallbackMd5     = "08a4af70b3386e2fa8d212e8ac65b0fc"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -99,8 +99,7 @@ $script:DlRememberFile = Join-Path $PSScriptRoot "download-path.txt"   # 记住�
 if ($ModsOnly) { $SkipVRM = $true }        # 只更新 mod：完全不碰模型
 $script:ModelRepo = ""
 $script:ModelTag  = ""
-if (Test-Path (Join-Path $PSScriptRoot "ModelLib.ps1")) { . (Join-Path $PSScriptRoot "ModelLib.ps1") }
-else { Write-Host "[注意] 缺少 ModelLib.ps1 —— 模型相关功能不可用（只更新 mod 不受影响）" -ForegroundColor Yellow }
+$script:ModelLibLoaded = $false   # 真正的载入在下面（助手函数都就位之后）；缺文件时会自愈下载一份
 
 # 某个位置所在盘还剩多少 GB（路径不存在就往上找最近的已存在目录）
 function Get-FreeGB([string]$path) {
@@ -398,17 +397,39 @@ function Fail([string]$msg) {
     Exit 1
 }
 
+# ---------- 模型库载入：ModelLib.ps1（方法一只下 install.ps1 时会缺 → 自愈下载一份）----------
+$script:ModelLibPath = Join-Path $PSScriptRoot "ModelLib.ps1"
+if (-not (Test-Path $script:ModelLibPath)) {
+    $rawBase = "https://raw.githubusercontent.com/$ReleasesRepo/main"
+    Say "  没找到 ModelLib.ps1（模型库）→ 从仓库取一份…" "DarkGray"
+    $tmpLib = Join-Path $env:TEMP "MAKABAKA-ModelLib.ps1"
+    if (Save-FileWithMirrors "$rawBase/ModelLib.ps1" $tmpLib "模型库 ModelLib.ps1") {
+        try { Copy-Item $tmpLib $script:ModelLibPath -Force -ErrorAction Stop } catch {}
+    }
+}
+foreach ($libTry in @($script:ModelLibPath, (Join-Path $env:TEMP "MAKABAKA-ModelLib.ps1"))) {
+    if ($script:ModelLibLoaded) { break }
+    if (Test-Path $libTry) {
+        try { . $libTry; $script:ModelLibLoaded = $true } catch { Say "  [注意] ModelLib.ps1 载入失败：$($_.Exception.Message)" "Yellow" }
+    }
+}
+if (-not $script:ModelLibLoaded) {
+    Say "  [注意] 模型功能不可用（缺 ModelLib.ps1，且没下下来）；只更新 mod 完全不受影响。" "Yellow"
+    Say "         想装/换模型：以后双击 换模型.bat，或在有网时重跑本脚本即可。" "DarkGray"
+}
+
 # ---------- -ListModels：只列模型清单就退出（不下载、不动任何文件）----------
 if ($ListModels) {
+    if (-not $script:ModelLibLoaded) { Fail '模型库（ModelLib.ps1）不可用，没法列清单 —— 请重跑一次安装脚本（会自动补下），或直接用 -Models "名字1,名字2" 指定模型。' }
     $cacheLM = Get-ModelCacheDir ""
     Section "模型清单（只查看，不动任何文件）"
-    $cands = @(Get-ModelCandidates -packRoot $PSScriptRoot -cacheDir $cacheLM -modelPath $ModelPath -manifestSource $ModelSource)
+    $cands = Get-ModelCandidates -packRoot $PSScriptRoot -cacheDir $cacheLM -modelPath $ModelPath -manifestSource $ModelSource
     if ($cands.Count -eq 0) {
         Say "  没读到任何模型：包内没有 Models\models.json，也没联网取到清单。" "Yellow"
         Say "  （想直接用本地文件：把 .vrm 拖进来，或用 -ModelPath <文件>）" "DarkGray"
     } else { Show-ModelCandidates $cands $cacheLM }
     Say ""
-    Say "  装/换模型：双击 换模型.bat，或用 -Models \"名字1,名字2\" 指定。" "DarkGray"
+    Say '  装/换模型：双击 换模型.bat，或用 -Models "名字1,名字2" 指定。' "DarkGray"
     exit 0
 }
 
@@ -1158,12 +1179,18 @@ if ($vrmPack -and -not $SkipVRM) {
             $script:ModelCacheDir = $cacheDir
             $modelsDir = Join-Path $vrmPack "Models"
             if (-not (Test-Path $modelsDir)) { $modelsDir = Join-Path $packRoot "Models" }
-            $man = Get-ModelManifest -packRoot $packRoot -source $ModelSource
-            if ($man) {
-                if ($man.repo) { $script:ModelRepo = "" + $man.repo }
-                if ($man.tag)  { $script:ModelTag  = "" + $man.tag }
+            $man = $null
+            $modelList = @()
+            if ($script:ModelLibLoaded) {
+                $man = Get-ModelManifest -packRoot $packRoot -source $ModelSource
+                if ($man) {
+                    if ($man.repo) { $script:ModelRepo = "" + $man.repo }
+                    if ($man.tag)  { $script:ModelTag  = "" + $man.tag }
+                }
+                $modelList = Get-ModelCandidates -packRoot $packRoot -cacheDir $cacheDir -modelPath $ModelPath -manifestSource $ModelSource -manifest $man
+            } else {
+                Say "        ③ [跳过] 缺模型库 ModelLib.ps1 → 这一步跳过（只更新 mod 不受影响；以后用 换模型.bat 可单独装模型）" "Yellow"
             }
-            $modelList = @(Get-ModelCandidates -packRoot $packRoot -cacheDir $cacheDir -modelPath $ModelPath -manifestSource $ModelSource -manifest $man)
             if ($modelList.Count -gt 0) {
                 $nC = @($modelList | Where-Object { $_.Cached }).Count
                 Say ("  模型：可选 {0} 个（本机已有 {1} 个，需下载 {2} 个）" -f $modelList.Count, $nC, ($modelList.Count - $nC)) "DarkGray"

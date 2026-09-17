@@ -30,14 +30,18 @@
   2) 把下面这几行【整段复制】进去，回车：
 
      [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-     $u = 'https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/install.ps1'
-     $s = "$env:TEMP\makabaka-install.ps1"
+     $base = 'https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/'
      $ms = @('https://ghfast.top/','https://ghproxy.net/','https://gh-proxy.com/','')
+     $dir = $env:TEMP
      $ok = $false
-     foreach ($m in $ms) { $t = if ($m) { $m + $u } else { $u }; Write-Host "试：$t" -ForegroundColor DarkGray; try { Invoke-WebRequest -Uri $t -OutFile $s -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item $s).Length -gt 20000) { $ok = $true; break } } catch { Write-Host ("  这条不通：" + $_.Exception.Message.Split([char]10)[0]) -ForegroundColor DarkYellow } }
-     if ($ok) { powershell -NoProfile -ExecutionPolicy Bypass -File $s } else { Write-Host '四条线路都没连上 → 检查杀软/代理，或改用方法三（手动下载 zip）' -ForegroundColor Yellow }
+     foreach ($m in $ms) { $t = $m + $base + 'install.ps1'; Write-Host "试：$t" -ForegroundColor DarkGray; try { Invoke-WebRequest -Uri $t -OutFile "$dir\makabaka-install.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\makabaka-install.ps1").Length -gt 20000) { $ok = $true; break } } catch { Write-Host ("  这条不通：" + $_.Exception.Message.Split([char]10)[0]) -ForegroundColor DarkYellow } }
+     $okLib = $false
+     foreach ($m in $ms) { try { Invoke-WebRequest -Uri ($m + $base + 'ModelLib.ps1') -OutFile "$dir\ModelLib.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\ModelLib.ps1").Length -gt 5000) { $okLib = $true; break } } catch {} }
+     if ($ok) { if (-not $okLib) { Write-Host '[提示] ModelLib.ps1 没下下来（模型功能会自动跳过；只更新 mod 不受影响）' -ForegroundColor Yellow }; powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\makabaka-install.ps1" } else { Write-Host '四条线路都没连上 → 检查杀软/代理，或改用方法三（手动下载 zip）' -ForegroundColor Yellow }
 
   3) 接着跟着提示回答（问什么见【2】）
+     注：上面这段会下【两个】文件（install.ps1 + ModelLib.ps1，都在 %TEMP%）；这是必须的 ——
+         ModelLib.ps1 是模型清单/下载用的库，少了它模型那一步会报“Get-ModelManifest 不是…”。
   提示：首装要下约 82MB（不含角色模型），几分钟属正常，别关窗口；下载时会实时显示【百分比 / 当前速度 / 剩余时间】。
        上面这段对每条线路都有 15 秒超时：连不上会明确打印「这条不通：...」，不会一直卡着不动。
        镜像前缀 https://ghfast.top/ 可以换成 https://ghproxy.net/ 或 https://gh-proxy.com/，
@@ -170,7 +174,11 @@
    （PowerShell 控制台是逐行执行的）→ 改用方法二那段写法，或那一行版命令
 7) 提示磁盘空间不足 / 下载老是失败 → 重跑一次，在问"安装包放哪"时换到空间大的盘
    （或加参数：-DownloadDir D:\MAKABAKA_install）
-8) 以上都看不懂：把 MAKABAKA安装日志.txt 发过来
+8) 报「无法将"Get-ModelManifest"项识别为 cmdlet / Get-ModelCandidates 不是…」
+   → 你的 install.ps1 旁边缺 ModelLib.ps1（老版方法一只下了 install.ps1）。
+     新脚本会自动去仓库补下这个文件；实在不行就手动下它放到 install.ps1 同一个文件夹：
+       https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/ModelLib.ps1
+9) 以上都看不懂：把 MAKABAKA安装日志.txt 发过来
 
 
 【8】两件千万别做的事
