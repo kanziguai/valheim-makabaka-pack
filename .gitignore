@@ -11,6 +11,7 @@ MAKABAKA/
 
 # ---- 安装脚本运行时产物 ----
 install-path.txt
+download-path.txt
 MAKABAKA安装日志.txt
 MAKABAKA_backup-*/
 _vrm_backup_*/
