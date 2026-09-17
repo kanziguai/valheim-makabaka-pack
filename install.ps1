@@ -96,8 +96,8 @@ $script:EnforcedConfig = @(
 )
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.4_20260917.zip"
-$FallbackMd5     = "cde75ce2a1e78f8aa21693a58a1a2a49"
+$FallbackAsset   = "MAKABAKA_profile_v1.5_20260917.zip"
+$FallbackMd5     = "ab9597ab5f02db95b5fcc4d0a60fe6ab"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -1557,10 +1557,14 @@ if (-not $SkipSkin) {
                 }
                 if ($curE -eq "true") { Say "        当前：$curT  ←  $curM" "DarkGray" } else { Say "        当前：不替换（原版外观）" "DarkGray" }
             }
-            # 外观模型的凭据（模型实体在私有仓库，按需下载）——与角色模型同一套解析：-ModelToken → 环境变量 → 模型凭据.txt
-            $skinToken = ""
-            if (Get-Command Get-ModelToken -ErrorAction SilentlyContinue) { $skinToken = Get-ModelToken -given $ModelToken -packRoot $packRoot }
-            if (-not $skinToken) { Say "        [注意] 没找到模型凭据：只有本地已有的模型可用，需下载的模型会跳过" "DarkGray" }
+            # 外观模型的凭据（模型实体在私有仓库，按需下载）——与角色模型同一套解析：-ModelToken → 环境变量 → 模型凭据.txt
+
+            $skinToken = ""
+
+            if (Get-Command Get-ModelToken -ErrorAction SilentlyContinue) { $skinToken = Get-ModelToken -given $ModelToken -packRoot $packRoot }
+
+            if (-not $skinToken) { Say "        [注意] 没找到模型凭据：只有本地已有的模型可用，需下载的模型会跳过" "DarkGray" }
+
             $skinLog = { param($m) Say $m }
             if ($NonInteractive) {
                 if ($SkinTarget -and $SkinModel) {
