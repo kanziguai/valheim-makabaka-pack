@@ -1,10 +1,10 @@
-# 英灵神殿 MAKABAKA 整合档 · 一键安装
+﻿# 英灵神殿 MAKABAKA 整合档 · 一键安装
 
 Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（37 启用 / 5 禁用）**
 ＋ 自制插件 3 个（SafeBox 0.5.4、KeepBuffsOnDeath 1.0.1、VRMGhostFix）
 ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
 
-**当前版本：v1.3（2026-09-16）** · 安装包 138.0 MB（自包含，含两个角色模型）· 见 [Releases](../../releases)
+**当前版本：v1.4（2026-09-17）** · 安装包约 60 MB（不含模型；模型按需下载）· 见 [Releases](../../releases)
 
 > 仓库里只放脚本 + 文档（几百 KB）；安装包 zip 走 Release 附件，不进 git 历史。
 
@@ -108,12 +108,26 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 |---|---|---|
 | 插件 `ValheimVRM.dll` + `ValheimVRM.shaders` | `ValheimVRM_手动安装\BepInEx_pluginsに入れるファイル\` | **r2modman 的档里**：`<档>\BepInEx\plugins\ValheimVRM_1.2.2\` |
 | 运行时 dll（15 个，`VRM10.dll`/`UniGLTF.dll`/`MToon.dll`…） | `ValheimVRM_手动安装\valheim_Data_Managedに入れる文件\` | **游戏本体里**：`<游戏>\valheim_Data\Managed\`（覆盖前自动备份到 `<游戏>\_vrm_backup_<时间>\`） |
-| 模型与设置 | `ValheimVRM_手动安装\Models\金乌\` 或 `\辰星\`（默认金乌） | **游戏本体里**：`<游戏>\ValheimVRM\<角色名>.vrm` + `settings_<角色名>.txt` |
+| 模型与设置 | 按需下载（见下）/ 本机缓存 / `-ModelPath` 指定的本地文件 | **游戏本体里**：`<游戏>\ValheimVRM\<角色名>.vrm` + `settings_<角色名>.txt` |
 
-模型是**装的时候自己选、角色名在脚本里自己输**的：脚本列出 `金乌`（默认）/`辰星`/`0 不换`，然后问你的角色名，
-复制成 `<角色名>.vrm` + `settings_<角色名>.txt` —— 玩家**不需要去文件夹里找文件或手动改名**。
-（目录里已有以前用过的角色名时会列出来，输编号即可；旧模型默认留着，也可选一键收进 `_旧模型_<时间>\`。）**只换模型不用重装整个档** —— 双击 `换模型.bat` 即可
-（等价 `install.ps1 -VRMOnly`，也可 `-VrmModel 辰星 -CharName 你的角色名 -NonInteractive` 直接指定）。
+**从 v1.4 起，角色模型不再进安装包**（安装包只含 mod 本体+脚本+文档，日常更新只下几十 MB）：
+
+| 你想干什么 | 怎么做 | 下载量 |
+|---|---|---|
+| 只更新 mod | 双击 `一键安装.bat`，最后一步答 `n`；或 `-ModsOnly` | 几十 MB |
+| 装包 + 顺手装模型 | 走到模型那步，菜单里选一个或多个（如 `1,3`） | 每个 13–77 MB（按需） |
+| 只换模型 / 换角色名 | 双击 `换模型.bat`（等价 `install.ps1 -VRMOnly`） | 已下载过 = **0**（秒切） |
+| 只看有哪些可选 | `install.ps1 -ListModels`（不动任何文件） | 0 |
+
+模型细节：
+- 模型放在**私有仓库的 Release 附件**里，脚本按包内 `Models\models.json` 清单下载并核对 **sha256**；
+  首次要一次凭据（只读 GitHub 令牌，脚本问一次并记住到 `模型凭据.txt`；也可用环境变量 `MAKABAKA_MODEL_TOKEN`）。
+- 下载过的存本机缓存（`<你选的下载目录>\VRM_Models\` 或 `%LOCALAPPDATA%\MAKABAKA\VRM\Models`），
+  换模型 = 从缓存复制并按你的角色名改名，所以**切换是秒级的**。
+- 不想用私有仓库/凭据：把 `.vrm` 放本地，用 `-ModelPath <文件或目录>`，或用 `-Models "金乌-毛绒派对,辰星"` 预选。
+- 角色名由脚本里自己输（`<角色名>.vrm` + `settings_<角色名>.txt`），**不用去文件夹里找文件或手动改名**；
+  目录里已有以前用过的角色名时会列出来、输编号即可；旧模型默认留着，也可选一键收进 `_旧模型_<时间>\`。
+- 完整说明见包内 **`模型说明.txt`**。
 
 > 文件名规则（照上游源码确认）：`<游戏>\ValheimVRM\<角色名>.vrm` 与 `settings_<角色名>.txt`。
 > 拼写必须与游戏里角色名一致（大小写无所谓，字母不能错），前缀必须是 `settings_`；
@@ -132,6 +146,9 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 ```
 -ProfilesRoot <路径>  指定 profiles 目录        -Fresh      强制全新重装
 -SkipVRM              跳过 ValheimVRM 那一步    -Offline    只用本地文件、不联网
+-ModsOnly             只更新 mod（= -SkipVRM）    -ListModels 只列出可选模型后退出
+-Models "名1,名2"      指定要下载并缓存的模型     -ModelPath <文件|目录>  用本地 .vrm
+-ModelSource <url>    覆盖模型清单来源           -ModelToken <令牌>      私有仓库下载凭据
 -PackFile <路径>      用指定的本地 zip          -PackUrl <url>  从指定 URL 下载包
 -ReleaseRepo <o/r>    换仓库                   -ReleaseBase <url>  自建镜像/自测用
 -DetectOnly           只探测路径、什么都不改
@@ -147,8 +164,8 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 >     0) 我自己输入一个路径
 > ```
 > 选完会记在脚本旁的 `download-path.txt`；想改就删掉它、或用 `-DownloadDir` 指定。
-> 模型缓存（换模型用，约 100MB）也会跟着放到你选的目录里的 `VRM_Models\`；用默认位置时则放
-> `%LOCALAPPDATA%\MAKABAKA\VRM\Models`（因为临时目录会被系统清理）。
+> 模型缓存（下载过的模型，每个 24–150MB）也会跟着放到你选的目录里的 `VRM_Models\`；用默认位置时则放
+> `%LOCALAPPDATA%\MAKABAKA\VRM\Models`（因为临时目录会被系统清理）。没装模型的人这里就是空的。
 
 ---
 

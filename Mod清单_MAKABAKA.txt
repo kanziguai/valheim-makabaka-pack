@@ -1,6 +1,6 @@
 ﻿Valheim mod 清单（r2modman 档名：MAKABAKA）
 导出时间：2026-09-15   游戏：Valheim（Steam buildid 25253764，2026-09 正式版）
-启用 36 个 / 已装禁用 5 个 / 自制插件（不在 Thunderstore 上）3 个（SafeBox / KeepBuffsOnDeath / VRMGhostFix）
+启用 36 个 / 已装禁用 5 个 / 自制插件（不在 Thunderstore 上）4 个（SafeBox / KeepBuffsOnDeath / VRMGhostFix / PortalBroadcastFix）
 
 ======================================================================
 【一、启用中（36 个）】—— 前面带 * 的表示“别在 r2modman 里点 Update/Reinstall”
@@ -97,7 +97,7 @@
  5. KuboNinja_Squad-QuickStackStore_Valheim1_Compat  v1.0.0   by KuboNinja_Squad
 
 ======================================================================
-【三、自制 / 本地插件（3 个，不在 Thunderstore 上，r2modman 不会更新它们）】
+【三、自制 / 本地插件（4 个，不在 Thunderstore 上，r2modman 不会更新它们）】
 ======================================================================
  1. ChestFlowTweaks.dll  15872 B
      说明：自研性能补丁 0.3.1：把 ChestFlow 每帧的反射查找改成启动时缓存（旧版掉帧的真凶，48ms/帧 → 修好后 65fps）
@@ -105,6 +105,9 @@
      说明：自研 1.0.1：只整理 AzuEPI 的常规行，热键栏/收藏格/装备行不动
  3. VRMGhostFix.dll  9216 B
      说明：自研 1.0.0：修 ValheimVRM 传送后残留/多出的人物模型（上游 1.2.2 自 2024 年起未修）
+ 4. PortalBroadcastFix.dll  12288 B
+     说明：自研 1.0.0：修 TargetPortal“我新放的传送门朋友看不到，得重连/重启服务器才出现”
+     ⚠ 要装在服务端（房主那台）才生效；客户端装了不会做任何事（也无副作用）
 
 ======================================================================
 【附：需要更新的 md5 出厂校验值（install.ps1 用）】
@@ -114,4 +117,5 @@
     "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "56c35cd9125ef7f9e43c90c77f9dfa6e"
     "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll" = "4ba6372ed659ec18f897f2dcf9e2e6d8"
     "BepInEx\plugins\VRMGhostFix\VRMGhostFix.dll" = "297936525d808cfdd38b33da54eeb87c"
+    "BepInEx\plugins\PortalBroadcastFix\PortalBroadcastFix.dll" = "2c4a8ec2e1f69781fd97761423e72b64"
     "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"

@@ -15,6 +15,13 @@ r"""
   3) 打印：文件数、原始大小、zip 大小、MD5/SHA256，以及"排除了哪些"（不静默丢东西）
   4) 打包完成后再跑一次发布：GITHUB_TOKEN=*** python3 tools/发布新版.py --version vX.Y --zip <zip>
 
+模型分离（2026-09-17 起，默认）
+  · 角色模型**不再进安装包**：模型放在私有仓库的 Release 附件里，安装脚本按 Models\models.json 按需下载
+    （models.json 随包/仓库走；模型 zip 用 tools/发布模型.py --pack / --upload 生成与上传）
+  · 默认**只**排模型，其它一律照原样。想更瘦可选加：
+    --strip-ui-backgrounds(≈27MB) / --strip-old-payload(≈3MB) / --strip-mmhook(≈7MB)
+    想要"整包带模型"的老行为：--with-models
+
 排除规则（关键：给朋友的包里不能有你的个人数据）
   · *_player_*.dat        —— 各玩家 SteamID 的状态文件（QuickStackStore / Recycle_N_Reclaim 等）
   · *.box                 —— SafeBox 柜档（文件名里带玩家ID + 角色名）
@@ -55,9 +62,23 @@ EXCLUDE_RE = [
     (re.compile(r"(^|/)(__pycache__|\.git)(/|$)"), "开发目录"),
     (re.compile(r"(^|/)(\.DS_Store|Thumbs\.db)$", re.I), "系统垃圾文件"),
     (re.compile(r"(^|/)_旧模型_"), "旧模型备份目录"),
+    # ---- 模型分离（2026-09-17 起）：模型不再进安装包，改走"私有仓库附件 + 按需下载" ----
+    (re.compile(r"(^|/)ValheimVRM_手动安装/Models/.*\.vrm$", re.I), "角色模型（改为按需下载）"),
+    (re.compile(r"^Models/.*\.vrm$", re.I), "角色模型（改为按需下载）"),
+    (re.compile(r"^Models/_dist/", re.I), "模型发布 zip（本机产物，不上传 git/包）"),
+    (re.compile(r"(^|/)模型凭据\.txt$"), "模型下载凭据（绝不能进包）"),
 ]
+# 模型目录内容：默认排除（--with-models 可改回"整包带模型"）——注意不能误伤 Models/models.json
+EXCLUDE_MODELS = (re.compile(r"^Models/[^/]+/", re.I), "模型目录内容（模型改走按需下载）")
+# 额外瘦身项：**默认不排除**，想更瘦就加对应 --strip-* 开关
+EXCLUDE_STRIP = {
+    "ui_backgrounds": (re.compile(r"(^|/)BepInEx/config/Azumatt\.MinimalUI_Backgrounds/", re.I), "MinimalUI 背景包"),
+    "old_payload": (re.compile(r"\.old$", re.I), "禁用 mod 的 .old 载荷"),
+    "mmhook": (re.compile(r"(^|/)BepInEx/plugins/MMHOOK/", re.I), "MMHOOK（首次启动会自动生成）"),
+}
 # 顶层这些文档/脚本必须存在（缺了说明分享包目录不对）
-REQUIRED = ["install.ps1", "一键安装.bat", "MAKABAKA/mods.yml", "版本号.txt", "安装步骤.txt"]
+REQUIRED = ["install.ps1", "ModelLib.ps1", "一键安装.bat", "换模型.bat", "MAKABAKA/mods.yml",
+            "版本号.txt", "安装步骤.txt", "Models/models.json"]
 
 
 def human(n: int) -> str:
@@ -95,15 +116,22 @@ def read_version(share: Path, override: str | None) -> tuple[str, str]:
     return ver, date
 
 
-def collect(share: Path):
+def collect(share: Path, with_models: bool = False, strip: set[str] | None = None):
     keep, skipped = [], []
+    strip = strip or set()
+    rules = list(EXCLUDE_RE)
+    if not with_models:              # 默认：模型不进包
+        rules.append(EXCLUDE_MODELS)
+    for key in strip:                # 额外瘦身：只有显式指定才排除
+        if key in EXCLUDE_STRIP:
+            rules.append(EXCLUDE_STRIP[key])
     for root, dirs, files in os.walk(share):
         dirs[:] = [d for d in dirs if d not in ("__pycache__", ".git")]
         for name in files:
             p = Path(root) / name
             rel = p.relative_to(share).as_posix()
             reason = None
-            for rx, why in EXCLUDE_RE:
+            for rx, why in rules:
                 if rx.search(rel):
                     reason = why
                     break
@@ -122,6 +150,12 @@ def main() -> int:
     ap.add_argument("--out", default=None, help="输出 zip 路径（默认放分享包目录）")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-sync", action="store_true")
+    # 默认只做模型分离；下面三个是可选的额外瘦身（不加就保持原样）
+    ap.add_argument("--with-models", action="store_true",
+                    help="把模型也打进安装包（恢复成「整包带模型」的老行为）")
+    ap.add_argument("--strip-ui-backgrounds", action="store_true", help="额外排除 MinimalUI 背景包（≈27 MB）")
+    ap.add_argument("--strip-old-payload", action="store_true", help="额外排除禁用 mod 的 .old 载荷（≈3 MB）")
+    ap.add_argument("--strip-mmhook", action="store_true", help="额外排除 MMHOOK（≈7 MB，首次启动会自动生成）")
     args = ap.parse_args()
 
     share = Path(args.share)
@@ -139,7 +173,14 @@ def main() -> int:
     else:
         print("  ✓ install.ps1 / 一键安装.bat / MAKABAKA\\mods.yml / 版本号.txt 都在")
 
-    keep, skipped = collect(share)
+    strip = set()
+    if args.strip_ui_backgrounds:
+        strip.add("ui_backgrounds")
+    if args.strip_old_payload:
+        strip.add("old_payload")
+    if args.strip_mmhook:
+        strip.add("mmhook")
+    keep, skipped = collect(share, with_models=args.with_models, strip=strip)
     total = sum(p.stat().st_size for p, _ in keep)
     print(f"\n== 3) 收集结果：{len(keep)} 个文件，原始 {human(total)} ==")
     by_reason: dict[str, list] = {}

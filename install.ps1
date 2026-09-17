@@ -22,6 +22,12 @@
     -NoRemember            不使用/不写入 install-path.txt（不记住上次的路径）
     -GameDir <路径>        指定 Valheim 游戏目录（一般不填，脚本自己找 Steam 库）
     -SkipVRM               跳过"附加：ValheimVRM"这一步（只想装档、不碰游戏目录时用）
+    -ModsOnly              只更新 mod 本体（= 不装/不换模型）：日常升级用这个最省流量
+    -ListModels            只列出可选的 VRM 模型（本机已缓存 / 需下载 + 大小）后退出，不动任何文件
+    -Models <名字1,名字2>  要下载并缓存哪些模型（逗号分隔；名字从 -ListModels 抄）
+    -ModelPath <文件|目录> 直接用本地的 .vrm（自己下的、别人发的模型拖进来即可）
+    -ModelSource <url|文件> 模型清单来源覆盖（默认：包内 Models\models.json → 公开仓库在线清单）
+    -ModelToken <令牌>     私有模型仓库的下载凭据（也可设环境变量 MAKABAKA_MODEL_TOKEN，或存 模型凭据.txt）
 
   关于 r2modman 装在别的盘：r2modman 的"数据文件夹"可以用 设置→Locations→Change data folder
   挪到别的盘，所以本脚本按以下顺序找（找到就用）：
@@ -47,7 +53,13 @@ param(
     [switch]$VRMOnly,
     [string]$VrmModel = "",
     [string]$CharName = "",
-    [string]$DownloadDir = ""
+    [string]$DownloadDir = "",
+    [switch]$ModsOnly,
+    [switch]$ListModels,
+    [string]$Models = "",
+    [string]$ModelPath = "",
+    [string]$ModelSource = "",
+    [string]$ModelToken = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -65,6 +77,7 @@ $Expect = @{
     "BepInEx\plugins\SafeBox\SafeBox.dll" = "5fbea845657a211ca7749026a6ae0fff"
     "BepInEx\plugins\KeepBuffsOnDeath\KeepBuffsOnDeath.dll" = "6fc8037642f4bc4508d585312525e191"
     "BepInEx\plugins\Azumatt-AzuExtendedPlayerInventory\AzuExtendedPlayerInventory.dll" = "8d9f4ac43884e64fb0fafa08b04f609c"
+    "BepInEx\plugins\PortalBroadcastFix\PortalBroadcastFix.dll" = "2c4a8ec2e1f69781fd97761423e72b64"
 }
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
@@ -72,7 +85,7 @@ $ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owne
 $ScriptBuild    = "2026-09-16"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
-$VrmDefaultModel = "金乌"                             # VRM 默认模型（对应 Models\ 下的目录名，会排在清单第一位）
+$VrmDefaultModel = "金乌-毛绒派对"                    # VRM 默认模型（Models\ 下的目录名，会排在清单第一位）
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.3_20260916.zip"
@@ -81,6 +94,13 @@ $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / �
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
 $script:DlRememberFile = Join-Path $PSScriptRoot "download-path.txt"   # 记住你选过的下载位置
+
+# ---------- 模型库（清单 / 私有仓库附件 / 缓存）：逻辑都在 ModelLib.ps1 ----------
+if ($ModsOnly) { $SkipVRM = $true }        # 只更新 mod：完全不碰模型
+$script:ModelRepo = ""
+$script:ModelTag  = ""
+if (Test-Path (Join-Path $PSScriptRoot "ModelLib.ps1")) { . (Join-Path $PSScriptRoot "ModelLib.ps1") }
+else { Write-Host "[注意] 缺少 ModelLib.ps1 —— 模型相关功能不可用（只更新 mod 不受影响）" -ForegroundColor Yellow }
 
 # 某个位置所在盘还剩多少 GB（路径不存在就往上找最近的已存在目录）
 function Get-FreeGB([string]$path) {
@@ -378,6 +398,20 @@ function Fail([string]$msg) {
     Exit 1
 }
 
+# ---------- -ListModels：只列模型清单就退出（不下载、不动任何文件）----------
+if ($ListModels) {
+    $cacheLM = Get-ModelCacheDir ""
+    Section "模型清单（只查看，不动任何文件）"
+    $cands = @(Get-ModelCandidates -packRoot $PSScriptRoot -cacheDir $cacheLM -modelPath $ModelPath -manifestSource $ModelSource)
+    if ($cands.Count -eq 0) {
+        Say "  没读到任何模型：包内没有 Models\models.json，也没联网取到清单。" "Yellow"
+        Say "  （想直接用本地文件：把 .vrm 拖进来，或用 -ModelPath <文件>）" "DarkGray"
+    } else { Show-ModelCandidates $cands $cacheLM }
+    Say ""
+    Say "  装/换模型：双击 换模型.bat，或用 -Models \"名字1,名字2\" 指定。" "DarkGray"
+    exit 0
+}
+
 Section "英灵神殿 MAKABAKA 整合档 一键安装 / 升级"
 Say "  本脚本会：把本包里的 MAKABAKA 档装进 r2modman 的 profiles 目录。"
 Say "  · 以前没装过 → 全新安装"
@@ -395,12 +429,16 @@ if ($VRMOnly) {
     # -VRMOnly（只换模型）：不动 r2modman 的档、不下载安装包，只处理 VRM 的模型与设置
     Say "  [只换模型模式] 不改动 r2modman 的档，只处理 VRM 的模型与设置（并做三处自检）" "Cyan"
     $packRoot = $PSScriptRoot
-    if (-not (Test-Path (Join-Path $PSScriptRoot "ValheimVRM_手动安装")) -and -not (Test-Path (Join-Path $PSScriptRoot "Models"))) {
+    if (-not (Test-Path (Join-Path $PSScriptRoot "Models\models.json")) -and -not (Test-Path (Join-Path $PSScriptRoot "Models")) -and -not (Test-Path (Join-Path $PSScriptRoot "ValheimVRM_手动安装"))) {
         $up = Split-Path $PSScriptRoot -Parent
-        if ($up -and ((Test-Path (Join-Path $up "ValheimVRM_手动安装")) -or (Test-Path (Join-Path $up "Models")))) { $packRoot = $up }
+        if ($up -and ((Test-Path (Join-Path $up "Models")) -or (Test-Path (Join-Path $up "ValheimVRM_手动安装")))) { $packRoot = $up }
     }
     $src = $packRoot   # 占位：只换模型不需要档源
-    if (-not (Test-Path (Join-Path $packRoot "ValheimVRM_手动安装")) -and -not (Test-Path (Join-Path $packRoot "Models"))) {
+    if ($ModelPath -and -not $ModelSource -and -not (Test-Path (Join-Path $packRoot "Models"))) {
+        # 只有本地 .vrm 也能换模型（清单取在线）
+        Say "  [只换模型] 用 -ModelPath 指定的本地文件" "DarkGray"
+    }
+    if (-not (Test-Path (Join-Path $packRoot "ValheimVRM_手动安装")) -and -not (Test-Path (Join-Path $packRoot "Models")) -and -not $ModelPath) {
         Fail "没找到 VRM 的模型源（ValheimVRM_手动安装\ 或 Models\）。把 换模型.bat 和它们放在同一个目录，或用 -ProfilesRoot/-PackRoot 相关参数指定。"
     }
 }
@@ -1113,26 +1151,25 @@ if ($vrmPack -and -not $SkipVRM) {
             $vrmTarget = Join-Path $game "ValheimVRM"
             try { New-Item -ItemType Directory -Path $vrmTarget -Force | Out-Null } catch {}
 
-            # ---- 3a) 收集可选模型：Models\<模型名>\<模型名>.vrm（+ 可选 settings.txt）----
+            # ---- 3a) 候选模型：清单(包内/在线) + 包内 Models\ + -ModelPath + 本机缓存 ----
+            #      模型不再进安装包：清单指向【私有仓库 Release 附件】，按需下载 → 进本机缓存 → 换模型不再重下
+            $cacheDir = $script:ModelCacheDir
+            if ([string]::IsNullOrWhiteSpace($cacheDir)) { $cacheDir = Get-ModelCacheDir $script:WorkDir }
+            $script:ModelCacheDir = $cacheDir
             $modelsDir = Join-Path $vrmPack "Models"
             if (-not (Test-Path $modelsDir)) { $modelsDir = Join-Path $packRoot "Models" }
-            if (-not (Test-Path $modelsDir)) {
-                $cm = $script:ModelCacheDir
-                if ([string]::IsNullOrWhiteSpace($cm)) { $cm = Join-Path $env:LOCALAPPDATA "MAKABAKA\VRM\Models" }   # 本机缓存（在线安装时缓存下来的）
-                if (Test-Path $cm) { $modelsDir = $cm }
+            $man = Get-ModelManifest -packRoot $packRoot -source $ModelSource
+            if ($man) {
+                if ($man.repo) { $script:ModelRepo = "" + $man.repo }
+                if ($man.tag)  { $script:ModelTag  = "" + $man.tag }
             }
-            $modelList = @()
-            if (Test-Path $modelsDir) {
-                foreach ($d in (Get-ChildItem -Path $modelsDir -Directory -ErrorAction SilentlyContinue | Sort-Object Name)) {
-                    $v = Get-ChildItem -Path $d.FullName -File -Filter "*.vrm" -ErrorAction SilentlyContinue | Select-Object -First 1
-                    if (-not $v) { continue }
-                    $s = Join-Path $d.FullName "settings.txt"
-                    if (-not (Test-Path $s)) { $s = Join-Path $modelsDir "默认settings.txt" }
-                    $modelList += @{ Name = $d.Name; Vrm = $v.FullName; Settings = $(if (Test-Path $s) { $s } else { $null }) }
-                }
+            $modelList = @(Get-ModelCandidates -packRoot $packRoot -cacheDir $cacheDir -modelPath $ModelPath -manifestSource $ModelSource -manifest $man)
+            if ($modelList.Count -gt 0) {
+                $nC = @($modelList | Where-Object { $_.Cached }).Count
+                Say ("  模型：可选 {0} 个（本机已有 {1} 个，需下载 {2} 个）" -f $modelList.Count, $nC, ($modelList.Count - $nC)) "DarkGray"
+                if ($modelList.Count -gt $nC) { Say "         模型在私有仓库里按需下载；不选就不会下，装过的以后换模型不用重下" "DarkGray" }
             }
-            # 兼容老包：没有 Models\ 但有 ValheimVRM.zip（解压到临时目录，当"唯一可用模型"）
-            $vrmLegacyTmp = $null
+            # 兼容老包 / 手工放法：ValheimVRM.zip（旧版布局）或包根直接丢的 .vrm
             if ($modelList.Count -eq 0) {
                 $zipModel = Join-Path $vrmPack "ValheimVRM.zip"
                 if (Test-Path $zipModel) {
@@ -1143,57 +1180,108 @@ if ($vrmPack -and -not $SkipVRM) {
                         $v = Get-ChildItem -Path $vrmLegacyTmp -Recurse -File -Filter "*.vrm" -ErrorAction SilentlyContinue | Select-Object -First 1
                         if ($v) {
                             $s = Get-ChildItem -Path $vrmLegacyTmp -Recurse -File -Filter "settings_*.txt" -ErrorAction SilentlyContinue | Select-Object -First 1
-                            $modelList += @{ Name = "默认模型（旧版包内）"; Vrm = $v.FullName; Settings = $(if ($s) { $s.FullName } else { $null }) }
-                            Say "        [说明] 这个安装包是旧版布局（只带 1 个模型，就是默认那个）；" "DarkGray"
-                            Say "              新版包会提供 金乌 / 辰星 两个可选，到时菜单里会出现第 2 项。" "DarkGray"
+                            $modelList += [pscustomobject]@{
+                                Name="默认模型（旧版包内）"; Vrm=$v.FullName; Local=$v.FullName; Cached=$true; Remote=$false
+                                Asset=""; Url=""; SizeMB=[math]::Round($v.Length/1MB,1); Sha256=""; VrmFile=$v.Name
+                                Desc="（旧版包里自带的模型）"; Settings=$(if ($s) { $s.FullName } else { $null }); Source="legacy"
+                            }
+                            Say "        [说明] 这是旧版布局的包（只带 1 个模型，就用它）" "DarkGray"
                         }
                     } catch { Say "        [注意] ValheimVRM.zip 解压失败：$($_.Exception.Message)" "Yellow" }
                 }
             }
-            # 源目录根下直接放着的 .vrm（有人习惯自己丢进去）也算候选
             foreach ($f in (Get-ChildItem -Path $vrmPack -File -Filter "*.vrm" -ErrorAction SilentlyContinue)) {
-                $modelList += @{ Name = $f.BaseName; Vrm = $f.FullName; Settings = $null }
+                $modelList += [pscustomobject]@{
+                    Name=$f.BaseName; Vrm=$f.FullName; Local=$f.FullName; Cached=$true; Remote=$false
+                    Asset=""; Url=""; SizeMB=[math]::Round($f.Length/1MB,1); Sha256=""; VrmFile=$f.Name
+                    Desc="（包根目录里的 .vrm）"; Settings=$null; Source="packroot"
+                }
             }
-
             # 默认模型排到第一位（清单顺序 = 显示顺序，第 1 个就是默认）
-            if ($VrmDefaultModel -and ($modelList | Where-Object { $_.Name -eq $VrmDefaultModel })) {
-                $modelList = @($modelList | Where-Object { $_.Name -eq $VrmDefaultModel }) + @($modelList | Where-Object { $_.Name -ne $VrmDefaultModel })
-            }
             $script:vrmActiveName = ""
             if ($modelList.Count -eq 0) {
                 Say "        ③ [注意] 没找到任何模型文件（包里应有 Models\<模型名>\<模型名>.vrm）" "Yellow"
                 $vrmOk["模型"] = (@(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count -gt 0)
             } else {
-                # ---- 3b) 选哪个模型 ----
-                $pick = $null
+                # ---- 3b) 选哪个/哪几个（多选：选中的下载进缓存；第一个作为当前使用的）----
+                $picks = @()
                 if (-not [string]::IsNullOrWhiteSpace($VrmModel)) {
                     $VrmModel = $VrmModel.Trim().Trim('"')
                     if (Test-Path $VrmModel) {
-                        $pick = @{ Name = (Split-Path $VrmModel -Leaf); Vrm = (Resolve-Path $VrmModel).Path; Settings = $null }
-                        Say "        用 -VrmModel 指定的文件：$($pick.Vrm)" "DarkGray"
+                        $picks = @([pscustomobject]@{ Name = (Split-Path $VrmModel -Leaf); Vrm = (Resolve-Path $VrmModel).Path; Settings = $null; Cached = $true })
+                        Say "        用 -VrmModel 指定的文件：$($picks[0].Vrm)" "DarkGray"
                     } else {
-                        $pick = $modelList | Where-Object { $_.Name -eq $VrmModel } | Select-Object -First 1
-                        if (-not $pick) { $pick = $modelList | Where-Object { $_.Name -like "*$VrmModel*" } | Select-Object -First 1 }
-                        if (-not $pick) { Say "        [注意] -VrmModel 指定的「$VrmModel」不在清单里，改用默认（第一个）。" "Yellow" }
+                        $hit = $modelList | Where-Object { $_.Name -eq $VrmModel } | Select-Object -First 1
+                        if (-not $hit) { $hit = $modelList | Where-Object { $_.Name -like "*$VrmModel*" } | Select-Object -First 1 }
+                        if ($hit) { $picks = @($hit) }
+                        else { Say "        [注意] -VrmModel 指定的「$VrmModel」不在清单里，改用默认（第一个）。" "Yellow" }
                     }
                 }
-                if (-not $pick -and -not $NonInteractive) {
-                    Say ""
-                    Say "        可选模型："
-                    for ($i = 0; $i -lt $modelList.Count; $i++) {
-                        $mb = [math]::Round((Get-Item $modelList[$i].Vrm).Length / 1MB, 1)
-                        $tag = ""
-                        if ($i -eq 0) { $tag = "   ← 默认" }
-                        Say ("          {0}) {1}（{2} MB）{3}" -f ($i + 1), $modelList[$i].Name, $mb, $tag)
+                if ($picks.Count -eq 0 -and $Models) {
+                    foreach ($n in ($Models -split "[,，;；\s]+" | Where-Object { $_ })) {
+                        $hit = $modelList | Where-Object { $_.Name -eq $n } | Select-Object -First 1
+                        if (-not $hit) { $hit = $modelList | Where-Object { $_.Name -like "*$n*" } | Select-Object -First 1 }
+                        if ($hit) { $picks += $hit } else { Say "        [注意] -Models 里的「$n」不在清单里，跳过。" "Yellow" }
                     }
+                }
+                if ($picks.Count -eq 0 -and -not $NonInteractive) {
+                    Show-ModelCandidates $modelList $cacheDir
                     Say "          0) 不换模型（保持现状）"
-                    $sel = "" + (Read-Host "        选哪个？(直接回车 = 1)")
-                    if ($sel -match '^\s*0\s*$') { $pick = "skip" }
-                    elseif ($sel -match '^\s*$') { $pick = $modelList[0] }
-                    elseif ($sel -match '^\s*\d+\s*$' -and [int]$sel -ge 1 -and [int]$sel -le $modelList.Count) { $pick = $modelList[[int]$sel - 1] }
-                    else { Say "        输入看不懂，按默认（1）处理。" "Yellow"; $pick = $modelList[0] }
+                    Say "          输入：0=不换；回车=默认(1)；可多选（如 1,3 或 2-4）；选中的都会下到本机，第一个作为当前用的"
+                    $sel = "" + (Read-Host "        选哪个/哪些？(直接回车 = 1)")
+                    if ($sel -match '^\s*0\s*$') { $picks = @() }
+                    elseif ($sel -match '^\s*$') { $picks = @($modelList[0]) }
+                    else {
+                        $idx = @()
+                        foreach ($tok in ($sel -split "[,，\s]+" | Where-Object { $_ })) {
+                            if ($tok -match '^(\d+)\s*-\s*(\d+)$') { for ($k = [int]$Matches[1]; $k -le [int]$Matches[2]; $k++) { $idx += $k } }
+                            elseif ($tok -match '^\d+$') { $idx += [int]$tok }
+                        }
+                        $idx = @($idx | Sort-Object -Unique | Where-Object { $_ -ge 1 -and $_ -le $modelList.Count })
+                        if ($idx.Count -eq 0) { Say "        输入看不懂，按默认（1）处理。" "Yellow"; $picks = @($modelList[0]) }
+                        else { foreach ($k in $idx) { $picks += $modelList[$k - 1] } }
+                    }
                 }
-                if (-not $pick) { $pick = $modelList[0] }   # 非交互模式：默认第一个
+                if ($picks.Count -eq 0 -and $NonInteractive) {
+                    $cachedOnly = @($modelList | Where-Object { $_.Cached })
+                    if ($cachedOnly.Count -gt 0) {
+                        $picks = @($cachedOnly[0])
+                        Say "        （非交互模式：用本机已有的「$($picks[0].Name)」；不会自动下载几百 MB）" "DarkGray"
+                    } else {
+                        Say "        （非交互模式：本机没有缓存模型 → 跳过模型这步；要装模型请交互运行或用 -Models）" "DarkGray"
+                    }
+                }
+
+                # ---- 3b-2) 需要的先下载（多选逐个下；失败的跳过，不影响其它）----
+                if ($picks.Count -gt 0) {
+                    $need = @($picks | Where-Object { -not $_.Cached })
+                    $mToken = ""
+                    if ($need.Count -gt 0) {
+                        $mToken = Get-ModelToken -given $ModelToken -packRoot $packRoot
+                        if ([string]::IsNullOrWhiteSpace($mToken) -and -not $NonInteractive) {
+                            Say ""
+                            Say "        模型放在【私有】仓库里，下载要一次凭据（GitHub 令牌，只读权限就够；输一次会记住）" "Yellow"
+                            $mToken = Get-ModelToken -packRoot $packRoot -Prompt -Save
+                        }
+                    }
+                    $okPicks = @()
+                    foreach ($pc in $picks) {
+                        if ($pc.Cached -and $pc.Vrm) { $okPicks += $pc; continue }
+                        Say ""
+                        if ([string]::IsNullOrWhiteSpace($mToken) -and -not $pc.Url) {
+                            Say "        [×] 没有下载凭据 → 跳过「$($pc.Name)」（也可以用 -ModelPath 直接把 .vrm 给它）" "Yellow"
+                            continue
+                        }
+                        $res = Save-ModelToCache -Cand $pc -cacheDir $cacheDir -packRoot $packRoot -repo $script:ModelRepo -tag $script:ModelTag -token $mToken
+                        if ($res) { $pc.Vrm = $res.Vrm; $pc.Settings = $res.Settings; $pc.Cached = $true; $okPicks += $pc }
+                        else { Say "        [×] 「$($pc.Name)」没装上（其它模型不受影响）" "Yellow" }
+                    }
+                    $picks = @($okPicks)
+                    if ($picks.Count -gt 1) { Say "        （另外 $($picks.Count - 1) 个也已存到本机，之后用 换模型.bat 秒切、不用再下）" "DarkGray" }
+                }
+                $pick = $null
+                if ($picks.Count -gt 0) { $pick = $picks[0] }
+                if (-not $pick) { $pick = "skip" }
 
                 if ($pick -eq "skip") {
                     Say "        ③ 已跳过（保持现有模型不动）" "DarkGray"

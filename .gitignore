@@ -18,3 +18,10 @@ _vrm_backup_*/
 # Python 编译产物
 __pycache__/
 *.pyc
+
+# ---- 角色模型：实体不进 git（改走私有仓库 Release 附件；仓库里只留清单 models.json）----
+Models/*/
+!Models/models.json
+Models/_dist/
+Models/默认settings.txt
+模型凭据.txt

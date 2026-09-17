@@ -5,7 +5,10 @@
     · 双击 换模型.bat（推荐，等价于本文件）
     · 或命令行： powershell -NoProfile -ExecutionPolicy Bypass -File .\换模型.ps1
   可选参数会原样传给 install.ps1：
-    -VrmModel 金乌|辰星|<.vrm 路径>   指定模型（不给就弹菜单选）
+    -VrmModel 金乌-毛绒派对|辰星|<.vrm 路径>  指定模型（不给就弹菜单选）
+    -ListModels                       只列出可选模型（★已缓存/↓需下载）后退出，不动任何文件
+    -Models "金乌-毛绒派对,辰星"       预选要下载并缓存的模型（可多选）
+    -ModelPath <.vrm 文件|目录>        用本地的模型文件（自己下的/别人发的）
     -CharName 你的角色名              指定角色名（不给就问）
     -GameDir <游戏目录>               指定 Valheim 目录（找不到时会问）
     -ProfilesRoot <档目录>            指定 r2modman 档目录（只用于①插件自检）

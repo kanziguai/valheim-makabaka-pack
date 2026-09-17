@@ -14,7 +14,7 @@
      （必须做过这一步：它要先建好 profiles 目录，安装脚本才能把档放进去）
 
 3) 系统与磁盘
-   · Windows 10 / 11，磁盘留 1GB 左右（安装包 118MB + 临时解压 + 档本体 + 模型）
+   · Windows 10 / 11，磁盘留 1GB 左右（安装包几十 MB + 临时解压 + 档本体；装模型再另占 40~150MB/个）
    · 如果装了火绒 / 腾讯管家这类，运行时弹窗要点【允许】，否则装到一半会被拦截
 
 4) 安装之前先把 r2modman 关掉
@@ -92,8 +92,11 @@
 [5/7] 复制 + 校验   → 自动（逐个文件核对 MD5、mod 启用/禁用数量）
 [6/7] 收尾          → 告诉你启动方式
 [7/7] ValheimVRM（换角色模型的 mod，可选）→ 问你「一并配置 ValheimVRM 吗？(Y/n)」
-      · 答 Y（回车）会依次问你：
-          - 选哪个模型： 1) 金乌（默认）  2) 辰星  0) 不换
+      · 只更新 mod 的人：答 n（不下载任何模型；模型以后随时能加：见同目录「模型说明.txt」）
+      · 想换模型的：答 Y（回车），然后依次问你：
+          - 选模型：菜单列出全部可选（★=本机已有，↓=需要下载+大小）；默认第一个（金乌-毛绒派对）；
+                    可多选（如 1,3 或 2-4）；0 = 不换；首次下载要一次凭据（只读 GitHub 令牌，脚本会问一次并记住）
+          - 下载是按需的：下过的存本机，以后再换不用重下（切换秒级）
           - 【你的角色名】：填你游戏里的角色名（每人不一样）
             （脚本会按这个名字自动生成 <角色名>.vrm 与 settings_<角色名>.txt，
               不需要你自己去文件夹里找文件、改名）
@@ -137,7 +140,8 @@
 · 用方法二（git）装的：  git pull  →  再双击一次「一键安装.bat」
 · 更新会保留你自己的 F1 设置与收藏格；旧文件先备份到 MAKABAKA_backup-<时间戳>
 · 只想换角色模型 / 换角色名（不想重装整个档）：双击包里的「换模型.bat」，
-  选模型 + 输角色名即可（新版包才有这个文件）
+  选模型 + 输角色名即可；已下载过的秒切，没下过的会现场下载
+  · 模型的来源、下载凭据、缓存位置、常见问题 → 见同目录「模型说明.txt」
 
 
 【7】出问题了怎么办（按顺序自查）
@@ -165,7 +169,7 @@
    （会被官方原版覆盖，丢掉中文化 / 自编译的改动）：
      AzuExtendedPlayerInventory、Recycle_N_Reclaim、MinimalUI、BetterUI、PetPantry、
      ChestFlow、TargetPortal、PlanBuild、InstantMonsterLootDrop、Endurance，
-     以及三个自制插件 SafeBox（随身保险柜）、KeepBuffsOnDeath、VRMGhostFix
+     以及自制插件 SafeBox（随身保险柜）、KeepBuffsOnDeath、VRMGhostFix、PortalBroadcastFix
 2) 别在装好 ValheimVRM 的 dll 之后点 Steam 的「验证游戏文件完整性」
    （会清掉 valheim_Data\Managed 里的 dll；真点了就重跑一次安装脚本）
 
@@ -181,6 +185,6 @@
 · ValheimVRM_手动安装\说明_ValheimVRM.txt   角色模型那部分的手动做法
 
 
-（本包内容：Thunderstore 42 个包 · 37 启用 / 5 禁用 ＋ 自制插件 3 个
+（本包内容：Thunderstore 42 个包 · 37 启用 / 5 禁用 ＋ 自制插件 4 个
   ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked ＋ Achievement_Enabler_Plus）
 ============================================================
