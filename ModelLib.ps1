@@ -235,7 +235,7 @@ function Save-ModelFromGitHub([string]$repo, [string]$tag, [string]$assetName, [
     try {
         $req = [System.Net.HttpWebRequest]::Create($uri)
         $req.Headers.Add("Authorization", "Bearer $token")
-        $req.Headers.Add("Accept", "application/octet-stream")
+        $req.Accept = "application/octet-stream"   # 受限头，必须用属性（Headers.Add 会抛异常）
         $req.UserAgent = "makabaka-install"
         $req.Timeout = 60000
         $req.ReadWriteTimeout = 600000
