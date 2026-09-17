@@ -11,7 +11,9 @@
    "zipSize": 1038320,
    "sha256": "a5601706afa6e87d94594bc506150b505d18278819a3768255fdc609583abe3c",
    "defTarget": "BowDraugrFang",
-   "desc": "弓 · 灵跃心弦（原版尸鬼之牙外观替换）"
+   "desc": "弓 · 灵跃心弦（原版尸鬼之牙外观替换）",
+   "type": "弓",
+   "preview": "灵跃心弦.jpg"
   }
  ]
 }

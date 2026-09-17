@@ -1,139 +1,159 @@
 {
-  "manifestVersion": 1,
-  "repo": "kanziguai/valheim-makabaka-models",
-  "tag": "models-v1",
-  "note": "模型仅供本地自用（禁二次配布）；经私有仓库 Release 附件按需下载，安装脚本会校验 sha256。",
-  "default": "",
-  "models": [
-    {
-      "name": "太一·庚辰-海上的私语",
-      "vrm": "gengchen_armfix_v1_compat_v053.vrm",
-      "asset": "gengchen_armfix_v1.zip",
-      "dir": "gengchen_armfix_v1",
-      "size": 25043756,
-      "zipSize": 13398030,
-      "sha256": "b4a3704869894eb120cdc0161dc00ccecb4de63281e7a7b300532738243cbe2a",
-      "desc": "太一·庚辰 · 海上的私语"
-    },
-    {
-      "name": "安卡希雅-叶荫闲趣_权重裙",
-      "vrm": "anka_ye_wei_armfix_v1_compat_v053.vrm",
-      "asset": "anka_ye_wei_armfix_v1.zip",
-      "dir": "anka_ye_wei_armfix_v1",
-      "size": 40735320,
-      "zipSize": 21334719,
-      "sha256": "649cf7e9588c7a0f626f856d962231d2add2c6d1286a3e47ffced3090be3bb0f",
-      "desc": "安卡希雅 · 叶荫闲趣 权重裙"
-    },
-    {
-      "name": "安卡希雅-时之重奏 缘音回响",
-      "vrm": "ankaxiya_armfix_v1_compat_v053.vrm",
-      "asset": "ankaxiya_armfix_v1.zip",
-      "dir": "ankaxiya_armfix_v1",
-      "size": 63510008,
-      "zipSize": 33952300,
-      "sha256": "71121801feebbdd475d2327c023a66f865b1887334c3735a971f54b63d9ac573",
-      "desc": "安卡希雅 · 时之重奏 缘音回响"
-    },
-    {
-      "name": "无常-必安",
-      "vrm": "wuchang_bian_armfix_v1_compat_v053.vrm",
-      "asset": "wuchang_bian_armfix_v1.zip",
-      "dir": "wuchang_bian_armfix_v1",
-      "size": 54798344,
-      "zipSize": 29293987,
-      "sha256": "a82710a3fd284159c441321b6b6555fa1489a7f0f310eaed07c2456213fa21f4",
-      "desc": "无常 · 必安"
-    },
-    {
-      "name": "无常-无咎",
-      "vrm": "wuchang_jiu_armfix_v1_compat_v053.vrm",
-      "asset": "wuchang_jiu_armfix_v1.zip",
-      "dir": "wuchang_jiu_armfix_v1",
-      "size": 46690024,
-      "zipSize": 25158366,
-      "sha256": "ee545deebcf73a39ebab75dddc5de9789f84863c6e19ecc148b130e6bab84231",
-      "desc": "无常 · 无咎"
-    },
-    {
-      "name": "瑟瑞斯-碧波浮游",
-      "vrm": "seris_bi_armfix_v1_compat_v053.vrm",
-      "asset": "seris_bi_armfix_v1.zip",
-      "dir": "seris_bi_armfix_v1",
-      "size": 38774260,
-      "zipSize": 21977057,
-      "sha256": "f4b278e250b569b8edc9da9e818251e65ee4c00e5b3657bfbfc16f6ad678f9cb",
-      "desc": "瑟瑞斯 · 碧波浮游"
-    },
-    {
-      "name": "瑟瑞斯-霄倾君怀",
-      "vrm": "seris_xiao_armfix_v1_compat_v053.vrm",
-      "asset": "seris_xiao_armfix_v1.zip",
-      "dir": "seris_xiao_armfix_v1",
-      "size": 43581432,
-      "zipSize": 23470253,
-      "sha256": "7799425e5e97780e550eea905bb51f4d1747726664a724a99991a714655e0f9d",
-      "desc": "瑟瑞斯 · 霄倾君怀"
-    },
-    {
-      "name": "绮幻-恋如花舞",
-      "vrm": "qihuan_armfix_v1_compat_v053.vrm",
-      "asset": "qihuan_armfix_v1.zip",
-      "dir": "qihuan_armfix_v1",
-      "size": 55728452,
-      "zipSize": 30775735,
-      "sha256": "c442f54191f9b5114789590639b2654f639f9733ec3cbc96ae8c4098c141bca7",
-      "desc": "绮幻 · 恋如花舞"
-    },
-    {
-      "name": "芬妮-颂夜欢歌",
-      "vrm": "fenni_armfix_v1_compat_v053.vrm",
-      "asset": "fenni_armfix_v1.zip",
-      "dir": "fenni_armfix_v1",
-      "size": 46164380,
-      "zipSize": 24755149,
-      "sha256": "79624f0bc253d4d3f2c5d64161b271d1809cf81456265a213154da841595d5a3",
-      "desc": "芬妮 · 颂夜欢歌"
-    },
-    {
-      "name": "茉莉安-纯白恋羽",
-      "vrm": "molian_armfix_v1_compat_v053.vrm",
-      "asset": "molian_armfix_v1.zip",
-      "dir": "molian_armfix_v1",
-      "size": 59550540,
-      "zipSize": 32323539,
-      "sha256": "190915db831a62ba80f79a7fbdfdb18e02f18d035afe79a47e3ef8a582ea13ef",
-      "desc": "茉莉安 · 纯白恋羽"
-    },
-    {
-      "name": "菲比-反和谐",
-      "vrm": "feibi_armfix_v1_compat_v053.vrm",
-      "asset": "feibi_armfix_v1.zip",
-      "dir": "feibi_armfix_v1",
-      "size": 157310464,
-      "zipSize": 80924055,
-      "sha256": "a42993e878e9411cc31950bcb674f1b5cafce79e8f3c71c9e67cb2fd32c56c27",
-      "desc": "菲比 · 反和谐"
-    },
-    {
-      "name": "辰星-琼弦 慵倚花阴",
-      "vrm": "chenxing_armfix_v1_compat_v053.vrm",
-      "asset": "chenxing_armfix_v1.zip",
-      "dir": "chenxing_armfix_v1",
-      "size": 38278844,
-      "zipSize": 20246552,
-      "sha256": "79e3772324d76a1d9f57d55c5766364cb288d0bec0edbce7b7c4d24f0bfcc20c",
-      "desc": "辰星 · 琼弦 慵倚花阴"
-    },
-    {
-      "name": "金乌-毛绒派对",
-      "vrm": "jinwu_armfix_v3_compat_v053.vrm",
-      "asset": "jinwu_armfix_v3.zip",
-      "dir": "jinwu_armfix_v3",
-      "size": 62659400,
-      "zipSize": 32262465,
-      "sha256": "d29aaca446add61572eb17a73ba592b3807efb142a0f82a75096bcc061e877d9",
-      "desc": "金乌 · 毛绒派对"
-    }
-  ]
+ "manifestVersion": 1,
+ "repo": "kanziguai/valheim-makabaka-models",
+ "tag": "models-v1",
+ "note": "模型仅供本地自用（禁二次配布）；经私有仓库 Release 附件按需下载，安装脚本会校验 sha256。",
+ "default": "",
+ "models": [
+  {
+   "name": "太一·庚辰-海上的私语",
+   "vrm": "gengchen_armfix_v1_compat_v053.vrm",
+   "asset": "gengchen_armfix_v1.zip",
+   "dir": "gengchen_armfix_v1",
+   "size": 25043756,
+   "zipSize": 13398030,
+   "sha256": "b4a3704869894eb120cdc0161dc00ccecb4de63281e7a7b300532738243cbe2a",
+   "desc": "太一·庚辰 · 海上的私语"
+  },
+  {
+   "name": "安卡希雅-叶荫闲趣_权重裙",
+   "vrm": "anka_ye_wei_armfix_v1_compat_v053.vrm",
+   "asset": "anka_ye_wei_armfix_v1.zip",
+   "dir": "anka_ye_wei_armfix_v1",
+   "size": 40735320,
+   "zipSize": 21334719,
+   "sha256": "649cf7e9588c7a0f626f856d962231d2add2c6d1286a3e47ffced3090be3bb0f",
+   "desc": "安卡希雅 · 叶荫闲趣 权重裙"
+  },
+  {
+   "name": "安卡希雅-时之重奏 缘音回响",
+   "vrm": "ankaxiya_armfix_v1_compat_v053.vrm",
+   "asset": "ankaxiya_armfix_v1.zip",
+   "dir": "ankaxiya_armfix_v1",
+   "size": 63510008,
+   "zipSize": 33952300,
+   "sha256": "71121801feebbdd475d2327c023a66f865b1887334c3735a971f54b63d9ac573",
+   "desc": "安卡希雅 · 时之重奏 缘音回响"
+  },
+  {
+   "name": "无常-必安",
+   "vrm": "wuchang_bian_armfix_v1_compat_v053.vrm",
+   "asset": "wuchang_bian_armfix_v1.zip",
+   "dir": "wuchang_bian_armfix_v1",
+   "size": 54798344,
+   "zipSize": 29293987,
+   "sha256": "a82710a3fd284159c441321b6b6555fa1489a7f0f310eaed07c2456213fa21f4",
+   "desc": "无常 · 必安"
+  },
+  {
+   "name": "无常-无咎",
+   "vrm": "wuchang_jiu_armfix_v1_compat_v053.vrm",
+   "asset": "wuchang_jiu_armfix_v1.zip",
+   "dir": "wuchang_jiu_armfix_v1",
+   "size": 46690024,
+   "zipSize": 25158366,
+   "sha256": "ee545deebcf73a39ebab75dddc5de9789f84863c6e19ecc148b130e6bab84231",
+   "desc": "无常 · 无咎"
+  },
+  {
+   "name": "瑟瑞斯-碧波浮游",
+   "vrm": "seris_bi_armfix_v1_compat_v053.vrm",
+   "asset": "seris_bi_armfix_v1.zip",
+   "dir": "seris_bi_armfix_v1",
+   "size": 38774260,
+   "zipSize": 21977057,
+   "sha256": "f4b278e250b569b8edc9da9e818251e65ee4c00e5b3657bfbfc16f6ad678f9cb",
+   "desc": "瑟瑞斯 · 碧波浮游"
+  },
+  {
+   "name": "瑟瑞斯-霄倾君怀",
+   "vrm": "seris_xiao_armfix_v1_compat_v053.vrm",
+   "asset": "seris_xiao_armfix_v1.zip",
+   "dir": "seris_xiao_armfix_v1",
+   "size": 43581432,
+   "zipSize": 23470253,
+   "sha256": "7799425e5e97780e550eea905bb51f4d1747726664a724a99991a714655e0f9d",
+   "desc": "瑟瑞斯 · 霄倾君怀"
+  },
+  {
+   "name": "绮幻-恋如花舞",
+   "vrm": "qihuan_armfix_v1_compat_v053.vrm",
+   "asset": "qihuan_armfix_v1.zip",
+   "dir": "qihuan_armfix_v1",
+   "size": 55728452,
+   "zipSize": 30775735,
+   "sha256": "c442f54191f9b5114789590639b2654f639f9733ec3cbc96ae8c4098c141bca7",
+   "desc": "绮幻 · 恋如花舞"
+  },
+  {
+   "name": "芬妮-颂夜欢歌",
+   "vrm": "fenni_armfix_v1_compat_v053.vrm",
+   "asset": "fenni_armfix_v1.zip",
+   "dir": "fenni_armfix_v1",
+   "size": 46164380,
+   "zipSize": 24755149,
+   "sha256": "79624f0bc253d4d3f2c5d64161b271d1809cf81456265a213154da841595d5a3",
+   "desc": "芬妮 · 颂夜欢歌"
+  },
+  {
+   "name": "茉莉安-纯白恋羽",
+   "vrm": "molian_armfix_v1_compat_v053.vrm",
+   "asset": "molian_armfix_v1.zip",
+   "dir": "molian_armfix_v1",
+   "size": 59550540,
+   "zipSize": 32323539,
+   "sha256": "190915db831a62ba80f79a7fbdfdb18e02f18d035afe79a47e3ef8a582ea13ef",
+   "desc": "茉莉安 · 纯白恋羽"
+  },
+  {
+   "name": "菲比-反和谐",
+   "vrm": "feibi_armfix_v1_compat_v053.vrm",
+   "asset": "feibi_armfix_v1.zip",
+   "dir": "feibi_armfix_v1",
+   "size": 157310464,
+   "zipSize": 80924055,
+   "sha256": "a42993e878e9411cc31950bcb674f1b5cafce79e8f3c71c9e67cb2fd32c56c27",
+   "desc": "菲比 · 反和谐"
+  },
+  {
+   "name": "辰星-琼弦 慵倚花阴",
+   "vrm": "chenxing_armfix_v1_compat_v053.vrm",
+   "asset": "chenxing_armfix_v1.zip",
+   "dir": "chenxing_armfix_v1",
+   "size": 38278844,
+   "zipSize": 20246552,
+   "sha256": "79e3772324d76a1d9f57d55c5766364cb288d0bec0edbce7b7c4d24f0bfcc20c",
+   "desc": "辰星 · 琼弦 慵倚花阴"
+  },
+  {
+   "name": "金乌-毛绒派对",
+   "vrm": "jinwu_armfix_v3_compat_v053.vrm",
+   "asset": "jinwu_armfix_v3.zip",
+   "dir": "jinwu_armfix_v3",
+   "size": 62659400,
+   "zipSize": 32262465,
+   "sha256": "d29aaca446add61572eb17a73ba592b3807efb142a0f82a75096bcc061e877d9",
+   "desc": "金乌 · 毛绒派对"
+  },
+  {
+   "name": "伊洛伊-夏日梦",
+   "vrm": "yiluo_armfix_v1_compat_v053.vrm",
+   "asset": "yiluo_armfix_v1.zip",
+   "dir": "yiluo_armfix_v1",
+   "size": 176666240,
+   "zipSize": 93077638,
+   "sha256": "c73fb0247a1dce0b50f3870b34ff5c08cce4583a80ca296dad2be6151ff06e92",
+   "desc": "异环 · 伊洛伊-夏日梦"
+  },
+  {
+   "name": "昔涟-星穹铁道",
+   "vrm": "xilian_armfix_v1_compat_v053.vrm",
+   "asset": "xilian_armfix_v1.zip",
+   "dir": "xilian_armfix_v1",
+   "size": 142927284,
+   "zipSize": 70324169,
+   "sha256": "83754b5d6fc841fcf6da81c8dea439b238b85f1cc3f5243918702375fafa9661",
+   "desc": "星穹铁道 · 昔涟"
+  }
+ ]
 }

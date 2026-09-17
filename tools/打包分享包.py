@@ -125,7 +125,7 @@ def collect(share: Path, with_models: bool = False, strip: set[str] | None = Non
     if not with_models:              # 默认：模型不进包
         rules.append(EXCLUDE_MODELS)
         # 武器/物品外观模型：实体"本地自用、不外传"→ 只保留根部的 models.json / 目标清单.txt / README.txt
-        rules.append((re.compile(r"^Models/武器替换/(?!models\.json$|目标清单\.txt$|README\.txt$)", re.I), "武器外观模型实体（改走私有仓库按需下载）"))
+        rules.append((re.compile(r"^Models/武器替换/(?!预览/|models\.json$|目标清单\.txt$|README\.txt$)", re.I), "武器外观模型实体（改走私有仓库按需下载）"))
     for key in strip:                # 额外瘦身：只有显式指定才排除
         if key in EXCLUDE_STRIP:
             rules.append(EXCLUDE_STRIP[key])

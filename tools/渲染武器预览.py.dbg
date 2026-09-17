@@ -1,0 +1,212 @@
+# 武器/物品外观模型 —— 无头渲染预览图（Blender）
+# 用法：blender.exe -b -P 渲染武器预览.py -- --obj <模型.obj> --manifest <模型.json> --out <预览.jpg>
+#       口径与角色模型预览一致：EV -1.0 / 灯光 55% / 世界光 0.20 / JPEG q85
+import bpy, sys, os, json, math
+from mathutils import Vector
+
+argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+opt = {}
+for i in range(0, len(argv) - 1, 2):
+    opt[argv[i]] = argv[i + 1]
+obj_path = opt.get("--obj", "")
+man_path = opt.get("--manifest", "")
+out_path = opt.get("--out", "")
+res_x = int(opt["--w"]) if "--w" in opt else None    # 不给就按物体长宽比自动选
+res_y = int(opt["--h"]) if "--h" in opt else None
+assert obj_path and out_path, "需要 --obj 与 --out"
+
+man = {}
+if man_path and os.path.exists(man_path):
+    with open(man_path, encoding="utf-8") as f:
+        man = json.load(f)
+slots = man.get("slots") or []
+mat_cfg = man.get("material") or {}
+glow_slot = man.get("glowSlot", -1)
+glow_hex = (man.get("glowTintHex") or "").strip()
+tex_dir = os.path.join(os.path.dirname(os.path.abspath(obj_path)), "textures")
+
+def load_img(name, non_color=False):
+    if not name:
+        return None
+    n = name if name.lower().endswith(".png") else name + ".png"
+    p = os.path.join(tex_dir, n)
+    if not os.path.exists(p):
+        return None
+    img = bpy.data.images.load(p)
+    if non_color:
+        img.colorspace_settings.name = "Non-Color"
+    return img
+
+def hex_rgb(h):
+    h = h.lstrip("#")
+    if len(h) == 8:
+        h = h[2:]
+    if len(h) != 6:
+        return (1.0, 1.0, 1.0)
+    return tuple(int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+
+# ---------- 场景：清空 + 导入 OBJ ----------
+bpy.ops.wm.read_factory_settings(use_empty=True)
+try:
+    bpy.ops.wm.obj_import(filepath=obj_path)
+except Exception:
+    bpy.ops.import_scene.obj(filepath=obj_path)
+
+meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+if not meshes:
+    raise SystemExit("导入后没有网格")
+
+# ---------- 材质：按槽位套用清单里的贴图（_d 基础色 / _n 法线 / _r 粗糙）----------
+for ob in meshes:
+    me = ob.data
+    n = len(me.materials) if len(me.materials) else 1
+    for i in range(n):
+        s = slots[i] if i < len(slots) else (slots[-1] if slots else {})
+        mat = bpy.data.materials.new("slot_%d" % i)
+        mat.use_nodes = True
+        nt = mat.node_tree
+        for nd in list(nt.nodes):
+            nt.nodes.remove(nd)
+        out = nt.nodes.new("ShaderNodeOutputMaterial"); out.location = (500, 0)
+        bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled"); bsdf.location = (180, 0)
+        nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+        alb = load_img(s.get("albedo"))
+        nrm = load_img(s.get("normal"), True)
+        rgh = load_img(s.get("rough"), True)
+        if alb:
+            t = nt.nodes.new("ShaderNodeTexImage"); t.image = alb; t.location = (-320, 220)
+            nt.links.new(t.outputs["Color"], bsdf.inputs["Base Color"])
+        if rgh:
+            t = nt.nodes.new("ShaderNodeTexImage"); t.image = rgh; t.location = (-320, -60)
+            nt.links.new(t.outputs["Color"], bsdf.inputs["Roughness"])
+        if nrm:
+            t = nt.nodes.new("ShaderNodeTexImage"); t.image = nrm; t.location = (-560, -300)
+            nm = nt.nodes.new("ShaderNodeNormalMap"); nm.location = (-320, -300)
+            nt.links.new(t.outputs["Color"], nm.inputs["Color"])
+            nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
+        bsdf.inputs["Metallic"].default_value = float(mat_cfg.get("metallic", 0.75))
+        if "Glossiness" in bsdf.inputs:
+            bsdf.inputs["Glossiness"].default_value = float(mat_cfg.get("glossiness", 0.35))
+        try:
+            bsdf.inputs["Emission Color"].default_value = (*hex_rgb(glow_hex or "FFFFFF"), 1.0) if (i == glow_slot and glow_hex) else (0, 0, 0, 1)
+            bsdf.inputs["Emission Strength"].default_value = float(mat_cfg.get("glowEmissionScale", 2.0)) if (i == glow_slot and glow_hex) else 0.0
+        except Exception:
+            pass
+        if i < len(me.materials):
+            me.materials[i] = mat
+        else:
+            me.materials.append(mat)
+
+# ---------- 取包围盒（世界坐标）----------
+pts = []
+for ob in meshes:
+    for c in ob.bound_box:
+        pts.append(ob.matrix_world @ Vector(c))
+mn = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
+mx = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
+ctr = (mn + mx) / 2.0
+size = max((mx - mn).length, 1e-4)
+
+# ---------- 相机：3/4 视角 + 自动取景（迭代贴合包围盒，带边距）----------
+cam_data = bpy.data.cameras.new("cam")
+cam_data.lens = 85
+cam = bpy.data.objects.new("cam", cam_data)
+bpy.context.scene.collection.objects.link(cam)
+direction = Vector((0.85, -1.25, 0.45)).normalized()
+cam.location = ctr + direction * (size * 1.35)
+cam.rotation_euler = (ctr - cam.location).normalized().to_track_quat("-Z", "Y").to_euler()
+bpy.context.scene.camera = cam
+
+from bpy_extras.object_utils import world_to_camera_view
+corners = []
+for ob in meshes:
+    for c in ob.bound_box:
+        corners.append(ob.matrix_world @ Vector(c))
+
+def aim():
+    cam.rotation_euler = (ctr - cam.location).normalized().to_track_quat("-Z", "Y").to_euler()
+    bpy.context.view_layer.update()   # ★必须：否则 world_to_camera_view 用的是旧矩阵，迭代会把相机推飞
+
+def measure():
+    bpy.context.view_layer.update()
+    m = 0.0
+    for c in corners:
+        co = world_to_camera_view(bpy.context.scene, cam, c)
+        m = max(m, abs(co.x - 0.5) * 2.0, abs(co.y - 0.5) * 2.0)
+    return m
+
+def fit(margin=1.04, iters=60):
+    aim()
+    for _ in range(iters):
+        mx = measure()
+        if mx < 1e-6 or mx != mx:
+            return
+        print("FITDBG dist=%.4f mx=%.4f" % ((cam.location - ctr).length, mx))
+        if abs(mx * margin - 1.0) < 0.005:
+            break
+        cam.location = ctr + (cam.location - ctr) * (mx * margin)
+        aim()
+    aim()
+    measure()
+
+# 按物体长宽比决定画幅（弓=竖长 → 竖构图；剑/盾=横宽 → 横构图）
+ext = mx - mn
+aspect_obj = ext.z / max(ext.x, ext.y) if max(ext.x, ext.y) > 1e-6 else 1.0
+if aspect_obj > 1.25:
+    sc_auto = (700, 900)
+elif aspect_obj < 0.8:
+    sc_auto = (900, 700)
+else:
+    sc_auto = (800, 800)
+
+# ---------- 灯光：主/补/轮廓，功率 55% ----------
+def add_light(name, loc, energy, kind="AREA", sz=3.0):
+    d = bpy.data.lights.new(name, kind)
+    d.energy = energy * 0.55
+    if kind == "AREA":
+        d.size = sz
+    o = bpy.data.objects.new(name, d)
+    o.location = loc
+    v = (ctr - Vector(loc))
+    if v.length > 1e-6:
+        o.rotation_euler = v.normalized().to_track_quat("-Z", "Y").to_euler()
+    bpy.context.scene.collection.objects.link(o)
+    return o
+
+add_light("key", ctr + Vector((size * 1.2, size * -1.6, size * 1.6)), 900, "AREA", size * 1.5)
+add_light("fill", ctr + Vector((-size * 1.8, size * -1.0, size * 0.5)), 350, "AREA", size * 2.0)
+add_light("rim", ctr + Vector((-size * 0.4, size * 1.8, size * 1.0)), 500, "AREA", size * 1.5)
+
+# ---------- 世界光 0.20 + 曝光 -1.0 ----------
+world = bpy.data.worlds.new("w")
+bpy.context.scene.world = world
+world.use_nodes = True
+bg = world.node_tree.nodes.get("Background")
+if bg:
+    bg.inputs[0].default_value = (0.55, 0.58, 0.62, 1.0)
+    bg.inputs[1].default_value = 0.20
+sc = bpy.context.scene
+sc.view_settings.exposure = -1.0
+sc.render.film_transparent = False
+
+# ---------- 取景 + 渲染 ----------
+fit()
+if res_x is None or res_y is None:
+    res_x, res_y = sc_auto
+try:
+    sc.render.engine = "BLENDER_EEVEE_NEXT"
+except Exception:
+    try:
+        sc.render.engine = "BLENDER_EEVEE"
+    except Exception:
+        sc.render.engine = "CYCLES"
+        sc.cycles.samples = 64
+sc.render.resolution_x = res_x
+sc.render.resolution_y = res_y
+sc.render.resolution_percentage = 100
+sc.render.image_settings.file_format = "JPEG"
+sc.render.image_settings.quality = 85
+sc.render.filepath = out_path
+os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+bpy.ops.render.render(write_still=True)
+print("PREVIEW_OK %s (%dx%d)" % (out_path, res_x, res_y))

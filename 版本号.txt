@@ -1,6 +1,6 @@
-﻿版本：v1.5
+﻿版本：v1.7
 日期：2026-09-17
-包文件：MAKABAKA_profile_v1.5_20260917.zip
+包文件：MAKABAKA_profile_v1.7_20260917.zip
 
 命名规则（从 v1.0 起）：安装包文件名一律带版本号，格式
   MAKABAKA_profile_v<主.次>_<打包日期>.zip
