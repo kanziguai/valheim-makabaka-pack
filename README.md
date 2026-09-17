@@ -13,6 +13,18 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 
 ---
 
+## 联机前先对档（强烈建议）
+
+双击 **`联机一致性自检.bat`** → 生成 `一致性_<电脑名>_<档名>_<日期>.txt` 并打印一行**指纹**；
+所有人把文件发给房主，房主跑：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\联机一致性自检.ps1 -Compare 甲.txt,乙.txt,丙.txt
+```
+
+逐项比对 **mod 名称/版本/启用状态、插件 DLL 的 MD5、BepInEx core、关键配置**；
+不一致的人用完整安装包覆盖一次即可。原因与完整隐患清单见 `联机数据同步排查_20260917.md`。
+
 ## 0. 前提（没这两样装不了）
 
 1. **正版 Valheim 1.0**（Steam）

@@ -17,7 +17,8 @@ echo
 changed=0; same=0
 for f in install.ps1 ModelLib.ps1 一键安装.bat 换模型.bat 换模型.ps1 README.md 校验值.txt 安装步骤.txt \
          安装指南.txt 键位自定义指南.txt 游戏内功能速查.txt r2modman使用说明.txt \
-         Mod清单_MAKABAKA.txt 版本号.txt 模型说明.txt EpicLoot游玩指南.md EpicLoot游玩指南.txt; do
+         Mod清单_MAKABAKA.txt 版本号.txt 模型说明.txt EpicLoot游玩指南.md EpicLoot游玩指南.txt \
+         联机一致性自检.ps1 联机一致性自检.bat; do
   src="$REPO/$f"; dst="$SHARE/$f"
   [ -f "$src" ] || { echo "  [跳过] 仓库里没有 $f"; continue; }
   if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
@@ -41,6 +42,13 @@ if [ -f "$SRC_MAN" ]; then
     echo "  [已更新] Models/models.json（$(stat -c%s "$SRC_MAN") 字节）"; changed=$((changed+1))
   fi
 fi
+
+# 联机排查报告（跟着仓库走）
+for f in 联机数据同步排查_20260917.md; do
+  src="$REPO/$f"; dst="$SHARE/$f"
+  [ -f "$src" ] || continue
+  if [ -f "$dst" ] && cmp -s "$src" "$dst"; then same=$((same+1)); else cp -p "$src" "$dst"; echo "  [已更新] $f"; changed=$((changed+1)); fi
+done
 
 # 更新说明（Release notes 与包内文案保持一致）
 for src in "$REPO"/更新说明_*.txt; do
