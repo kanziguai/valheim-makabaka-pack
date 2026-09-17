@@ -89,7 +89,7 @@ $VrmDefaultModel = "金乌-毛绒派对"                    # VRM 默认模型�
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.4_20260917.zip"
-$FallbackMd5     = "08a4af70b3386e2fa8d212e8ac65b0fc"
+$FallbackMd5     = "698fcea2e3dd1838af448129d42ffe78"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -428,6 +428,7 @@ if ($ListModels) {
         Say "  没读到任何模型：包内没有 Models\models.json，也没联网取到清单。" "Yellow"
         Say "  （想直接用本地文件：把 .vrm 拖进来，或用 -ModelPath <文件>）" "DarkGray"
     } else { Show-ModelCandidates $cands $cacheLM }
+    Say '  （参考图：打开本包目录里的 Models\预览\ 文件夹，文件名编号与上面序号一致）' "DarkGray"
     Say ""
     Say '  装/换模型：双击 换模型.bat，或用 -Models "名字1,名字2" 指定。' "DarkGray"
     exit 0
@@ -1253,6 +1254,7 @@ if ($vrmPack -and -not $SkipVRM) {
                 }
                 if ($picks.Count -eq 0 -and -not $NonInteractive) {
                     Show-ModelCandidates $modelList $cacheDir
+                    Say '          （想看长什么样：打开本包目录里的 Models\预览\ 文件夹，文件名编号与上面一致）' "DarkGray"
                     Say "          0) 不换模型（保持现状）"
                     Say "          输入：0=不换；回车=默认(1)；可多选（如 1,3 或 2-4）；选中的都会下到本机，第一个作为当前用的"
                     $sel = "" + (Read-Host "        选哪个/哪些？(直接回车 = 1)")

@@ -26,16 +26,6 @@
       "desc": "安卡希雅 · 叶荫闲趣 权重裙"
     },
     {
-      "name": "安卡希雅-叶荫闲趣_物理裙",
-      "vrm": "anka_ye_phys_armfix_v1_compat_v053.vrm",
-      "asset": "anka_ye_phys_armfix_v1.zip",
-      "dir": "anka_ye_phys_armfix_v1",
-      "size": 40763944,
-      "zipSize": 21344362,
-      "sha256": "853046478533cbdc85d671e7dde8e45b8ebb5785cbc038069fa9b85a63c16582",
-      "desc": "安卡希雅 · 叶荫闲趣 物理裙"
-    },
-    {
       "name": "安卡希雅-时之重奏 缘音回响",
       "vrm": "ankaxiya_armfix_v1_compat_v053.vrm",
       "asset": "ankaxiya_armfix_v1.zip",
@@ -124,6 +114,16 @@
       "zipSize": 80924055,
       "sha256": "a42993e878e9411cc31950bcb674f1b5cafce79e8f3c71c9e67cb2fd32c56c27",
       "desc": "菲比 · 反和谐"
+    },
+    {
+      "name": "辰星-琼弦 慵倚花阴",
+      "vrm": "chenxing_armfix_v1_compat_v053.vrm",
+      "asset": "chenxing_armfix_v1.zip",
+      "dir": "chenxing_armfix_v1",
+      "size": 38278844,
+      "zipSize": 20246552,
+      "sha256": "79e3772324d76a1d9f57d55c5766364cb288d0bec0edbce7b7c4d24f0bfcc20c",
+      "desc": "辰星 · 琼弦 慵倚花阴"
     },
     {
       "name": "金乌-毛绒派对",

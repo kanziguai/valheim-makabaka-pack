@@ -21,8 +21,10 @@ __pycache__/
 *.pyc
 
 # ---- 角色模型：实体不进 git（改走私有仓库 Release 附件；仓库里只留清单 models.json）----
-Models/*/
-!Models/models.json
+Models/*/*.vrm
+Models/*/*.zip
+Models/*/*.png
 Models/_dist/
 Models/默认settings.txt
+# Models/预览/（参考图，随包分发）不受上面规则影响
 模型凭据.txt

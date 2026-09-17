@@ -288,6 +288,7 @@ hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里�
   BepInEx_pluginsに入れるファイル\        ← ① 的源（装进 r2modman 的档）
   valheim_Data_Managedに入れる文件\       ← ② 的源（装进游戏本体）
   Models\models.json                      ← ③ 的可选模型清单（13 个：名称/大小/sha256/附件名）
+  Models\预览\NN_模型名.jpg                 ← 每个模型的参考图（450×700，13 张共约 0.45 MB，编号=菜单序号）
   Models\默认settings.txt                 ← ③ 的默认参数（模型自带 settings.txt 时优先用它）
   （模型实体不再随包 —— 脚本按清单从私有仓库按需下载到本机缓存，见 模型说明.txt）
 

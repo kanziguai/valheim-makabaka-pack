@@ -42,6 +42,32 @@ if [ -f "$SRC_MAN" ]; then
   fi
 fi
 
+# 更新说明（Release notes 与包内文案保持一致）
+for src in "$REPO"/更新说明_*.txt; do
+  [ -f "$src" ] || continue
+  b="$(basename "$src")"; dst="$SHARE/$b"
+  if [ -f "$dst" ] && cmp -s "$src" "$dst"; then same=$((same+1)); else
+    cp -p "$src" "$dst"; echo "  [已更新] $b（$(stat -c%s "$src") 字节）"; changed=$((changed+1)); fi
+done
+
+# 模型参考图（Models/预览/*.jpg）：随包分发，跟着仓库走
+SRC_PV="$REPO/Models/预览"; DST_PV="$SHARE/Models/预览"
+if [ -d "$SRC_PV" ]; then
+  mkdir -p "$DST_PV"
+  for f in "$SRC_PV"/*.jpg; do
+    [ -f "$f" ] || continue
+    b="$(basename "$f")"
+    if [ -f "$DST_PV/$b" ] && cmp -s "$f" "$DST_PV/$b"; then same=$((same+1)); else
+      cp -p "$f" "$DST_PV/$b"; echo "  [已更新] Models/预览/$b（$(stat -c%s "$f") 字节）"; changed=$((changed+1)); fi
+  done
+  # 删掉分享包里已不在仓库的旧参考图
+  for f in "$DST_PV"/*.jpg; do
+    [ -f "$f" ] || continue
+    b="$(basename "$f")"
+    [ -f "$SRC_PV/$b" ] || { rm -f "$f"; echo "  [已删除] Models/预览/$b（仓库里已没有）"; changed=$((changed+1)); }
+  done
+fi
+
 echo
 echo "完成：更新 $changed 个，一致 $same 个。"
 echo "提醒：角色模型实体不在本流程里 —— 用 tools/发布模型.py --pack / --upload 走私有仓库附件。"

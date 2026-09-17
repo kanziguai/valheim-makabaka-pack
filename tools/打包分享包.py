@@ -69,7 +69,7 @@ EXCLUDE_RE = [
     (re.compile(r"(^|/)模型凭据\.txt$"), "模型下载凭据（绝不能进包）"),
 ]
 # 模型目录内容：默认排除（--with-models 可改回"整包带模型"）——注意不能误伤 Models/models.json
-EXCLUDE_MODELS = (re.compile(r"^Models/[^/]+/", re.I), "模型目录内容（模型改走按需下载）")
+EXCLUDE_MODELS = (re.compile(r"^Models/(?!预览/)[^/]+/", re.I), "模型目录内容（模型改走按需下载；Models/预览/ 例外，参考图随包分发）")
 # 额外瘦身项：**默认不排除**，想更瘦就加对应 --strip-* 开关
 EXCLUDE_STRIP = {
     "ui_backgrounds": (re.compile(r"(^|/)BepInEx/config/Azumatt\.MinimalUI_Backgrounds/", re.I), "MinimalUI 背景包"),

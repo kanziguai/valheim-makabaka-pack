@@ -10,13 +10,15 @@
 本版要点（v1.4）：
   · **角色模型分离**：模型不再进安装包 / 不再进 git，改走私有仓库 Release 附件 + 清单按需下载
       → 日常只更新 mod：安装包从 138 MB 降到几十 MB；模型按需选（下过的存本机，换模型秒切不重下）
-      → 新开关：install.ps1 -ModsOnly（只更 mod）/ -ListModels（看清单）/ -Models "金乌-毛绒派对,辰星" / -ModelPath
+      → 新开关：install.ps1 -ModsOnly（只更 mod）/ -ListModels（看清单）/ -Models "金乌-毛绒派对,辰星-琼弦 慵倚花阴" / -ModelPath
+      → 模型清单调整：新增「辰星-琼弦 慵倚花阴」；「安卡希雅-叶荫闲趣」只保留权重裙版（物理裙版下线）
+      → 新增每个模型的参考图：包内 Models\预览\（13 张 450×700 JPEG，编号=菜单序号，共约 0.45 MB）
       → 新增 ModelLib.ps1（模型清单/下载/缓存库）、模型说明.txt、tools/发布模型.py 与 tools/同步角色模型.py
   · 新增自制插件 PortalBroadcastFix 1.0.0（服务端侧：新放的传送门立刻广播给全队，见更新说明）
   · 打包脚本默认排除：模型、MinimalUI 背景包、禁用 mod 的 .old 载荷、MMHOOK（要保留用对应的 --keep-*）
 
 版本历史：
-  v1.4  2026-09-17  模型分离（按需下载）+ PortalBroadcastFix（安装包 81.7 MB，上一版 138.0 MB）
+  v1.4  2026-09-17  模型分离（按需下载）+ PortalBroadcastFix（安装包 82.1 MB，上一版 138.0 MB）
   v1.0  2026-09-15  首个线上版（117.6 MB）
   v1.1  2026-09-16  ValheimVRM 双落点 + 可选模型（金乌/辰星）+ 脚本内输角色名 + 换模型.bat（138.0 MB）
   v1.2  2026-09-16  下载实时速度/剩余时间 + 下载完整性校验 + 安装包位置可选 + 多 r2modman 数据文件夹可选 + git 一段命令（138.0 MB）

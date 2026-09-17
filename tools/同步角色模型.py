@@ -29,8 +29,6 @@ MODELS = [
      "b4a3704869894eb120cdc0161dc00ccecb4de63281e7a7b300532738243cbe2a"),
     ("安卡希雅-叶荫闲趣_权重裙", "anka_ye_wei_armfix_v1_compat_v053.vrm",
      "649cf7e9588c7a0f626f856d962231d2add2c6d1286a3e47ffced3090be3bb0f"),
-    ("安卡希雅-叶荫闲趣_物理裙", "anka_ye_phys_armfix_v1_compat_v053.vrm",
-     "853046478533cbdc85d671e7dde8e45b8ebb5785cbc038069fa9b85a63c16582"),
     ("安卡希雅-时之重奏 缘音回响", "ankaxiya_armfix_v1_compat_v053.vrm",
      "71121801feebbdd475d2327c023a66f865b1887334c3735a971f54b63d9ac573"),
     ("无常-必安", "wuchang_bian_armfix_v1_compat_v053.vrm",
@@ -51,6 +49,8 @@ MODELS = [
      "a42993e878e9411cc31950bcb674f1b5cafce79e8f3c71c9e67cb2fd32c56c27"),
     ("金乌-毛绒派对", "jinwu_armfix_v3_compat_v053.vrm",
      "d29aaca446add61572eb17a73ba592b3807efb142a0f82a75096bcc061e877d9"),
+    ("辰星-琼弦 慵倚花阴", "chenxing_armfix_v1_compat_v053.vrm",
+     "79e3772324d76a1d9f57d55c5766364cb288d0bec0edbce7b7c4d24f0bfcc20c"),
 ]
 
 
