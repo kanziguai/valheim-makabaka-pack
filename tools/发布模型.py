@@ -163,7 +163,7 @@ def write_manifest(items, repo, tag, default=None):
         "repo": repo,
         "tag": tag,
         "note": "模型仅供本地自用（禁二次配布）；经私有仓库 Release 附件按需下载，安装脚本会校验 sha256。",
-        "default": default or (models[0]["name"] if models else ""),
+        "default": default or "",   # 空 = 没有默认模型（菜单顺序 = 清单顺序）
         "models": models,
     }
     MANIFEST.write_text(json.dumps(man, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -267,6 +267,7 @@ def main():
     ap.add_argument("--tag", default="")
     ap.add_argument("--only", default="", help="只处理这些模型（逗号分隔）")
     ap.add_argument("--default", default="", help="写进清单的默认模型名")
+    ap.add_argument("--no-default", action="store_true", help="取消默认模型（清单里 default 置空：菜单按清单顺序显示，不再把某个模型排第一）")
     ap.add_argument("--force", action="store_true", help="重打已有 zip / 强制重传")
     a = ap.parse_args()
     if not (a.pack or a.upload or a.check):
@@ -290,7 +291,8 @@ def main():
             log("  %s %-30s %6.1f MB%s" % ("新建" if created else "已存在", z.name, z.stat().st_size / 1048576,
                                            "" if created else "（内容一致，跳过）"))
         log("  → Models/_dist/（共 %d 个 zip，本次新建 %d）" % (len(items), new))
-        man = write_manifest(items, repo, tag, default=a.default or None)
+        _dfl = "" if a.no_default else (a.default or man_disk.get("default") or "")
+        man = write_manifest(items, repo, tag, default=_dfl)
         log("  已写 %s（%d 个模型）" % (MANIFEST.relative_to(ROOT), len(man["models"])))
 
     if a.upload:

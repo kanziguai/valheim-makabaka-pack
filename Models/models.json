@@ -3,7 +3,7 @@
   "repo": "kanziguai/valheim-makabaka-models",
   "tag": "models-v1",
   "note": "模型仅供本地自用（禁二次配布）；经私有仓库 Release 附件按需下载，安装脚本会校验 sha256。",
-  "default": "金乌-毛绒派对",
+  "default": "",
   "models": [
     {
       "name": "太一·庚辰-海上的私语",

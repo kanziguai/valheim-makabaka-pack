@@ -197,10 +197,10 @@ function Get-ModelCandidates {
             Desc="（本机缓存）"; Settings=$cache[$k].Settings; Source="cache"
         })
     }
-    # 默认模型排第一（优先清单里的 default，其次脚本里的 $VrmDefaultModel）
+    # 显示顺序 = 清单顺序（已取消「默认模型」：清单里 default 为空就完全不重排，避免和参考图编号错位）
     $defName = ""
     if ($man -and $man.default) { $defName = "" + $man.default }
-    if (-not $defName) { $defName = $VrmDefaultModel }
+    $script:ModelDefaultName = $defName      # 展示时给这个模型打「← 默认」；为空则不打（本版已取消默认）
     if ($defName) {
         $head = @($list | Where-Object { $_.Name -eq $defName })
         if ($head.Count -gt 0) {
@@ -359,7 +359,7 @@ function Show-ModelCandidates($list, [string]$cacheDir = "") {
         $mark = if ($m.Cached) { "★" } else { "↓" }
         $size = if ($m.SizeMB) { "$($m.SizeMB) MB" } else { "大小未知" }
         $tail = if ($m.Cached) { "（已缓存）" } else { "（需下载 $size）" }
-        $def = if ($i -eq 0) { "   ← 默认" } else { "" }
+        $def = if ($script:ModelDefaultName -and $m.Name -eq $script:ModelDefaultName) { "   ← 默认" } else { "" }
         Say ("          {0}) {1} {2} {3}{4}" -f ($i + 1), $mark, $m.Name, $tail, $def)
         if ($m.Desc) { Say ("              " + $m.Desc) "DarkGray" }
     }

@@ -85,11 +85,11 @@ $ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owne
 $ScriptBuild    = "2026-09-17"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
-$VrmDefaultModel = "金乌-毛绒派对"                    # VRM 默认模型（Models\ 下的目录名，会排在清单第一位）
+$VrmDefaultModel = ""                                   # 已取消默认模型（清单里 default 为空 → 不重排；菜单顺序=清单顺序=参考图编号）
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.4_20260917.zip"
-$FallbackMd5     = "0ada05a965f6a64d1dd26f8d0fb4794e"
+$FallbackMd5     = "b10f7d8a066f69d1963be9de95be07e2"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -1225,7 +1225,7 @@ if ($vrmPack -and -not $SkipVRM) {
                     Desc="（包根目录里的 .vrm）"; Settings=$null; Source="packroot"
                 }
             }
-            # 默认模型排到第一位（清单顺序 = 显示顺序，第 1 个就是默认）
+            # 显示顺序 = 清单顺序（已取消默认模型；不再把某个模型排到第一位）
             $script:vrmActiveName = ""
             if ($modelList.Count -eq 0) {
                 Say "        ③ [注意] 没找到任何模型文件（包里应有 Models\<模型名>\<模型名>.vrm）" "Yellow"
@@ -1242,7 +1242,7 @@ if ($vrmPack -and -not $SkipVRM) {
                         $hit = $modelList | Where-Object { $_.Name -eq $VrmModel } | Select-Object -First 1
                         if (-not $hit) { $hit = $modelList | Where-Object { $_.Name -like "*$VrmModel*" } | Select-Object -First 1 }
                         if ($hit) { $picks = @($hit) }
-                        else { Say "        [注意] -VrmModel 指定的「$VrmModel」不在清单里，改用默认（第一个）。" "Yellow" }
+                        else { Say "        [注意] -VrmModel 指定的「$VrmModel」不在清单里 → 跳过模型这步（用 -ListModels 看清单）" "Yellow" }
                     }
                 }
                 if ($picks.Count -eq 0 -and $Models) {
@@ -1259,8 +1259,9 @@ if ($vrmPack -and -not $SkipVRM) {
                         Say "          0) 不换模型（保持现状）"
                         Say "          p = 打开参考图总览（一张图看全部，图上的编号就是上面的序号）" "DarkGray"
                         Say "          p3 = 只看第 3 个模型的大图；f = 打开参考图文件夹" "DarkGray"
-                        Say "          输入：0=不换；回车=默认(1)；可多选（如 1,3 或 2-4）；选中的都会下到本机，第一个作为当前用的"
-                        $sel = "" + (Read-Host "        选哪个/哪些？(直接回车 = 1)")
+                        Say "          输入：回车 或 0 = 不换（保持现状）；可多选（如 1,3 或 2-4）；选中的都会下到本机，第一个作为当前用的"
+                        Say "          （本版已取消默认模型 —— 请按上面的编号挑，想看效果可以先按 p 看图）" "DarkGray"
+                        $sel = "" + (Read-Host "        选哪个/哪些？(回车 = 不换)")
                         # 看参考图：p / p<编号> / f
                         if ($sel -match '^\s*[pP]\s*(\d+)?\s*$') {
                             $wantN = 0
@@ -1286,8 +1287,7 @@ if ($vrmPack -and -not $SkipVRM) {
                             Say ""
                             continue
                         }
-                        if ($sel -match '^\s*0\s*$') { $picks = @(); break }
-                        if ($sel -match '^\s*$') { $picks = @($modelList[0]); break }
+                        if ($sel -match '^\s*0\s*$' -or $sel -match '^\s*$') { $picks = @(); break }
                         $idx = @()
                         foreach ($tok in ($sel -split "[,，\s]+" | Where-Object { $_ })) {
                             if ($tok -match '^(\d+)\s*-\s*(\d+)$') { for ($k = [int]$Matches[1]; $k -le [int]$Matches[2]; $k++) { $idx += $k } }
