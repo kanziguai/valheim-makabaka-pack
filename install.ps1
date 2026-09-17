@@ -89,7 +89,7 @@ $VrmDefaultModel = "金乌-毛绒派对"                    # VRM 默认模型�
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.4_20260917.zip"
-$FallbackMd5     = "e835bf8690aa6b3c9df647715c2a7f9b"
+$FallbackMd5     = "30f24d3556123dfbe6e31258d12ba9f4"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
