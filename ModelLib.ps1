@@ -365,3 +365,37 @@ function Show-ModelCandidates($list, [string]$cacheDir = "") {
     }
     if ($cacheDir) { Say "        缓存目录：$cacheDir" "DarkGray" }
 }
+
+
+# ---------- 打开参考图（挑模型时看）----------
+function Show-ModelPreview {
+    param(
+        [string]$PackRoot = "",
+        [int]$Index = 0,
+        [switch]$NoOpen
+    )
+    $dir = Join-Safe $PackRoot "Models\预览"
+    $target = $null
+    if (Test-Path $dir) {
+        if ($Index -gt 0) {
+            foreach ($pat in @(("{0:D2}_*.jpg" -f $Index), ("{0}_*.jpg" -f $Index), ("{0:D2}_*" -f $Index))) {
+                $hit = Get-ChildItem -LiteralPath $dir -Filter $pat -File -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($hit) { $target = $hit; break }
+            }
+        } else {
+            $target = Get-ChildItem -LiteralPath $dir -Filter "_总览*.jpg" -File -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $target) {
+                $target = Get-ChildItem -LiteralPath $dir -Filter "*.jpg" -File -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -First 1
+            }
+        }
+    }
+    if ($NoOpen) { if ($target) { return $target.FullName } else { return $null } }
+    if (-not (Test-Path $dir)) { return $false }
+    try {
+        if ($target) { Start-Process -FilePath $target.FullName | Out-Null; return $true }
+        Start-Process -FilePath "explorer.exe" -ArgumentList ('"' + $dir + '"') | Out-Null
+        return $false
+    } catch {
+        return $false
+    }
+}

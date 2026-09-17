@@ -4,7 +4,7 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 ＋ 自制插件 3 个（SafeBox 0.5.4、KeepBuffsOnDeath 1.0.1、VRMGhostFix）
 ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
 
-**当前版本：v1.4（2026-09-17）** · 安装包 82.1 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
+**当前版本：v1.4（2026-09-17）** · 安装包 82.3 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
 
 > 仓库里只放脚本 + 文档（几百 KB）；安装包 zip 走 Release 附件，不进 git 历史。
 
@@ -18,7 +18,7 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 1. **正版 Valheim 1.0**（Steam）
 2. **[r2modman](https://thunderstore.io/c/valheim/p/ebkr/r2modman/)** 已安装，**并启动过一次、选好 Valheim 安装位置**
    （它得先建好 profiles 目录，安装脚本才能把档放进去）
-3. Windows 10/11，预留约 1 GB（安装包 82.1 MB + 临时解压 + 档本体；另按需下载模型，每个 13–77 MB；`%TEMP%` 里的临时文件装完会自动清）
+3. Windows 10/11，预留约 1 GB（安装包 82.3 MB + 临时解压 + 档本体；另按需下载模型，每个 13–77 MB；`%TEMP%` 里的临时文件装完会自动清）
 
 ---
 
@@ -127,7 +127,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 - 下载过的存本机缓存（`<你选的下载目录>\VRM_Models\` 或 `%LOCALAPPDATA%\MAKABAKA\VRM\Models`），
   换模型 = 从缓存复制并按你的角色名改名，所以**切换是秒级的**。
 - 不想用私有仓库/凭据：把 `.vrm` 放本地，用 `-ModelPath <文件或目录>`，或用 `-Models "金乌-毛绒派对,辰星-琼弦 慵倚花阴"` 预选。
-- 想先看模型长什么样：包内 `Models\预览\` 有 13 张 450×700 参考图（约 0.45 MB），**文件名编号与选择菜单的序号一致**。
+- 想先看模型长什么样：**选模型时直接输 `p` 打开总览图**（一张图看全部 13 个、图上编号 = 菜单序号），`p3` 看第 3 个的大图，`f` 打开参考图文件夹；图也在包内 `Models\预览\`（450×700 JPEG，约 0.45 MB）。
 - 角色名由脚本里自己输（`<角色名>.vrm` + `settings_<角色名>.txt`），**不用去文件夹里找文件或手动改名**；
   目录里已有以前用过的角色名时会列出来、输编号即可；旧模型默认留着，也可选一键收进 `_旧模型_<时间>\`。
 - 完整说明见包内 **`模型说明.txt`**。

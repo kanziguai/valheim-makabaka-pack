@@ -89,7 +89,7 @@ $VrmDefaultModel = "金乌-毛绒派对"                    # VRM 默认模型�
 $MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.4_20260917.zip"
-$FallbackMd5     = "698fcea2e3dd1838af448129d42ffe78"
+$FallbackMd5     = "0ada05a965f6a64d1dd26f8d0fb4794e"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -1253,22 +1253,49 @@ if ($vrmPack -and -not $SkipVRM) {
                     }
                 }
                 if ($picks.Count -eq 0 -and -not $NonInteractive) {
-                    Show-ModelCandidates $modelList $cacheDir
-                    Say '          （想看长什么样：打开本包目录里的 Models\预览\ 文件夹，文件名编号与上面一致）' "DarkGray"
-                    Say "          0) 不换模型（保持现状）"
-                    Say "          输入：0=不换；回车=默认(1)；可多选（如 1,3 或 2-4）；选中的都会下到本机，第一个作为当前用的"
-                    $sel = "" + (Read-Host "        选哪个/哪些？(直接回车 = 1)")
-                    if ($sel -match '^\s*0\s*$') { $picks = @() }
-                    elseif ($sel -match '^\s*$') { $picks = @($modelList[0]) }
-                    else {
+                    $previewDir = Join-Path $packRoot "Models\预览"
+                    while ($picks.Count -eq 0) {
+                        Show-ModelCandidates $modelList $cacheDir
+                        Say "          0) 不换模型（保持现状）"
+                        Say "          p = 打开参考图总览（一张图看全部，图上的编号就是上面的序号）" "DarkGray"
+                        Say "          p3 = 只看第 3 个模型的大图；f = 打开参考图文件夹" "DarkGray"
+                        Say "          输入：0=不换；回车=默认(1)；可多选（如 1,3 或 2-4）；选中的都会下到本机，第一个作为当前用的"
+                        $sel = "" + (Read-Host "        选哪个/哪些？(直接回车 = 1)")
+                        # 看参考图：p / p<编号> / f
+                        if ($sel -match '^\s*[pP]\s*(\d+)?\s*$') {
+                            $wantN = 0
+                            if ($Matches[1]) { $wantN = [int]$Matches[1] }
+                            $opened = $false
+                            if (Get-Command Show-ModelPreview -ErrorAction SilentlyContinue) {
+                                if (Test-Path $previewDir) {
+                                    try { $opened = [bool](Show-ModelPreview -PackRoot $packRoot -Index $wantN) } catch { $opened = $false }
+                                }
+                            }
+                            if (-not $opened) {
+                                if (Test-Path $previewDir) {
+                                    try { Start-Process -FilePath "explorer.exe" -ArgumentList ('"' + $previewDir + '"') | Out-Null } catch {}
+                                } else { Say "        （这个包里没有参考图目录 Models\预览\）" "Yellow" }
+                            }
+                            Say ""
+                            continue
+                        }
+                        if ($sel -match '^\s*[fF]\s*$') {
+                            if (Test-Path $previewDir) {
+                                try { Start-Process -FilePath "explorer.exe" -ArgumentList ('"' + $previewDir + '"') | Out-Null } catch {}
+                            } else { Say "        （这个包里没有参考图目录 Models\预览\）" "Yellow" }
+                            Say ""
+                            continue
+                        }
+                        if ($sel -match '^\s*0\s*$') { $picks = @(); break }
+                        if ($sel -match '^\s*$') { $picks = @($modelList[0]); break }
                         $idx = @()
                         foreach ($tok in ($sel -split "[,，\s]+" | Where-Object { $_ })) {
                             if ($tok -match '^(\d+)\s*-\s*(\d+)$') { for ($k = [int]$Matches[1]; $k -le [int]$Matches[2]; $k++) { $idx += $k } }
                             elseif ($tok -match '^\d+$') { $idx += [int]$tok }
                         }
                         $idx = @($idx | Sort-Object -Unique | Where-Object { $_ -ge 1 -and $_ -le $modelList.Count })
-                        if ($idx.Count -eq 0) { Say "        输入看不懂，按默认（1）处理。" "Yellow"; $picks = @($modelList[0]) }
-                        else { foreach ($k in $idx) { $picks += $modelList[$k - 1] } }
+                        if ($idx.Count -eq 0) { Say "        没看懂 —— 可以输 1 / 1,3 / 2-4 / p 看参考图 / 0 不换。" "Yellow"; Say ""; continue }
+                        foreach ($k in $idx) { $picks += $modelList[$k - 1] }
                     }
                 }
                 if ($picks.Count -eq 0 -and $NonInteractive) {
