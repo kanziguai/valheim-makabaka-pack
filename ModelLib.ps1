@@ -16,6 +16,13 @@ $ModelReleaseTag   = "models-v1"                            # 模型附件的 Re
 $ModelTokenFile    = "模型凭据.txt"                          # 令牌文件（脚本同目录或 %LOCALAPPDATA%\MAKABAKA\）
 $ModelManifestName = "models.json"                          # 清单文件名（仓库 Models\ 下）
 
+# 私有仓库附件是"按连接限速"的（实测单连接 0.59~0.85 MB/s 且随进度衰减）⇒ 分段并发下载：
+#   实测 Windows PS 5.1、32.4MB 附件：单连接 54.5s（0.59 MB/s）→ 6 段 7.9s（4.12 MB/s，6.9×）
+# 8 段没有继续变快（4.2×，比 6 段略差）⇒ 6 是甜点。小附件分段不划算（握手开销占比高）。
+$script:ModelDownloadThreads  = 6        # 并发连接数（1 = 关闭分段，走单连接）
+$script:ModelSegmentMinBytes  = 8MB      # 小于这个大小就单连接下（一次 API 跳转 + 握手就够快）
+$script:ModelSegmentTries     = 3        # 单段失败重试次数（每次从该段断点续）
+
 # 安全的 Join-Path：父目录不存在/盘符不存在时返回 $null（避免 DriveNotFoundException）
 function Join-Safe([string]$base, [string]$rel) {
     if ([string]::IsNullOrWhiteSpace($base)) { return $null }
@@ -218,6 +225,137 @@ function Get-ModelCandidates {
 
 # ---------- 下载 ----------
 # 私有仓库附件：走 GitHub API（token 鉴权）→ 拿 asset id → 用 octet-stream 下
+function Test-AssetRangeOk([string]$uri, [string]$token) {
+    # 先要 1 个字节看看服务器理不理 Range：回 206 = 支持分段，回 200 = 无视 Range（分段会白下 N 倍）
+    try {
+        $req = [System.Net.HttpWebRequest]::Create($uri)
+        $req.Headers.Add("Authorization", "Bearer $token")
+        $req.Accept = "application/octet-stream"
+        $req.UserAgent = "makabaka-install"
+        $req.Timeout = 30000
+        $req.ReadWriteTimeout = 30000
+        $req.AddRange(0, 0)
+        $resp = $req.GetResponse()
+        $code = [int]$resp.StatusCode
+        $resp.Close()
+        return ($code -eq 206)
+    } catch { return $false }
+}
+
+# 分段下载器：每段一个 runspace（真并行，且令牌不出进程 —— 不用 Start-Job 那种子进程）
+function Save-AssetSegmented {
+    param(
+        [string]$Api, [string]$Token, [string]$OutFile,
+        [int64]$Total, [int]$Threads
+    )
+    $per = [int64][math]::Ceiling($Total / $Threads)
+    $pool = [runspacefactory]::CreateRunspacePool(1, $Threads)
+    $pool.Open()
+    $jobs = @()
+    for ($i = 0; $i -lt $Threads; $i++) {
+        $from = [int64]($i * $per)
+        $to   = [int64][math]::Min($i * $per + $per - 1, $Total - 1)
+        $part = "$OutFile.part$i"
+        if (Test-Path $part) { Remove-Item $part -Force -ErrorAction SilentlyContinue }
+        $ps = [powershell]::Create()
+        $ps.RunspacePool = $pool
+        $null = $ps.AddScript($script:SegScript).AddArgument($Api).AddArgument($Token).AddArgument($from).AddArgument($to).AddArgument($part).AddArgument($script:ModelSegmentTries)
+        $jobs += [pscustomobject]@{ PS = $ps; H = $ps.BeginInvoke(); Out = $part; Want = ($to - $from + 1) }
+    }
+    # 进度用"各段文件在磁盘上的大小"聚合 —— 不需要跨 runspace 传状态
+    $t0 = Get-Date; $last = 0.0
+    while (@($jobs | Where-Object { -not $_.H.IsCompleted }).Count -gt 0) {
+        Start-Sleep -Milliseconds 400
+        $done = 0L
+        foreach ($j in $jobs) { if (Test-Path $j.Out) { try { $done += (Get-Item $j.Out).Length } catch {} } }
+        $sec = ((Get-Date) - $t0).TotalSeconds
+        if (($sec - $last) -ge 1) {
+            $last = $sec
+            $spd = if ($sec -gt 0) { [math]::Round($done / 1MB / $sec, 2) } else { 0 }
+            $pct = if ($Total -gt 0) { [int](100 * $done / $Total) } else { 0 }
+            Write-Host ("`r          $pct%  $([math]::Round($done/1MB,1))/$([math]::Round($Total/1MB,1)) MB  $spd MB/s（$Threads 条连接）   ") -NoNewline
+        }
+    }
+    Write-Host ""
+    $sec = ((Get-Date) - $t0).TotalSeconds
+    $msgs = @()
+    $got = 0L
+    foreach ($j in $jobs) {
+        try {
+            $r = $j.PS.EndInvoke($j.H)
+            if ($r) { $msgs += ("" + $r[0]) }
+        } catch { $msgs += ("invoke:" + $_.Exception.Message) }
+        try { $j.PS.Dispose() } catch {}
+        if (Test-Path $j.Out) { try { $got += (Get-Item $j.Out).Length } catch {} }
+    }
+    try { $pool.Close(); $pool.Dispose() } catch {}
+    $bad = @($msgs | Where-Object { $_ -notlike "ok:*" })
+    if ($got -ne $Total -or $bad.Count -gt 0) {
+        Say ("        [×] 分段下载没成（收到 $got / 应有 $Total" + $(if ($bad.Count) { "；$($bad[0])" } else { "" }) + "）") "DarkGray"
+        foreach ($j in $jobs) { Remove-Item $j.Out -Force -ErrorAction SilentlyContinue }
+        return $false
+    }
+    # 合并（按段顺序拼；流必须显式关闭，否则文件被占用删不掉）
+    try {
+        $out = [System.IO.File]::Create($OutFile)
+        foreach ($j in $jobs) {
+            $in = [System.IO.File]::OpenRead($j.Out)
+            $in.CopyTo($out)
+            $in.Close(); $in.Dispose()
+        }
+        $out.Close(); $out.Dispose()
+    } catch {
+        Say "        [×] 合并分段失败：$($_.Exception.Message)" "Yellow"
+        return $false
+    } finally {
+        foreach ($j in $jobs) { Remove-Item $j.Out -Force -ErrorAction SilentlyContinue }
+    }
+    $sz = (Get-Item $OutFile).Length
+    $avg = if ($sec -gt 0) { [math]::Round(($sz / 1MB) / $sec, 2) } else { 0 }
+    Say ("        下载完成：$([math]::Round($sz/1MB,1)) MB，耗时 $([math]::Round($sec,1)) 秒（$Threads 条连接平均 $avg MB/s）") "Green"
+    return ($sz -eq $Total)
+}
+
+# 单段下载脚本（在独立 runspace 里跑）：支持段内断点续传
+$script:SegScript = {
+    param($Api, $Token, $From, $To, $Out, $Tries)
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $want = $To - $From + 1
+    for ($k = 1; $k -le $Tries; $k++) {
+        $have = 0L
+        if (Test-Path $Out) { try { $have = (Get-Item $Out).Length } catch { $have = 0 } }
+        if ($have -ge $want) { return "ok:$have" }
+        try {
+            $req = [System.Net.HttpWebRequest]::Create($Api)
+            $req.Headers.Add("Authorization", "Bearer $Token")
+            $req.Accept = "application/octet-stream"
+            $req.UserAgent = "makabaka-install"
+            $req.Timeout = 60000
+            $req.ReadWriteTimeout = 120000
+            if ($have -gt 0) { $req.AddRange([int64]($From + $have), [int64]$To) }
+            else { $req.AddRange([int64]$From, [int64]$To) }
+            $resp = $req.GetResponse()
+            $code = [int]$resp.StatusCode
+            if ($code -ne 206) { throw "服务器返回 $code（不支持分段）" }
+            $in = $resp.GetResponseStream()
+            $mode = if ($have -gt 0) { [System.IO.FileMode]::Append } else { [System.IO.FileMode]::Create }
+            $fs = [System.IO.File]::Open($Out, $mode, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+            try {
+                $buf = New-Object byte[] (256KB)
+                while (($n = $in.Read($buf, 0, $buf.Length)) -gt 0) { $fs.Write($buf, 0, $n) }
+            } finally {
+                $fs.Close(); $fs.Dispose(); $in.Close(); $resp.Close()
+            }
+        } catch {
+            Start-Sleep -Milliseconds (500 * $k)
+        }
+    }
+    $have = 0L
+    if (Test-Path $Out) { try { $have = (Get-Item $Out).Length } catch { $have = 0 } }
+    if ($have -ge $want) { return "ok:$have" }
+    return "err:$have/$want"
+}
+
 function Save-ModelFromGitHub([string]$repo, [string]$tag, [string]$assetName, [string]$outFile, [string]$token, [string]$label = "") {
     if ([string]::IsNullOrWhiteSpace($token)) { return $false }
     $api = "https://api.github.com/repos/$repo/releases/tags/$tag"
@@ -233,6 +371,20 @@ function Save-ModelFromGitHub([string]$repo, [string]$tag, [string]$assetName, [
     $uri = "https://api.github.com/repos/$repo/releases/assets/$($asset.id)"
     $total = [double]$asset.size
     Say "        下载 $assetName（$([math]::Round($total/1MB,1)) MB，私有仓库）…" "Gray"
+
+    # ① 优先分段并发（私有附件按连接限速，6 段约 7 倍；8 段不再变快）
+    if (($script:ModelDownloadThreads -gt 1) -and ($total -ge $script:ModelSegmentMinBytes)) {
+        if (Test-AssetRangeOk $uri $token) {
+            if (Save-AssetSegmented -Api $uri -Token $token -OutFile $outFile -Total ([int64]$total) -Threads $script:ModelDownloadThreads) {
+                return $true
+            }
+            Say "        分段下载没成 → 退回单连接方式（多试一次总比失败好）。" "Yellow"
+        } else {
+            Say "        这个附件不支持分段（服务器没回 206）→ 用单连接下载。" "DarkGray"
+        }
+    }
+
+    # ② 单连接兜底（永远可用；也是老版本的行为）
     try {
         $req = [System.Net.HttpWebRequest]::Create($uri)
         $req.Headers.Add("Authorization", "Bearer $token")

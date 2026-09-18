@@ -10,7 +10,7 @@
 * 2. Azumatt-AzuExtendedPlayerInventory  v2.4.13   by Azumatt
      说明：AzuEPI (Extended Player Inventory) is a comprehensive inventory expansion mod that adds more rows to inventory, equipment slots, quick slots, vanity c
      ⚠ 本地改动：自编译 2.4.13（官方只有 2.4.8） → 点 Update/Reinstall 会覆盖，别点
-  3. Azumatt-Build_Camera_Custom_Hammers_Edition  v1.2.10   by Azumatt
+  3. Azumatt-Build_Camera_Custom_Hammers_Edition  v1.3.1   by Azumatt
      说明：Adds a build camera to your vanilla and custom hammers. Taken over from the original mod by Azumatt.
 * 4. Azumatt-Minimal_UI  v2.3.12   by Azumatt
      说明：A mod I made to hide the wooden panels, change the color of them, or use your own pngs because I am not fond of them. Optionally move your windows aro
@@ -52,20 +52,20 @@
      说明：A few customisation options for fermenters including percentage progress, not requiring cover and custom fermentation time
  20. Korppis-Spearfishing  v1.0.5   by Korppis
      说明：Catch fish with projectile weapons such as spear, harpoon and bow.
- 21. RandyKnapp-EpicLoot  v0.14.5   by RandyKnapp
+ 21. RandyKnapp-EpicLoot  v0.14.7   by RandyKnapp
      说明：Adds loot drops, magic items, and enchanting to Valheim.
- 22. Searica-DodgeShortcut  v1.3.1   by Searica
+ 22. Searica-DodgeShortcut  v1.4.0   by Searica
      说明：Simple mod to add a configurable dodge button. Allows you to dodge with a single key press.
 *23. ShelledGhost-PlanBuild  v0.18.8   by ShelledGhost
      说明：Fork of sirskunkalot's PlanBuild, updated for Valheim 1.0. Plan, copy and share your building creations with ease. Includes terrain tools and immersio
      ⚠ 本地改动：1.0 兼容分支版 → 点 Update/Reinstall 会覆盖，别点
- 24. shudnal-ConditionalConfigSync  v1.0.6   by shudnal
+ 24. shudnal-ConditionalConfigSync  v1.0.8   by shudnal
      说明：Shared config synchronization and server policy library for Valheim mods. Installed as a dependency and compatible with Jotunn and ServerSync.
- 25. shudnal-ConfigurationManager  v1.1.18   by shudnal
+ 25. shudnal-ConfigurationManager  v1.1.21   by shudnal
      说明：Localized, recolored, refined. Split view mode. Config files editor. Setting edit window. Changed values are highlighted. Prevent user input or pause 
  26. shudnal-ItemStacksItemWeights  v1.1.1   by shudnal
      说明：Control item stack sizes and weights. Dynamic server-to-client synchronization. Works globally or per item.
- 27. Skarif-AutoRepairBuilding  v1.2.16   by Skarif
+ 27. Skarif-AutoRepairBuilding  v1.3.1812   by Skarif
      说明：Simple mod for auto repair buildings
 *28. Smoothbrain-TargetPortal  v1.2.3   by Smoothbrain
      说明：Lets you target any portal, instead of having to connect two portals via a tag.
@@ -90,9 +90,9 @@
 
 【二、已装但禁用（5 个）】—— 文件在档里（.old），想用可在 r2modman 里启用
 ======================================================================
- 1. Azumatt-AzuCraftyBoxes  v1.8.18   by Azumatt
- 2. Goldenrevolver-Quick_Stack_Store_Sort_Trash_Restock  v1.4.13   by Goldenrevolver
- 3. Hex_Viking-HexQuickStackStorage  v1.0.1   by Hex_Viking
+ 1. Azumatt-AzuCraftyBoxes  v1.8.19   by Azumatt
+ 2. Goldenrevolver-Quick_Stack_Store_Sort_Trash_Restock  v1.4.15   by Goldenrevolver
+ 3. Hex_Viking-HexQuickStackStorage  v1.2.0   by Hex_Viking
  4. hyr-ItemStacks  v1.2.0   by hyr
  5. KuboNinja_Squad-QuickStackStore_Valheim1_Compat  v1.0.0   by KuboNinja_Squad
 

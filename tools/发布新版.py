@@ -108,6 +108,8 @@ def main():
     ap.add_argument("--notes", default="", help="Release 正文：直接用这个文件的内容（如 更新说明_20260920.txt）")
     ap.add_argument("--repo", default="", help="owner/repo；不给就从 git remote 推出来")
     ap.add_argument("--date", default=time.strftime("%Y%m%d"), help="打包日期 YYYYMMDD（默认今天）")
+    ap.add_argument("--no-warm", action="store_true",
+                    help="发布后不预热国内镜像缓存（默认会预热：热缓存比冷缓存快 10~50 倍）")
     args = ap.parse_args()
 
     token = os.environ.get("GITHUB_TOKEN", "").strip()
@@ -225,6 +227,24 @@ def main():
     log("")
     log("全部完成。Release 页面：%s" % rel.get("html_url", ""))
     log("提醒：确认 https://github.com/%s/releases/latest/download/SHA256SUMS.txt 能下载、内容是 %s。" % (repo, ver))
+
+    # ---- 6) 国内镜像缓存预热（重要：热缓存 5–17 MB/s，冷缓存只有 0.2–1 MB/s）----
+    if not args.no_warm:
+        warm = ROOT / "tools" / "预热镜像.py"
+        if warm.exists():
+            log("")
+            log("预热国内加速镜像的边缘缓存（别人下载时就能吃热缓存）…")
+            try:
+                r = subprocess.run([sys.executable, str(warm), "--timeout", "300"],
+                                   capture_output=True, text=True, timeout=1800)
+                for line in (r.stdout or "").strip().splitlines():
+                    log("  " + line)
+                if r.returncode != 0:
+                    log("[注意] 预热脚本返回 %d（不影响发布；可稍后手动再跑）" % r.returncode)
+            except Exception as e:                      # noqa: BLE001
+                log("[注意] 预热失败：%s（不影响发布；可稍后手动再跑 tools/预热镜像.py）" % e)
+        else:
+            log("[跳过] 没有 tools/预热镜像.py")
 
 
 if __name__ == "__main__":

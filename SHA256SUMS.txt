@@ -1,6 +1,6 @@
-version=v1.10
-date=2026-09-17
-file=MAKABAKA_profile_v1.10_20260917.zip
-size=86410626
-md5=2c7191d8c656a622d4f9ff3da70d622f
-sha256=809b0a4a3b01c1087a18e5bd67336c620b29d4bce99f51db44b2f6881c4ee3f3
+version=v1.11
+date=2026-09-18
+file=MAKABAKA_profile_v1.11_20260918.zip
+size=86418012
+md5=49c0dfd7668ba0bafd655ab1b91c376c
+sha256=a922dcae4c0122cb8ca874a1b133a0f48762936d1ba6d6f3e9df8cbb8b62c1c6

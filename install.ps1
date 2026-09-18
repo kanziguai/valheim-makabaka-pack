@@ -62,7 +62,8 @@ param(
     [string]$ModelToken = "",
     [string]$SkinTarget = "",    # 武器/物品外观替换：要替换的原版 prefab 名（如 BowDraugrFang）
     [string]$SkinModel = "",     # 武器/物品外观替换：模型库里的模型目录名（如 灵跃心弦）
-    [switch]$SkipSkin            # 跳过外观替换模块
+    [switch]$SkipSkin,           # 跳过外观替换模块
+    [switch]$NoMirrorProbe       # 不测速：直接按脚本内置顺序用（默认先给每条线路测速，选最快的先下）
 )
 
 $ErrorActionPreference = "Stop"
@@ -73,11 +74,11 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $Expect = @{
     "BepInEx\plugins\jg224-ChestFlow\ChestFlow.dll"       = "a749310465c4fa9a260f66a4b91f11ff"
     "BepInEx\plugins\ChestFlowTweaks\ChestFlowTweaks.dll" = "4c7460dc819a46bd1905f5ef5bc0fb7b"
-    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll"    = "56c35cd9125ef7f9e43c90c77f9dfa6e"
+    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "020ebd7a0b7bbdbac81352be3e0189e8"
     "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll"   = "5e632a79528a5fe12c792afbb95e7d65"
     "BepInEx\plugins\VRMGhostFix\VRMGhostFix.dll"         = "297936525d808cfdd38b33da54eeb87c"
     "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"
-    "BepInEx\plugins\SafeBox\SafeBox.dll" = "5fbea845657a211ca7749026a6ae0fff"
+    "BepInEx\plugins\SafeBox\SafeBox.dll" = "9f88456f4baddc5a953e0c799c48cb11"
     "BepInEx\plugins\KeepBuffsOnDeath\KeepBuffsOnDeath.dll" = "6fc8037642f4bc4508d585312525e191"
     "BepInEx\plugins\Azumatt-AzuExtendedPlayerInventory\AzuExtendedPlayerInventory.dll" = "8d9f4ac43884e64fb0fafa08b04f609c"
     "BepInEx\plugins\PortalBroadcastFix\PortalBroadcastFix.dll" = "2c4a8ec2e1f69781fd97761423e72b64"
@@ -85,7 +86,7 @@ $Expect = @{
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
 $ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owner/repo）
-$ScriptBuild    = "2026-09-17"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
+$ScriptBuild    = "2026-09-18"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
 $VrmDefaultModel = ""                                   # 已取消默认模型（清单里 default 为空 → 不重排；菜单顺序=清单顺序=参考图编号）
@@ -94,10 +95,26 @@ $VrmDefaultModel = ""                                   # 已取消默认模型�
 $script:EnforcedConfig = @(
     @{ File = "jg224.chestflow.cfg"; Section = "Multiplayer"; Key = "AllowConcurrentChestUse"; Value = "false" }
 )
-$MirrorPrefixes = @("https://ghfast.top/", "https://ghproxy.net/", "")   # "" = 直连，放最后
+# 下载线路：全部是实测能用的 GitHub 加速（国内可直连）；顺序 = 测速不可用时的兜底顺序
+#   ""       = 直连 github.com（放最后）
+#   发布后跑 tools/预热镜像.py 会把这几个镜像的边缘缓存“烫热”，别人下起来会明显更快
+$MirrorPrefixes = @(
+    "https://gh-proxy.com/",
+    "https://gh.jasonzeng.dev/",
+    "https://ghfast.top/",
+    "https://gh.xxooo.cf/",
+    "https://gh.llkk.cc/",
+    "https://ghproxy.net/",
+    "https://gh.xmly.dev/",
+    ""
+)
+$MirrorProbeBytes   = 262144   # 测速每条线路取样 256 KB（只读这么多就断开，不会白下整包）
+$MirrorProbeSeconds = 6        # 测速单条线路超时
+$MirrorGoodEnough   = 1.5      # MB/s：某条线路已经这么快就用它，不再测后面的（省时间）
+$script:ProbeCache  = @{}      # 同一个 URL 只测一次
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.10_20260917.zip"
-$FallbackMd5     = "2c7191d8c656a622d4f9ff3da70d622f"
+$FallbackAsset   = "MAKABAKA_profile_v1.11_20260918.zip"
+$FallbackMd5     = "49c0dfd7668ba0bafd655ab1b91c376c"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -215,7 +232,75 @@ function Get-MirroredUrls([string]$url) {
     if ($url -notmatch '^https://(github\.com|raw\.githubusercontent\.com|objects\.githubusercontent\.com)/') { return @($url) }
     $out = @()
     foreach ($m in $MirrorPrefixes) { $out += ($m + $url) }
+    # raw 文件再加一条 jsDelivr（CDN，不在上面那批代理里，代理全挂时仍可能通）
+    if ($url -match '^https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)$') {
+        $out += ("https://cdn.jsdelivr.net/gh/{0}/{1}@{2}/{3}" -f $Matches[1], $Matches[2], $Matches[3], $Matches[4])
+    }
     return @($out | Select-Object -Unique)
+}
+
+# 给某条线路测速：只读 512 KB 就断开（服务器不支持 Range 也不会白下整包，因为我们自己停读）
+function Test-LineSpeed([string]$u, [int]$bytes = 0, [int]$timeoutSec = 0) {
+    if ($bytes -le 0) { $bytes = $MirrorProbeBytes }
+    if ($timeoutSec -le 0) { $timeoutSec = $MirrorProbeSeconds }
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    try {
+        $req = [System.Net.HttpWebRequest]::Create($u)
+        $req.UserAgent = "makabaka-install"
+        $req.Timeout = $timeoutSec * 1000
+        $req.ReadWriteTimeout = $timeoutSec * 1000
+        try { $req.AddRange(0, $bytes - 1) } catch {}
+        $resp = $req.GetResponse()
+        $rs = $resp.GetResponseStream()
+        $buf = New-Object byte[] 65536
+        $n = 0L
+        try {
+            while ($n -lt $bytes) {
+                $k = $rs.Read($buf, 0, $buf.Length)
+                if ($k -le 0) { break }
+                $n += $k
+            }
+        } finally { try { $rs.Close() } catch {}; try { $resp.Close() } catch {} }
+        $sec = $sw.Elapsed.TotalSeconds
+        if (($n -le 0) -or ($sec -le 0.05)) { return 0.0 }
+        return [math]::Round(($n / 1MB) / $sec, 2)
+    } catch { return 0.0 }
+}
+
+# 先测速再排序：最快的排第一条。测速全部失败时回落到脚本内置顺序（不影响可用性）
+function Get-RankedUrls([string]$url) {
+    $urls = @(Get-MirroredUrls $url)
+    # 只有大文件（Release 附件 / zip 包）才值得先测速；小脚本（几十 KB）直接按顺序试更快
+    $big = ($url -match '\.zip($|\?)') -or ($url -match '/releases/')
+    if ($NoMirrorProbe -or (-not $big) -or ($urls.Count -le 1)) { return $urls }
+    if ($script:ProbeCache.ContainsKey($url)) { return $script:ProbeCache[$url] }
+    Say ("        给 {0} 条线路测速（每条取样 256 KB，选最快的先下）…" -f $urls.Count) "DarkGray"
+    $scored = @()
+    $idx = 0
+    $best = 0.0
+    foreach ($u in $urls) {
+        if (($idx -gt 0) -and ($best -ge $MirrorGoodEnough)) { break }   # 已经够快，剩下的不测了
+        $h = ""
+        try { $h = ([Uri]$u).Host } catch {}
+        if ([string]::IsNullOrWhiteSpace($h)) { $h = "本地文件" }
+        $spd = Test-LineSpeed $u
+        $scored += [pscustomobject]@{ Url = $u; Host = $h; Speed = $spd; Idx = $idx }
+        $idx++
+        if ($spd -gt $best) { $best = $spd }
+        if ($spd -gt 0) { Say ("        {0,-24} {1} MB/s" -f $h, $spd) "DarkGray" }
+        else { Say ("        {0,-24} 超时/连不上" -f $h) "DarkGray" }
+    }
+    # 速度降序；速度相同的保持原顺序（Idx 升序）——两键排序在 PS 5.1 里也是确定的
+    $sorted = @($scored | Sort-Object -Property @{Expression = { $_.Speed }; Descending = $true },
+                                              @{Expression = { $_.Idx };   Descending = $false })
+    # 提前停止测速时，没测过的线路按原顺序接在后面（仍然保留"全线路重试"的能力）
+    $extra = @($urls | Where-Object { $scored.Url -notcontains $_ })
+    $ranked = @($sorted | ForEach-Object { $_.Url }) + $extra
+    $fast = $sorted[0]
+    if ($fast.Speed -gt 0) { Say ("        首选线路：{0}（{1} MB/s）" -f $fast.Host, $fast.Speed) "Green" }
+    else { Say "        所有线路测速都没通过，按脚本内置顺序继续试（会逐条重试，不会卡住）。" "Yellow" }
+    $script:ProbeCache[$url] = $ranked
+    return $ranked
 }
 
 # 取一段文本（小文件），多线路依次试；每条线路先按系统代理、失败再绕开代理直连
@@ -240,8 +325,12 @@ function Get-TextWithMirrors([string]$url, [int]$timeoutSec = 20) {
 
 # 下载一个大文件，带百分比进度，多线路依次试；全部失败返回 $false
 function Save-FileWithMirrors([string]$url, [string]$outFile, [string]$label) {
-    $urls = @(Get-MirroredUrls $url)
+    $urls = @(Get-RankedUrls $url)
     $i = 0
+    # 目标位置若有残留（上一次没下完的、或别处留下的旧副本），先清掉：
+    # 拿一个"已经完整/来路不明"的文件做断点续传会拿到坏文件，甚至从 EOF 开始要数据被服务器回 416
+    if (Test-Path $outFile) { Remove-Item $outFile -Force -ErrorAction SilentlyContinue }
+    $have = 0L          # 已经落盘的字节数：换线路时从这里接着下（断点续传），不从头再来
     foreach ($u in $urls) {
         $i++
         $line = "第 $i/$($urls.Count) 条线路"
@@ -251,29 +340,42 @@ function Save-FileWithMirrors([string]$url, [string]$outFile, [string]$label) {
         } catch {}
         # 每条线路先按系统代理下；失败再绕开代理直连（用 Clash / 加速器时经常需要这一步）
         foreach ($useDirect in @($false, $true)) {
+            if (Test-Path $outFile) { try { $have = (Get-Item $outFile).Length } catch { $have = 0 } } else { $have = 0 }
+            $resume = ($have -gt 0)
             $tag = $line
             if ($useDirect) { $tag = $tag + "（不走代理）" }
+            if ($resume) { $tag = $tag + ("（接着下：已有 " + [math]::Round($have / 1MB, 1) + " MB）") }
             Say "        下载中（$label，$tag）…" "DarkGray"
-            $wc = $null
             try {
-            $wc = New-Object System.Net.WebClient
-            $wc.Headers.Add("User-Agent", "makabaka-install")
-            if ($useDirect) { $wc.Proxy = $null }
-            # 说明：WebClient 的同步 DownloadFile 不触发进度事件（旧写法等于没显示），
-            #       所以这里自己读流写文件 —— 进度/速度必然可显示，还能发现"下到一半断了"
             $req = [System.Net.HttpWebRequest]::Create($u)
             $req.UserAgent = "makabaka-install"
             $req.Timeout = 30000
-            $req.ReadWriteTimeout = 60000
+            # 25 秒收不到任何数据就判这条线路死了 → 抛异常 → 换下一条（从断点续）
+            $req.ReadWriteTimeout = 25000
             if ($useDirect) { $req.Proxy = $null }
+            if ($resume) { try { $req.AddRange([int64]$have) } catch { $resume = $false } }
             $resp = $req.GetResponse()
+            $code = 0
+            try { $code = [int]($resp.StatusCode) } catch {}
             $total = $resp.ContentLength
+            $mode = [System.IO.FileMode]::Create      # 默认：从头写
+            if ($resume -and ($code -eq 206)) {
+                $mode = [System.IO.FileMode]::Append  # 服务器支持续传 → 接着写
+                $total = $have + $resp.ContentLength
+            } elseif ($resume) {
+                # 服务器不理 Range（返回 200 整包）→ 只能从头下
+                Say "        这条线路不支持断点续传，从头下这个包。" "DarkGray"
+                $resume = $false
+                $have = 0
+                $total = $resp.ContentLength
+            }
             $rs = $resp.GetResponseStream()
-            $fs = [System.IO.File]::Create($outFile)
+            $fs = [System.IO.File]::Open($outFile, $mode, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
             $buf = New-Object byte[] 1048576
             $read = 0L
             $lastAt = 0.0
+            $job = "download"
             try {
                 while ($true) {
                     $n = $rs.Read($buf, 0, $buf.Length)
@@ -284,15 +386,16 @@ function Save-FileWithMirrors([string]$url, [string]$outFile, [string]$label) {
                     if (($secNow - $lastAt) -ge 0.5) {
                         $lastAt = $secNow
                         if ($secNow -le 0) { continue }
-                        $mb   = [math]::Round($read / 1MB, 1)
+                        $done = $have + $read
+                        $mb   = [math]::Round($done / 1MB, 1)
                         $spd  = [math]::Round(($read / 1MB) / $secNow, 1)
                         $pct  = 0
-                        if ($total -gt 0) { $pct = [int](100 * $read / $total) }
+                        if ($total -gt 0) { $pct = [int](100 * $done / $total) }
                         $totTxt = "?"
                         if ($total -gt 0) { $totTxt = "$([math]::Round($total / 1MB, 1)) MB" }
                         $etaTxt = ""
-                        if (($spd -gt 0.05) -and ($total -gt $read)) {
-                            $left = ($total - $read) / 1MB / $spd
+                        if (($spd -gt 0.05) -and ($total -gt $done)) {
+                            $left = ($total - $done) / 1MB / $spd
                             if ($left -lt 60) { $etaTxt = "，剩约 " + [math]::Round($left) + " 秒" }
                             else { $etaTxt = "，剩约 " + [math]::Round($left / 60, 1) + " 分钟" }
                         }
@@ -305,21 +408,29 @@ function Save-FileWithMirrors([string]$url, [string]$outFile, [string]$label) {
                 try { $resp.Close() } catch {}
             }
             $secAll = $sw.Elapsed.TotalSeconds
-            $szMB = [math]::Round($read / 1MB, 1)
+            $done = $have + $read
+            $szMB = [math]::Round($done / 1MB, 1)
             $avgAll = 0
-            if ($secAll -gt 0) { $avgAll = [math]::Round($szMB / $secAll, 1) }
+            if ($secAll -gt 0) { $avgAll = [math]::Round(($read / 1MB) / $secAll, 1) }
             Write-Host ""
-            if (($total -gt 0) -and ($read -ne $total)) {
-                throw "下载不完整（收到 $read / 应有 $total 字节）"
+            if (($total -gt 0) -and ($done -ne $total)) {
+                throw "下载不完整（收到 $done / 应有 $total 字节）"
             }
-            Say ("        下载完成：$szMB MB，用时 " + [math]::Round($secAll, 1) + " 秒（平均 $avgAll MB/s）") "Green"
+            Say ("        下载完成：$szMB MB，耗时 " + [math]::Round($secAll, 1) + " 秒（这条线路平均 $avgAll MB/s）") "Green"
             return $true
             } catch {
-                if ($wc) { try { $wc.Dispose() } catch {} }
+                $job = $null
                 $how = "代理"
                 if ($useDirect) { $how = "直连" }
                 Say "        这一条失败（$how）：$($_.Exception.Message)" "DarkGray"
-                if (Test-Path $outFile) { Remove-Item $outFile -Force -ErrorAction SilentlyContinue }
+                if ($_.Exception.Message -match '416') {
+                    # 416 = 要的区间超出文件尾（说明这个残包对不上，或镜像缓存有问题）→ 删掉，下一条从头下
+                    Remove-Item $outFile -Force -ErrorAction SilentlyContinue
+                    $have = 0
+                } elseif (Test-Path $outFile) {
+                    # 其余情况保留已下到的部分：下一条线路从断点接着下（网络抖动/限速是常态，重来一次就白下一段）
+                    try { $have = (Get-Item $outFile).Length } catch { $have = 0 }
+                }
             }
         }
     }
@@ -420,6 +531,14 @@ foreach ($libTry in @($script:ModelLibPath, (Join-Path $env:TEMP "MAKABAKA-Model
     if (Test-Path $libTry) {
         try { . $libTry; $script:ModelLibLoaded = $true } catch { Say "  [注意] ModelLib.ps1 载入失败：$($_.Exception.Message)" "Yellow" }
     }
+}
+
+# 私有模型附件：分段并发下载的连接数（默认 6；环境变量 MAKABAKA_MODEL_THREADS 可覆盖，1 = 关闭分段）
+if ($script:ModelLibLoaded -and (Test-Path Env:MAKABAKA_MODEL_THREADS)) {
+    try {
+        $nThr = [int]$env:MAKABAKA_MODEL_THREADS
+        if ($nThr -ge 1 -and $nThr -le 16) { $script:ModelDownloadThreads = $nThr }
+    } catch {}
 }
 if (-not $script:ModelLibLoaded) {
     Say "  [注意] 模型功能不可用（缺 ModelLib.ps1，且没下下来）；只更新 mod 完全不受影响。" "Yellow"
@@ -1047,7 +1166,7 @@ foreach ($rel in $Expect.Keys) {
     if ($h -ne $Expect[$rel]) { $bad += "$rel （内容与出厂不一致）" }
 }
 if ($bad.Count -eq 0) {
-    Say "        关键文件校验通过 ✓（ChestFlow 汉化版、ChestFlowTweaks 0.3.1、EpicLoot 0.14.5、Endurance 汉化版、VRMGhostFix）" "Green"
+    Say "        关键文件校验通过 ✓（ChestFlow 汉化版、ChestFlowTweaks 0.3.1、EpicLoot 0.14.7、Endurance 汉化版、VRMGhostFix）" "Green"
 } else {
     Say "        [注意] 以下文件与出厂版本不一致：" "Yellow"
     foreach ($b in $bad) { Say "          - $b" "Yellow" }

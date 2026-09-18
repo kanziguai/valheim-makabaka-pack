@@ -1,7 +1,7 @@
-﻿# 测试 ModelLib.ps1：清单 → 候选 → 下载(file://) → sha256 校验 → 进缓存 → 二次命中缓存
+﻿param([string]$Share = "")   # 用法：powershell -File tools\测试ModelLib.ps1 -Share "I:\...\英灵神殿mod分享_MAKABAKA"
+# 测试 ModelLib.ps1：清单 → 候选 → 下载(file://) → sha256 校验 → 进缓存 → 二次命中缓存
 $ErrorActionPreference = "Stop"
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
-param([string]$Share = "")   # 用法：powershell -File tools\测试ModelLib.ps1 -Share "I:\...\英灵神殿mod分享_MAKABAKA"
 $PSScriptRoot = if ($Share) { $Share } else { Split-Path (Split-Path $MyInvocation.MyCommand.Path -Parent) -Parent }
 
 function Say([string]$msg, [string]$color = "Gray") { Write-Host $msg -ForegroundColor $color }

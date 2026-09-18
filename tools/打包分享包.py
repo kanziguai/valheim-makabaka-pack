@@ -90,6 +90,43 @@ def human(n: int) -> str:
         n /= 1024.0
 
 
+def refresh_expect(share: Path) -> None:
+    """打包前把 install.ps1 的 $Expect 出厂校验值对齐到"这次要进包的文件"。
+
+    为什么必须自动做：$Expect 是给安装后的自检用的，它必须等于**包内实际文件**的 md5。
+    手工维护必然滞后（真实事故：v1.10 包里 EpicLoot/SafeBox 的 dll 换过，表里还是旧哈希
+    ⇒ 每个新装的朋友都会看到"与出厂版本不一致"，把真问题淹掉）。"""
+    ps = REPO / "install.ps1"
+    if not ps.exists():
+        return
+    text = ps.read_text(encoding="utf-8-sig", errors="replace")
+    pat = re.compile(r'"((?:BepInEx|valheim_Data)[^"]+\.(?:dll|shaders))"\s*=\s*"([0-9a-f]{32})"')
+    changed = []
+    def sub(m):
+        rel, old = m.group(1), m.group(2)
+        disk = share / "MAKABAKA" / Path(rel.replace("\\", "/"))
+        if not disk.exists():
+            print(f"  [!] 表里的 {rel} 在分享包里找不到，跳过（表项过时？）")
+            return m.group(0)
+        new = hashlib.md5(disk.read_bytes()).hexdigest()
+        if new != old:
+            changed.append((rel, old, new))
+            return '"%s" = "%s"' % (rel, new)
+        return m.group(0)
+    new_text = pat.sub(sub, text)
+    print(f"\n== 0) 出厂校验值（$Expect）自检：{len(pat.findall(text))} 项")
+    if changed:
+        # 二进制级替换：保住 UTF-8 BOM（PowerShell 5.1 没 BOM 会按 GBK 读）
+        raw = ps.read_bytes()
+        raw2 = raw.replace(text.encode("utf-8"), new_text.encode("utf-8"))
+        ps.write_bytes(raw2)
+        for rel, old, new in changed:
+            print(f"  ↻ 已更新 {rel}\n        {old} → {new}")
+        print("  （不更新的话，别人装完会看到假的\"与出厂不一致\"）")
+    else:
+        print("  ✓ 全部与包内文件一致")
+
+
 def sync_from_repo(share: Path) -> None:
     sh = REPO / "tools" / "同步到分享包.sh"
     if not sh.exists():
@@ -154,6 +191,8 @@ def main() -> int:
     ap.add_argument("--out", default=None, help="输出 zip 路径（默认放分享包目录）")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-sync", action="store_true")
+    ap.add_argument("--no-expect-refresh", action="store_true",
+                    help="不自动把 install.ps1 的 $Expect 出厂校验值对齐到包内文件（默认会对齐）")
     # 默认只做模型分离；下面三个是可选的额外瘦身（不加就保持原样）
     ap.add_argument("--with-models", action="store_true",
                     help="把模型也打进安装包（恢复成「整包带模型」的老行为）")
@@ -168,6 +207,8 @@ def main() -> int:
         return 1
 
     if not args.no_sync:
+        if not args.no_expect_refresh:
+            refresh_expect(share)
         sync_from_repo(share)
 
     print("\n== 2) 必检项 ==")

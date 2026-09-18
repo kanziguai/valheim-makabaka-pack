@@ -1,109 +1,114 @@
-﻿============================================================
- 英灵神殿 MAKABAKA 整合包 · 安装步骤
- （把这份文件发给要装的人就行，从头到尾照做即可）
-============================================================
-
-【0】装之前先准备两样东西
-------------------------------------------------------------
-1) 正版《英灵神殿 Valheim》（Steam）
-   · 本包对应 2026-09-17 的游戏构建；游戏再更新后请等新包，否则 mod 可能出错
-
-2) r2modman（Valheim 的 mod 管理器，免费）
-   · 下载：https://thunderstore.io/c/valheim/p/ebkr/r2modman/
-   · 装完【打开一次】，在里面选好 Valheim 的安装位置，然后再关掉
-     （必须做过这一步：它要先建好 profiles 目录，安装脚本才能把档放进去）
-
-3) 系统与磁盘
-   · Windows 10 / 11，磁盘留 1GB 左右（安装包 82MB + 临时解压约 105MB + 档本体；
-     角色模型按需下载，每个 13~77MB，下过的存在本机）
-   · 如果装了火绒 / 腾讯管家这类，运行时弹窗要点【允许】，否则装到一半会被拦截
-
-4) 安装之前先把 r2modman 关掉
-   （脚本也会自动帮你关，自己关更稳妥 —— 它退出时会重写档信息）
-
-
-【1】安装：三种方法，随便挑一种
-------------------------------------------------------------
-
-■ 方法一 · 一行命令（最省事，不用装 git）
-  1) 按 Win+X → 选「终端」或「Windows PowerShell」
-  2) 把下面这几行【整段复制】进去，回车：
-
-     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-     $base = 'https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/'
-     $ms = @('https://ghfast.top/','https://ghproxy.net/','https://gh-proxy.com/','')
-     $dir = $env:TEMP
-     $ok = $false
-     foreach ($m in $ms) { $t = $m + $base + 'install.ps1'; Write-Host "试：$t" -ForegroundColor DarkGray; try { Invoke-WebRequest -Uri $t -OutFile "$dir\makabaka-install.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\makabaka-install.ps1").Length -gt 20000) { $ok = $true; break } } catch { Write-Host ("  这条不通：" + $_.Exception.Message.Split([char]10)[0]) -ForegroundColor DarkYellow } }
-     $okLib = $false
-     foreach ($m in $ms) { try { Invoke-WebRequest -Uri ($m + $base + 'ModelLib.ps1') -OutFile "$dir\ModelLib.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\ModelLib.ps1").Length -gt 5000) { $okLib = $true; break } } catch {} }
-     if ($ok) { if (-not $okLib) { Write-Host '[提示] ModelLib.ps1 没下下来（模型功能会自动跳过；只更新 mod 不受影响）' -ForegroundColor Yellow }; powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\makabaka-install.ps1" } else { Write-Host '四条线路都没连上 → 检查杀软/代理，或改用方法三（手动下载 zip）' -ForegroundColor Yellow }
-
-  3) 接着跟着提示回答（问什么见【2】）
-     注：上面这段会下【两个】文件（install.ps1 + ModelLib.ps1，都在 %TEMP%）；这是必须的 ——
-         ModelLib.ps1 是模型清单/下载用的库，少了它模型那一步会报“Get-ModelManifest 不是…”。
-  提示：首装要下约 82MB（不含角色模型），几分钟属正常，别关窗口；下载时会实时显示【百分比 / 当前速度 / 剩余时间】。
-       上面这段对每条线路都有 15 秒超时：连不上会明确打印「这条不通：...」，不会一直卡着不动。
-       镜像前缀 https://ghfast.top/ 可以换成 https://ghproxy.net/ 或 https://gh-proxy.com/，
-       最后一条是直连；四条全不通说明是本机网络/杀软拦了，改走方法二或方法三。
-
-■ 方法二 · git 一段命令（推荐，以后更新最方便）
-  1) 先装 git（没装过的话）：https://git-scm.com/download/win
-     一路默认「下一步」装完即可
-  2) 按 Win+X → 选「终端」或「Windows PowerShell」，把下面这段【整段粘进去回车】：
-
-     $d = "$env:USERPROFILE\valheim-makabaka-pack"
-     if (-not (Test-Path "$d\.git") -and (Test-Path $d)) { $d = "$d-git" }
-     if (Test-Path "$d\.git") { git -C $d pull } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
-     & "$d\一键安装.bat"
-
-     它会：clone 下来（已存在就 git pull 更新）→ 直接开始安装。
-     **不用手动 cd 进目录，也不用去双击 bat**。
-     ★ 注意：别把 if / elseif / else 拆成三行分开粘 —— PowerShell 控制台是逐行执行的，
-       "if (...) { ... }" 那一行本身已是完整语句，下一行的 elseif 会被当成新命令，报
-       「无法将"elseif"项识别为 cmdlet」。上面这段每行都是独立完整语句，逐行粘或整段粘都安全。
-     想更省事可以压成一行（各句用 ; 分隔）：
-       $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $d pull } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }; & "$d\一键安装.bat"
-     仓库本身只有约 1MB（脚本 + 文档），不含 82MB 的大包；脚本会自己去 GitHub 下载（下完自动核对 MD5）。
-  3) 以后更新：**把同一段再粘一次**就行（它会先 pull 再装）
-     —— 想手动操作的话：进 C:\Users\你的用户名\valheim-makabaka-pack 双击「一键安装.bat」
-     ★ 如果你是【2026-09-17 之前】clone 过仓库的老朋友：这一版把角色模型从仓库历史里移走了（仓库从
-       450MB 瘦到 1MB），你的本地副本历史对不上，请先执行一次下面这行再 pull：
-         git -C "$env:USERPROFILE\valheim-makabaka-pack" fetch origin; git -C "$env:USERPROFILE\valheim-makabaka-pack" reset --hard origin/main
-       （或者干脆删掉那个文件夹重新 clone 一次，反正只有 1MB）
-
-■ 方法三 · 手动下载（不用 git、不用命令行）
-  1) 打开：https://github.com/kanziguai/valheim-makabaka-pack/releases
-     （不用注册 GitHub 账号，直接点就行）
-  2) 下载最新那个  MAKABAKA_profile_v…zip
-  3) 右键 → 【全部解压】（不要在压缩包里直接双击）
-  4) 进入解压出来的文件夹，【双击「一键安装.bat」】
-
-
-【2】安装过程中脚本会问你什么（照着答）
-------------------------------------------------------------
-[1/7] 找安装包      → 自动（本地没有就从 GitHub 下最新版，下完核对 MD5 才用）
-      ★ 第一次运行会先问你【安装包放哪】（要下约 82MB、解压还要占约 105MB，装完自动清理）：
-           1) …\AppData\Local\Temp\makabaka_pack  （默认）
-           2) 别的盘，例如 D:\MAKABAKA_install      （不喜欢放 C 盘就选这个）
-           0) 我自己输入一个路径（只写 D: 也行）
-        选完会记住（下次不再问）。想改：删掉脚本旁的 download-path.txt，或用 -DownloadDir 指定。
-        换模型用的模型缓存也会放在你选的这个目录里（按需下载的模型都存这儿，每个 13~77MB，
-        下过一次以后换模型秒切、不用重下）；用默认位置时放 %LOCALAPPDATA%。
-[2/7] 找 r2modman 目录 → 自动；要是没找到，它会让你把路径粘进去
-      ★ 如果你机器上有【多个 r2modman 数据文件夹】（有人每块盘都装过一份），
-        脚本会把它们列出来让你挑（会标出哪个"已有 MAKABAKA 档"、哪个是"上次装在这"）：
-           直接回车 = 第 1 项（一般就是它）；输 9 = 再扫描所有硬盘找找；输 0 = 自己输入路径
-        只有一个数据文件夹时不会问。
-[3/7] r2modman 在运行吗 → 自动关闭
-[4/7] 检测到已装过吗   → 全新安装：直接过
-                        装过旧版：会问你 [1] 升级（推荐，保留你自己的设置与收藏格）
-                                              [2] 全新重装（干净一份，F1 设置回默认）
-[5/7] 复制 + 校验   → 自动（逐个文件核对 MD5、mod 启用/禁用数量）
-[6/7] 收尾          → 告诉你启动方式
-[7/7] ValheimVRM（换角色模型的 mod，可选）→ 问你「一并配置 ValheimVRM 吗？(Y/n)」
-      · 只更新 mod 的人：答 n（不下载任何模型；模型以后随时能加：见同目录「模型说明.txt」）
-
+﻿============================================================
+ 英灵神殿 MAKABAKA 整合包 · 安装步骤
+ （把这份文件发给要装的人就行，从头到尾照做即可）
+============================================================
+
+【0】装之前先准备两样东西
+------------------------------------------------------------
+1) 正版《英灵神殿 Valheim》（Steam）
+   · 本包对应 2026-09-17 的游戏构建；游戏再更新后请等新包，否则 mod 可能出错
+
+2) r2modman（Valheim 的 mod 管理器，免费）
+   · 下载：https://thunderstore.io/c/valheim/p/ebkr/r2modman/
+   · 装完【打开一次】，在里面选好 Valheim 的安装位置，然后再关掉
+     （必须做过这一步：它要先建好 profiles 目录，安装脚本才能把档放进去）
+
+3) 系统与磁盘
+   · Windows 10 / 11，磁盘留 1GB 左右（安装包 82MB + 临时解压约 105MB + 档本体；
+     角色模型按需下载，每个 13~170MB（6 条连接分段并发，实测 2~4 MB/s），下过的存在本机）
+   · 如果装了火绒 / 腾讯管家这类，运行时弹窗要点【允许】，否则装到一半会被拦截
+
+4) 安装之前先把 r2modman 关掉
+   （脚本也会自动帮你关，自己关更稳妥 —— 它退出时会重写档信息）
+
+
+【1】安装：三种方法，随便挑一种
+------------------------------------------------------------
+
+■ 方法一 · 一行命令（最省事，不用装 git）
+  1) 按 Win+X → 选「终端」或「Windows PowerShell」
+  2) 把下面这几行【整段复制】进去，回车：
+
+     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+     $base = 'https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/'
+     $ms = @('https://gh-proxy.com/','https://gh.jasonzeng.dev/','https://ghfast.top/','https://gh.xxooo.cf/','https://gh.llkk.cc/','https://ghproxy.net/','')
+     $dir = $env:TEMP
+     $ok = $false
+     foreach ($m in $ms) { $t = $m + $base + 'install.ps1'; Write-Host "试：$t" -ForegroundColor DarkGray; try { Invoke-WebRequest -Uri $t -OutFile "$dir\makabaka-install.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\makabaka-install.ps1").Length -gt 20000) { $ok = $true; break } } catch { Write-Host ("  这条不通：" + $_.Exception.Message.Split([char]10)[0]) -ForegroundColor DarkYellow } }
+     $okLib = $false
+     foreach ($m in $ms) { try { Invoke-WebRequest -Uri ($m + $base + 'ModelLib.ps1') -OutFile "$dir\ModelLib.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\ModelLib.ps1").Length -gt 5000) { $okLib = $true; break } } catch {} }
+     if (-not $ok) { try { Invoke-WebRequest -Uri 'https://cdn.jsdelivr.net/gh/kanziguai/valheim-makabaka-pack@main/install.ps1' -OutFile "$dir\makabaka-install.ps1" -TimeoutSec 20 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\makabaka-install.ps1").Length -gt 20000) { $ok = $true; Write-Host '安装脚本已改从 jsDelivr 拿到' -ForegroundColor Green } } catch { Write-Host 'jsDelivr 这条也不通' -ForegroundColor DarkYellow } }
+     if (-not $okLib) { try { Invoke-WebRequest -Uri 'https://cdn.jsdelivr.net/gh/kanziguai/valheim-makabaka-pack@main/ModelLib.ps1' -OutFile "$dir\ModelLib.ps1" -TimeoutSec 20 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\ModelLib.ps1").Length -gt 5000) { $okLib = $true } } catch {} }
+     if ($ok) { if (-not $okLib) { Write-Host '[提示] ModelLib.ps1 没下下来（模型功能会自动跳过；只更新 mod 不受影响）' -ForegroundColor Yellow }; powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\makabaka-install.ps1" } else { Write-Host '这些线路都没连上 → 检查杀软/代理，或改用方法三（手动下载 zip）' -ForegroundColor Yellow }
+
+  3) 接着跟着提示回答（问什么见【2】）
+     注：上面这段会下【两个】文件（install.ps1 + ModelLib.ps1，都在 %TEMP%）；这是必须的 ——
+         ModelLib.ps1 是模型清单/下载用的库，少了它模型那一步会报“Get-ModelManifest 不是…”。
+  提示：首装要下约 82MB（不含角色模型），几分钟属正常，别关窗口；下载时会实时显示【百分比 / 当前速度 / 剩余时间】。
+       上面这段对每条线路都有 15 秒超时：连不上会明确打印「这条不通：...」，不会一直卡着不动。
+       7 条线路全是国内可直连的 GitHub 加速镜像（列表里随便换顺序都行），最后一条是直连 GitHub；
+       全不通说明是本机网络/杀软拦了，改走方法二或方法三（手动下 Release 附件）。
+       另外还带一条兜底：上面 6 条镜像 + 直连都失败时，会再试一次 jsDelivr 的 CDN 地址。
+       ★ 脚本自己也会挑线路：真正下安装包（82MB）之前，它会先给每条线路测速、
+         用最快的那条下；中途断了会从断点接着下（换线路也不用从头再来）。
+
+■ 方法二 · git 一段命令（推荐，以后更新最方便）
+  1) 先装 git（没装过的话）：https://git-scm.com/download/win
+     一路默认「下一步」装完即可
+  2) 按 Win+X → 选「终端」或「Windows PowerShell」，把下面这段【整段粘进去回车】：
+
+     $d = "$env:USERPROFILE\valheim-makabaka-pack"
+     if (-not (Test-Path "$d\.git") -and (Test-Path $d)) { $d = "$d-git" }
+     if (Test-Path "$d\.git") { git -C $d pull } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }
+     & "$d\一键安装.bat"
+
+     它会：clone 下来（已存在就 git pull 更新）→ 直接开始安装。
+     **不用手动 cd 进目录，也不用去双击 bat**。
+     ★ 注意：别把 if / elseif / else 拆成三行分开粘 —— PowerShell 控制台是逐行执行的，
+       "if (...) { ... }" 那一行本身已是完整语句，下一行的 elseif 会被当成新命令，报
+       「无法将"elseif"项识别为 cmdlet」。上面这段每行都是独立完整语句，逐行粘或整段粘都安全。
+     想更省事可以压成一行（各句用 ; 分隔）：
+       $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $d pull } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }; & "$d\一键安装.bat"
+     仓库本身只有约 1MB（脚本 + 文档），不含 82MB 的大包；脚本会自己去 GitHub 下载（下完自动核对 MD5）。
+  3) 以后更新：**把同一段再粘一次**就行（它会先 pull 再装）
+     —— 想手动操作的话：进 C:\Users\你的用户名\valheim-makabaka-pack 双击「一键安装.bat」
+     ★ 如果你是【2026-09-17 之前】clone 过仓库的老朋友：这一版把角色模型从仓库历史里移走了（仓库从
+       450MB 瘦到 1MB），你的本地副本历史对不上，请先执行一次下面这行再 pull：
+         git -C "$env:USERPROFILE\valheim-makabaka-pack" fetch origin; git -C "$env:USERPROFILE\valheim-makabaka-pack" reset --hard origin/main
+       （或者干脆删掉那个文件夹重新 clone 一次，反正只有 1MB）
+
+■ 方法三 · 手动下载（不用 git、不用命令行）
+  1) 打开：https://github.com/kanziguai/valheim-makabaka-pack/releases
+     （不用注册 GitHub 账号，直接点就行）
+  2) 下载最新那个  MAKABAKA_profile_v…zip
+  3) 右键 → 【全部解压】（不要在压缩包里直接双击）
+  4) 进入解压出来的文件夹，【双击「一键安装.bat」】
+
+
+【2】安装过程中脚本会问你什么（照着答）
+------------------------------------------------------------
+[1/7] 找安装包      → 自动（本地没有就从 GitHub 下最新版，下完核对 MD5 才用）
+      ★ 第一次运行会先问你【安装包放哪】（要下约 82MB、解压还要占约 105MB，装完自动清理）：
+           1) …\AppData\Local\Temp\makabaka_pack  （默认）
+           2) 别的盘，例如 D:\MAKABAKA_install      （不喜欢放 C 盘就选这个）
+           0) 我自己输入一个路径（只写 D: 也行）
+        选完会记住（下次不再问）。想改：删掉脚本旁的 download-path.txt，或用 -DownloadDir 指定。
+        换模型用的模型缓存也会放在你选的这个目录里（按需下载的模型都存这儿，每个 13~170MB，
+        下过一次以后换模型秒切、不用重下）；用默认位置时放 %LOCALAPPDATA%。
+[2/7] 找 r2modman 目录 → 自动；要是没找到，它会让你把路径粘进去
+      ★ 如果你机器上有【多个 r2modman 数据文件夹】（有人每块盘都装过一份），
+        脚本会把它们列出来让你挑（会标出哪个"已有 MAKABAKA 档"、哪个是"上次装在这"）：
+           直接回车 = 第 1 项（一般就是它）；输 9 = 再扫描所有硬盘找找；输 0 = 自己输入路径
+        只有一个数据文件夹时不会问。
+[3/7] r2modman 在运行吗 → 自动关闭
+[4/7] 检测到已装过吗   → 全新安装：直接过
+                        装过旧版：会问你 [1] 升级（推荐，保留你自己的设置与收藏格）
+                                              [2] 全新重装（干净一份，F1 设置回默认）
+[5/7] 复制 + 校验   → 自动（逐个文件核对 MD5、mod 启用/禁用数量）
+[6/7] 收尾          → 告诉你启动方式
+[7/7] ValheimVRM（换角色模型的 mod，可选）→ 问你「一并配置 ValheimVRM 吗？(Y/n)」
+      · 只更新 mod 的人：答 n（不下载任何模型；模型以后随时能加：见同目录「模型说明.txt」）
+
 【武器/物品外观替换（可选，独立模块）——分两步：先选模型，再选物品】
   第 1 步：用哪个模型？列表里会标注它是什么武器（例如「灵跃心弦 · 弓」）
       · 输入 p1 / p2 … 可以当场打开对应模型的效果预览图（f 打开预览文件夹）；看图之后再决定
@@ -116,113 +121,113 @@
   · 加模型/加预览：模型文件夹丢进 Models\武器替换\，预览图放 Models\武器替换\预览\<模型名>.jpg
   · 装完后想改：游戏里按 F1 → Item Skin Replacer（或重跑本脚本）
 
-【联机前建议做一次】双击「联机一致性自检.bat」→ 把生成的 一致性_xxx.txt 和指纹发房主，
-房主跑一次 -Compare 比对（几秒），确保每个人机器上的 mod 与插件 DLL 完全一致
-（不一致最容易表现为“同一箱子两人看到的不一样、物品回滚”）。详见「联机数据同步排查_20260917.md」。
-      · 想换模型的：答 Y（回车），然后依次问你：
-          - 选模型：菜单列出全部可选（★=本机已有，↓=需要下载+大小）；顺序 = 清单顺序（和参考图编号一致）；
-                    本版【已取消默认模型】—— 不再自动选中某个模型，回车 = 不换（保持现状）；
-                    ★ 想看模型长什么样：直接输 p 打开【总览图】（一张看全部，图上编号=菜单序号）、
-                      p3 看第 3 个的大图、f 打开参考图文件夹；看完自动回到菜单再选编号
-                    可多选（如 1,3 或 2-4）；0 = 不换；首次下载要一次凭据（只读 GitHub 令牌，脚本会问一次并记住）
-          - 下载是按需的：下过的存本机，以后再换不用重下（切换秒级）
-          - 【你的角色名】：填你游戏里的角色名（每人不一样）
-            （脚本会按这个名字自动生成 <角色名>.vrm 与 settings_<角色名>.txt，
-              不需要你自己去文件夹里找文件、改名）
-          - 目录里其它旧模型要不要收进备份文件夹：(y/N，默认留着)
-      · 最后会打印「VRM 三处自检」，三行都要是 [✓]
-
-  安装日志在【桌面】上：MAKABAKA安装日志.txt（要找人看问题就把这个文件发过去）
-
-
-【3】进游戏
-------------------------------------------------------------
-1) 打开 r2modman
-2) 左边选 Valheim
-3) 顶部 profile 选 MAKABAKA
-4) 点【Start modded】进游戏
-   —— 千万别点 Start vanilla，那是原版（没有 mod）
-   —— 直接点 Steam 的“开始游戏”也没有 mod，必须经 r2modman 启动
-   —— 第一次启动比较慢（要加载 40 多个 mod，1～3 分钟正常）
-
-
-【4】进游戏后要知道的几个键
-------------------------------------------------------------
-· F1              = mod 配置 / 热键面板（想查什么功能、改什么键都在这里）
-· Ctrl + 左键     = 快速存取（本包专用；原版的“Ctrl=拿一半”被拦下了）
-· 翻滚            = LeftAlt
-                    如果和 Windows 输入法的 Shift+Alt 切换热键冲突、跑动会中断：
-                    去关掉输入法的那个热键，或者在 F1 里把翻滚改成别的键
-· 更完整的键位与功能：见包里的「键位自定义指南.txt」「游戏内功能速查.txt」
-
-
-【5】联机怎么玩
-------------------------------------------------------------
-· 世界（存档）在主机那边；主机开好房间，其他人通过 Steam 好友房 / 密码加入
-· 【两边 mod 必须一致】：大家都装这一套、同一版本，否则会被踢或出现各种怪问题
-· 换角色模型是各人自己的：只在本机显示，互相看不到对方的模型（想看到就大家装同一套）
-
-
-【6】以后更新
-------------------------------------------------------------
-· 用方法一 / 方法三装的：重跑一次就行（每次都会取最新版）
-· 用方法二（git）装的：  git pull  →  再双击一次「一键安装.bat」
-· 【只想要 mod、不碰模型 / 最省流量】：加一个 -ModsOnly 参数（等价于最后一步答 n）：
-     一键安装.bat -ModsOnly        （或命令行 .\install.ps1 -ModsOnly）
-  这样完全不会下载/改动角色模型，整包下载量就是 82MB（模型已不计入）。
-· 想看看有哪些模型可选（什么都不改）：  .\install.ps1 -ListModels
-· 更新会保留你自己的 F1 设置与收藏格；旧文件先备份到 MAKABAKA_backup-<时间戳>
-· 只想换角色模型 / 换角色名（不想重装整个档）：双击包里的「换模型.bat」，
-  选模型 + 输角色名即可；已下载过的秒切，没下过的会现场下载
-  · 模型的来源、下载凭据、缓存位置、常见问题 → 见同目录「模型说明.txt」
-
-
-【7】出问题了怎么办（按顺序自查）
-------------------------------------------------------------
-1) 打开桌面上的 MAKABAKA安装日志.txt，看最后的报错行
-2) 游戏目录里的  BepInEx\LogOutput.log  里的报错行
-3) 装完进游戏没效果 → 看安装时那份「VRM 三处自检」，哪一行是 [×] 就查那一行
-4) 点了 Steam 的「验证游戏文件完整性」→ valheim_Data\Managed 里那几个 dll 会被清掉
-   → 【重跑一次安装脚本】就能恢复
-5) 脚本卡住不动 → Ctrl+C 停掉，换方法二或方法三再试
-   ★ 卡在「方法一第 4 行（下载 install.ps1 那行）」不动 = 老写法用 Net.WebClient 同步下载、没有超时，
-     网络或杀软把连接"黑洞"掉时它既不报错也不返回；而且它没先开 TLS 1.2，部分 Windows 上会卡在握手。
-     处理：把【方法一】换成上面那段新命令（先开 TLS 1.2 + 每条线路 15 秒超时 + 自动换线路），
-     或直接改走方法二（git）／方法三（手动下 zip）。
-6) 报「无法将"elseif"项识别为 cmdlet」→ 你把 if / elseif / else 分成三行粘了
-   （PowerShell 控制台是逐行执行的）→ 改用方法二那段写法，或那一行版命令
-7) 提示磁盘空间不足 / 下载老是失败 → 重跑一次，在问"安装包放哪"时换到空间大的盘
-   （或加参数：-DownloadDir D:\MAKABAKA_install）
-8) 报「无法将"Get-ModelManifest"项识别为 cmdlet / Get-ModelCandidates 不是…」
-   → 你的 install.ps1 旁边缺 ModelLib.ps1（老版方法一只下了 install.ps1）。
-     新脚本会自动去仓库补下这个文件；实在不行就手动下它放到 install.ps1 同一个文件夹：
-       https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/ModelLib.ps1
-9) 以上都看不懂：把 MAKABAKA安装日志.txt 发过来
-
-
-【8】两件千万别做的事
-------------------------------------------------------------
-1) 别在 r2modman 里对下面这些 mod 点 Update / Reinstall
-   （会被官方原版覆盖，丢掉中文化 / 自编译的改动）：
-     AzuExtendedPlayerInventory、Recycle_N_Reclaim、MinimalUI、BetterUI、PetPantry、
-     ChestFlow、TargetPortal、PlanBuild、InstantMonsterLootDrop、Endurance，
-     以及自制插件 SafeBox（随身保险柜）、KeepBuffsOnDeath、VRMGhostFix、PortalBroadcastFix
-2) 别在装好 ValheimVRM 的 dll 之后点 Steam 的「验证游戏文件完整性」
-   （会清掉 valheim_Data\Managed 里的 dll；真点了就重跑一次安装脚本）
-
-
-附：包里还有这些说明文档（都在同一个文件夹里）
-------------------------------------------------------------
-· 模型说明.txt          角色模型怎么按需下载/切换、下载凭据、缓存位置、常见问题
-· 安装指南.txt          更详细的说明（目录结构、每个 mod 干嘛的、常见问题）
-· 键位自定义指南.txt    怎么改键
-· 游戏内功能速查.txt    F1 面板里都有什么功能
-· r2modman使用说明.txt  管理器怎么用
-· Mod清单_MAKABAKA.txt  这包里到底有哪些 mod
-· 版本号.txt            当前版本与包文件名
-· ValheimVRM_手动安装\说明_ValheimVRM.txt   角色模型那部分的手动做法
-
-
-（本包内容：Thunderstore 42 个包 · 37 启用 / 5 禁用 ＋ 自制插件 6 个
-  ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked ＋ Achievement_Enabler_Plus）
-============================================================
+【联机前建议做一次】双击「联机一致性自检.bat」→ 把生成的 一致性_xxx.txt 和指纹发房主，
+房主跑一次 -Compare 比对（几秒），确保每个人机器上的 mod 与插件 DLL 完全一致
+（不一致最容易表现为“同一箱子两人看到的不一样、物品回滚”）。详见「联机数据同步排查_20260917.md」。
+      · 想换模型的：答 Y（回车），然后依次问你：
+          - 选模型：菜单列出全部可选（★=本机已有，↓=需要下载+大小）；顺序 = 清单顺序（和参考图编号一致）；
+                    本版【已取消默认模型】—— 不再自动选中某个模型，回车 = 不换（保持现状）；
+                    ★ 想看模型长什么样：直接输 p 打开【总览图】（一张看全部，图上编号=菜单序号）、
+                      p3 看第 3 个的大图、f 打开参考图文件夹；看完自动回到菜单再选编号
+                    可多选（如 1,3 或 2-4）；0 = 不换；首次下载要一次凭据（只读 GitHub 令牌，脚本会问一次并记住）
+          - 下载是按需的：下过的存本机，以后再换不用重下（切换秒级）
+          - 【你的角色名】：填你游戏里的角色名（每人不一样）
+            （脚本会按这个名字自动生成 <角色名>.vrm 与 settings_<角色名>.txt，
+              不需要你自己去文件夹里找文件、改名）
+          - 目录里其它旧模型要不要收进备份文件夹：(y/N，默认留着)
+      · 最后会打印「VRM 三处自检」，三行都要是 [✓]
+
+  安装日志在【桌面】上：MAKABAKA安装日志.txt（要找人看问题就把这个文件发过去）
+
+
+【3】进游戏
+------------------------------------------------------------
+1) 打开 r2modman
+2) 左边选 Valheim
+3) 顶部 profile 选 MAKABAKA
+4) 点【Start modded】进游戏
+   —— 千万别点 Start vanilla，那是原版（没有 mod）
+   —— 直接点 Steam 的“开始游戏”也没有 mod，必须经 r2modman 启动
+   —— 第一次启动比较慢（要加载 40 多个 mod，1～3 分钟正常）
+
+
+【4】进游戏后要知道的几个键
+------------------------------------------------------------
+· F1              = mod 配置 / 热键面板（想查什么功能、改什么键都在这里）
+· Ctrl + 左键     = 快速存取（本包专用；原版的“Ctrl=拿一半”被拦下了）
+· 翻滚            = LeftAlt
+                    如果和 Windows 输入法的 Shift+Alt 切换热键冲突、跑动会中断：
+                    去关掉输入法的那个热键，或者在 F1 里把翻滚改成别的键
+· 更完整的键位与功能：见包里的「键位自定义指南.txt」「游戏内功能速查.txt」
+
+
+【5】联机怎么玩
+------------------------------------------------------------
+· 世界（存档）在主机那边；主机开好房间，其他人通过 Steam 好友房 / 密码加入
+· 【两边 mod 必须一致】：大家都装这一套、同一版本，否则会被踢或出现各种怪问题
+· 换角色模型是各人自己的：只在本机显示，互相看不到对方的模型（想看到就大家装同一套）
+
+
+【6】以后更新
+------------------------------------------------------------
+· 用方法一 / 方法三装的：重跑一次就行（每次都会取最新版）
+· 用方法二（git）装的：  git pull  →  再双击一次「一键安装.bat」
+· 【只想要 mod、不碰模型 / 最省流量】：加一个 -ModsOnly 参数（等价于最后一步答 n）：
+     一键安装.bat -ModsOnly        （或命令行 .\install.ps1 -ModsOnly）
+  这样完全不会下载/改动角色模型，整包下载量就是 82MB（模型已不计入）。
+· 想看看有哪些模型可选（什么都不改）：  .\install.ps1 -ListModels
+· 更新会保留你自己的 F1 设置与收藏格；旧文件先备份到 MAKABAKA_backup-<时间戳>
+· 只想换角色模型 / 换角色名（不想重装整个档）：双击包里的「换模型.bat」，
+  选模型 + 输角色名即可；已下载过的秒切，没下过的会现场下载
+  · 模型的来源、下载凭据、缓存位置、常见问题 → 见同目录「模型说明.txt」
+
+
+【7】出问题了怎么办（按顺序自查）
+------------------------------------------------------------
+1) 打开桌面上的 MAKABAKA安装日志.txt，看最后的报错行
+2) 游戏目录里的  BepInEx\LogOutput.log  里的报错行
+3) 装完进游戏没效果 → 看安装时那份「VRM 三处自检」，哪一行是 [×] 就查那一行
+4) 点了 Steam 的「验证游戏文件完整性」→ valheim_Data\Managed 里那几个 dll 会被清掉
+   → 【重跑一次安装脚本】就能恢复
+5) 脚本卡住不动 → Ctrl+C 停掉，换方法二或方法三再试
+   ★ 卡在「方法一第 4 行（下载 install.ps1 那行）」不动 = 老写法用 Net.WebClient 同步下载、没有超时，
+     网络或杀软把连接"黑洞"掉时它既不报错也不返回；而且它没先开 TLS 1.2，部分 Windows 上会卡在握手。
+     处理：把【方法一】换成上面那段新命令（先开 TLS 1.2 + 每条线路 15 秒超时 + 自动换线路），
+     或直接改走方法二（git）／方法三（手动下 zip）。
+6) 报「无法将"elseif"项识别为 cmdlet」→ 你把 if / elseif / else 分成三行粘了
+   （PowerShell 控制台是逐行执行的）→ 改用方法二那段写法，或那一行版命令
+7) 提示磁盘空间不足 / 下载老是失败 → 重跑一次，在问"安装包放哪"时换到空间大的盘
+   （或加参数：-DownloadDir D:\MAKABAKA_install）
+8) 报「无法将"Get-ModelManifest"项识别为 cmdlet / Get-ModelCandidates 不是…」
+   → 你的 install.ps1 旁边缺 ModelLib.ps1（老版方法一只下了 install.ps1）。
+     新脚本会自动去仓库补下这个文件；实在不行就手动下它放到 install.ps1 同一个文件夹：
+       https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/ModelLib.ps1
+9) 以上都看不懂：把 MAKABAKA安装日志.txt 发过来
+
+
+【8】两件千万别做的事
+------------------------------------------------------------
+1) 别在 r2modman 里对下面这些 mod 点 Update / Reinstall
+   （会被官方原版覆盖，丢掉中文化 / 自编译的改动）：
+     AzuExtendedPlayerInventory、Recycle_N_Reclaim、MinimalUI、BetterUI、PetPantry、
+     ChestFlow、TargetPortal、PlanBuild、InstantMonsterLootDrop、Endurance，
+     以及自制插件 SafeBox（随身保险柜）、KeepBuffsOnDeath、VRMGhostFix、PortalBroadcastFix
+2) 别在装好 ValheimVRM 的 dll 之后点 Steam 的「验证游戏文件完整性」
+   （会清掉 valheim_Data\Managed 里的 dll；真点了就重跑一次安装脚本）
+
+
+附：包里还有这些说明文档（都在同一个文件夹里）
+------------------------------------------------------------
+· 模型说明.txt          角色模型怎么按需下载/切换、下载凭据、缓存位置、常见问题
+· 安装指南.txt          更详细的说明（目录结构、每个 mod 干嘛的、常见问题）
+· 键位自定义指南.txt    怎么改键
+· 游戏内功能速查.txt    F1 面板里都有什么功能
+· r2modman使用说明.txt  管理器怎么用
+· Mod清单_MAKABAKA.txt  这包里到底有哪些 mod
+· 版本号.txt            当前版本与包文件名
+· ValheimVRM_手动安装\说明_ValheimVRM.txt   角色模型那部分的手动做法
+
+
+（本包内容：Thunderstore 42 个包 · 37 启用 / 5 禁用 ＋ 自制插件 6 个
+  ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked ＋ Achievement_Enabler_Plus）
+============================================================

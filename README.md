@@ -4,7 +4,7 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 ＋ 自制插件 3 个（SafeBox 0.5.4、KeepBuffsOnDeath 1.0.1、VRMGhostFix）
 ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
 
-**当前版本：v1.4（2026-09-17）** · 安装包 82.3 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
+**当前版本：v1.11（2026-09-18）** · 安装包 82.4 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
 
 > 仓库里只放脚本 + 文档（几百 KB）；安装包 zip 走 Release 附件，不进 git 历史。
 
@@ -47,7 +47,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\联机一致性自检.ps1 
 1. **正版 Valheim 1.0**（Steam）
 2. **[r2modman](https://thunderstore.io/c/valheim/p/ebkr/r2modman/)** 已安装，**并启动过一次、选好 Valheim 安装位置**
    （它得先建好 profiles 目录，安装脚本才能把档放进去）
-3. Windows 10/11，预留约 1 GB（安装包 82.3 MB + 临时解压 + 档本体；另按需下载模型，每个 13–77 MB；`%TEMP%` 里的临时文件装完会自动清）
+3. Windows 10/11，预留约 1 GB（安装包 82.4 MB + 临时解压 + 档本体；另按需下载模型，每个 13–170 MB，脚本会用 6 条连接分段并发下载（实测 2~4 MB/s）；`%TEMP%` 里的临时文件装完会自动清）
 
 ---
 
@@ -60,16 +60,19 @@ PowerShell 窗口里把下面这几行整段粘进去、回车（镜像优先，
 ```powershell
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $base = 'https://raw.githubusercontent.com/kanziguai/valheim-makabaka-pack/main/'
-$ms = @('https://ghfast.top/','https://ghproxy.net/','https://gh-proxy.com/','')
+$ms = @('https://gh-proxy.com/','https://gh.jasonzeng.dev/','https://ghfast.top/','https://gh.xxooo.cf/','https://gh.llkk.cc/','https://ghproxy.net/','')
 $dir = $env:TEMP
 $ok = $false
 foreach ($m in $ms) { $t = $m + $base + 'install.ps1'; Write-Host "试：$t" -ForegroundColor DarkGray; try { Invoke-WebRequest -Uri $t -OutFile "$dir\makabaka-install.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\makabaka-install.ps1").Length -gt 20000) { $ok = $true; break } } catch { Write-Host ("  这条不通：" + $_.Exception.Message.Split([char]10)[0]) -ForegroundColor DarkYellow } }
 $okLib = $false
 foreach ($m in $ms) { try { Invoke-WebRequest -Uri ($m + $base + 'ModelLib.ps1') -OutFile "$dir\ModelLib.ps1" -TimeoutSec 15 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\ModelLib.ps1").Length -gt 5000) { $okLib = $true; break } } catch {} }
-if ($ok) { if (-not $okLib) { Write-Host '[提示] ModelLib.ps1 没下下来（模型功能会自动跳过；只更新 mod 不受影响）' -ForegroundColor Yellow }; powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\makabaka-install.ps1" } else { Write-Host '四条线路都没连上 → 检查杀软/代理，或改用 C（手动下载 zip）' -ForegroundColor Yellow }
+if (-not $ok) { try { Invoke-WebRequest -Uri 'https://cdn.jsdelivr.net/gh/kanziguai/valheim-makabaka-pack@main/install.ps1' -OutFile "$dir\makabaka-install.ps1" -TimeoutSec 20 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\makabaka-install.ps1").Length -gt 20000) { $ok = $true; Write-Host '安装脚本已改从 jsDelivr 拿到' -ForegroundColor Green } } catch { Write-Host 'jsDelivr 这条也不通' -ForegroundColor DarkYellow } }
+if (-not $okLib) { try { Invoke-WebRequest -Uri 'https://cdn.jsdelivr.net/gh/kanziguai/valheim-makabaka-pack@main/ModelLib.ps1' -OutFile "$dir\ModelLib.ps1" -TimeoutSec 20 -UseBasicParsing -ErrorAction Stop; if ((Get-Item "$dir\ModelLib.ps1").Length -gt 5000) { $okLib = $true } } catch {} }
+if ($ok) { if (-not $okLib) { Write-Host '[提示] ModelLib.ps1 没下下来（模型功能会自动跳过；只更新 mod 不受影响）' -ForegroundColor Yellow }; powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\makabaka-install.ps1" } else { Write-Host '这些线路都没连上 → 检查杀软/代理，或改用 C（手动下载 zip）' -ForegroundColor Yellow }
 ```
 
-这段有意做成永不静默卡住：先开 TLS 1.2，再对 4 条线路（ghfast / ghproxy / gh-proxy / 直连）
+这段有意做成永不静默卡住：先开 TLS 1.2，再对 6 条国内加速线路 + 直连（gh-proxy / jasonzeng / ghfast / xxooo / llkk / ghproxy / 直连），
+最后还有一条 jsDelivr CDN 兜底（它不吃 GitHub 的连通性，镜像全挂时仍可能拿到脚本）
 逐条尝试，每条最多等 15 秒；连不上就明确打印「这条不通：原因」并换下一条。
 
 - 之前那版用 `Net.WebClient` 同步下载：**它没有超时**，连接被网络或杀软黑洞掉时既不报错也不返回，
@@ -79,8 +82,8 @@ if ($ok) { if (-not $okLib) { Write-Host '[提示] ModelLib.ps1 没下下来（�
 - 卡住了就 Ctrl+C，改用 B 或 C 两种装法。
 
 > 在跑着 Clash / 机场加速器的机器上，脚本下载会先走系统代理、失败会自动绕开代理直连；
-> 首装要下 82MB（不含模型），几分钟属正常，别中途关窗口；**下载时会实时显示百分比、当前速度、剩余时间**。
-> 镜像（ghfast / ghproxy）对 raw 文件有几分钟缓存：脚本刚更新完的头几分钟，
+> 首装要下约 82 MB（不含模型），几分钟属正常，别中途关窗口；**下载时会实时显示百分比、当前速度、剩余时间**。
+> 镜像（gh-proxy / ghfast / ghproxy 等）对 raw 文件有几分钟缓存：脚本刚更新完的头几分钟，
 > 从镜像拿到的可能还是旧副本 —— 脚本开头会打印「脚本日期」，对不上就等几分钟或改用直连。
 
 ### B. git 一段命令（推荐，以后更新最方便）
@@ -146,7 +149,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 | 你想干什么 | 怎么做 | 下载量 |
 |---|---|---|
 | 只更新 mod | 双击 `一键安装.bat`，最后一步答 `n`；或 `-ModsOnly` | 几十 MB |
-| 装包 + 顺手装模型 | 走到模型那步，菜单里选一个或多个（如 `1,3`） | 每个 13–77 MB（按需） |
+| 装包 + 顺手装模型 | 走到模型那步，菜单里选一个或多个（如 `1,3`） | 每个 13–170 MB（按需，6 条连接并发） |
 | 只换模型 / 换角色名 | 双击 `换模型.bat`（等价 `install.ps1 -VRMOnly`） | 已下载过 = **0**（秒切） |
 | 只看有哪些可选 | `install.ps1 -ListModels`（不动任何文件） | 0 |
 
