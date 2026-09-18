@@ -1,0 +1,43 @@
+【v1.12 更新说明 · 2026-09-18】
+把 9-18 白天做的改动补进包里（保险柜完善版 · MinimalUI 兼容补丁 · 三个 mod 更新）
+
+● 为什么会有这一版
+  上一版 v1.11 只改了「下载链路」（国内线路测速选线、断点续传、模型 6 条连接并发），mod 内容仍是 v1.10 那套 ——
+  9-18 白天做的下面这些改动当时没同步进分享包，v1.11 的包里带的还是旧 dll。这一版把它们补齐并送达。
+  （如果你装过 v1.11：装 v1.12 会把这几处覆盖成新版，其余不变。）
+
+● 这次实际变了什么
+  1) SafeBox 0.5.8 → 0.5.9（自制 · 随身保险柜）—— 性能 + 存档可靠性
+     · 性能：总开关现在真的会停掉每帧工作（旧版关掉仍照跑面板填充/定位）；柜内格子改成「内容/拖拽物变化才重画」
+       （外加 2 秒兜底），稳定状态下不再每帧重写几十个 UI 属性；同贴图、同数值不再重复写入。
+       —— 面板开着时的每帧开销明显下降，多人同屏更稳。
+     · 存档：写盘改用原子替换（File.Replace），突然断电/崩溃不会留下半截存档；
+       正式存档若损坏，会自动从快照恢复，并把恢复副本留为 `<你的档>.recovered` 供排查。
+     · 兼容：`BepInEx\config\SafeBox\<玩家ID>_<角色名>.box` 格式不变，旧档直接用，不需要迁移。
+  2) MinimalUI 2.3.15 + EpicLoot 兼容补丁（修日志红字）
+     · 症状：进游戏后日志里一直有 `Could not load type 'EpicLoot_UnityLib.EnchantingTable'`，
+       附魔台相关皮肤加载失败（MinimalUI 把类型找在了旧程序集名 `EpicLoot-UnityLib` 上）。
+     · 处理：直接把那个类型引用改指到 `EpicLoot` 程序集（只改这一处字符串，其它逻辑未动）。
+     · 注意：这是 dll 级补丁 —— **只有装新版包才生效**，改配置是改不到的。
+  3) EpicLoot 0.14.7 → 0.14.8
+  4) Jotunn 2.30.0 → 2.30.1
+  5) InstantMonsterLootDrop 0.7.2 → 0.8.0
+     （MMHOOK 的两个 dll 每次启动会按当前插件自动重建，不用管）
+
+● 与上一版的相同点
+  · mod 列表不变：Thunderstore 42 个包（36 启用 / 6 禁用）＋ 自制插件 7 个
+    （SafeBox / KeepBuffsOnDeath / ItemSkin / VRMGhostFix / PortalBroadcastFix / ChestFlowTweaks / InventorySortOnly）
+  · 下载链路沿用 v1.11 的改进：7 条国内线路先测速再选线路、断了换线接着下；
+    角色模型 6 条连接分段并发（约 3~7 倍），失败自动退回单连接
+  · 角色模型 15 个 / 武器模型 2 个仍走私有仓库按需下载（不进安装包）
+
+● 升级方式
+  · 一键包用户：直接装 v1.12（原地升级，保留你的设置与收藏）
+  · 老玩家：把"一行命令"那段再粘一次，或走 git 那段命令
+  · 只更新 mod 的老手：`-ModsOnly` 即可（本版不含模型改动）
+  · **服务端那台**：Jotunn / EpicLoot / SafeBox 建议一起更到同版本（联机时两端 dll 不一致容易出怪问题）
+
+● 排障提示
+  · SafeBox 面板出现异常的旧档：删掉 `BepInEx\config\SafeBox\*.box.bad` 后重开游戏即可（脚本不会碰你的柜档）
+  · 装完仍是红字 `EpicLoot_UnityLib.EnchantingTable`：说明 MinimalUI.dll 没被换成新版，
+    多半是在 r2modman 里对 MinimalUI 点过 Update/Reinstall（会装回未打补丁的官方版）→ 重跑一次安装脚本即可

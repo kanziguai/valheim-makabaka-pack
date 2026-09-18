@@ -74,14 +74,17 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $Expect = @{
     "BepInEx\plugins\jg224-ChestFlow\ChestFlow.dll"       = "a749310465c4fa9a260f66a4b91f11ff"
     "BepInEx\plugins\ChestFlowTweaks\ChestFlowTweaks.dll" = "4c7460dc819a46bd1905f5ef5bc0fb7b"
-    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "020ebd7a0b7bbdbac81352be3e0189e8"
+    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "848b7d0192f887e979904c189187a34d"
     "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll"   = "5e632a79528a5fe12c792afbb95e7d65"
     "BepInEx\plugins\VRMGhostFix\VRMGhostFix.dll"         = "297936525d808cfdd38b33da54eeb87c"
     "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"
-    "BepInEx\plugins\SafeBox\SafeBox.dll" = "9f88456f4baddc5a953e0c799c48cb11"
+    "BepInEx\plugins\SafeBox\SafeBox.dll" = "0ee83cd3688447e723365119649d2a8c"
     "BepInEx\plugins\KeepBuffsOnDeath\KeepBuffsOnDeath.dll" = "6fc8037642f4bc4508d585312525e191"
     "BepInEx\plugins\Azumatt-AzuExtendedPlayerInventory\AzuExtendedPlayerInventory.dll" = "8d9f4ac43884e64fb0fafa08b04f609c"
     "BepInEx\plugins\PortalBroadcastFix\PortalBroadcastFix.dll" = "2c4a8ec2e1f69781fd97761423e72b64"
+    "BepInEx\plugins\ItemSkin\ItemSkin.dll" = "c6a3b2aa698b120726febe59fb055bee"
+    "BepInEx\plugins\Azumatt-Minimal_UI\MinimalUI.dll" = "d81470836d83a1e802fd09446b5fcea0"
+    "BepInEx\plugins\InventorySortOnly\InventorySortOnly.dll" = "957c0c96dafe4d7a738a59a9837144ce"
 }
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
@@ -113,8 +116,8 @@ $MirrorProbeSeconds = 6        # 测速单条线路超时
 $MirrorGoodEnough   = 1.5      # MB/s：某条线路已经这么快就用它，不再测后面的（省时间）
 $script:ProbeCache  = @{}      # 同一个 URL 只测一次
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.11_20260918.zip"
-$FallbackMd5     = "49c0dfd7668ba0bafd655ab1b91c376c"
+$FallbackAsset   = "MAKABAKA_profile_v1.12_20260918.zip"
+$FallbackMd5     = "91327524adace3c91dc4f44308ff0fef"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）

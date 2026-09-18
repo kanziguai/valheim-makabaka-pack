@@ -1,6 +1,7 @@
 ﻿Valheim mod 清单（r2modman 档名：MAKABAKA）
 导出时间：2026-09-15   游戏：Valheim（Steam buildid 25253764，2026-09 正式版）
-启用 36 个 / 已装禁用 5 个 / 自制插件（不在 Thunderstore 上）4 个（SafeBox / KeepBuffsOnDeath / VRMGhostFix / PortalBroadcastFix）
+启用 36 个 / 已装禁用 6 个 / 自制插件（不在 Thunderstore 上）7 个：
+SafeBox / KeepBuffsOnDeath / ItemSkin / VRMGhostFix / PortalBroadcastFix / ChestFlowTweaks / InventorySortOnly
 
 ======================================================================
 【一、启用中（36 个）】—— 前面带 * 的表示“别在 r2modman 里点 Update/Reinstall”
@@ -52,7 +53,7 @@
      说明：A few customisation options for fermenters including percentage progress, not requiring cover and custom fermentation time
  20. Korppis-Spearfishing  v1.0.5   by Korppis
      说明：Catch fish with projectile weapons such as spear, harpoon and bow.
- 21. RandyKnapp-EpicLoot  v0.14.7   by RandyKnapp
+ 21. RandyKnapp-EpicLoot  v0.14.8   by RandyKnapp
      说明：Adds loot drops, magic items, and enchanting to Valheim.
  22. Searica-DodgeShortcut  v1.4.0   by Searica
      说明：Simple mod to add a configurable dodge button. Allows you to dodge with a single key press.
@@ -76,7 +77,7 @@
      说明：Update and cleaned up code. Automate your Beehives.  Change honey production speed and store the honey when full
  31. ValheimModding-HookGenPatcher  v0.0.4   by ValheimModding
      说明：Generates MonoMod.RuntimeDetour.HookGen's MMHOOK file during the BepInEx preloader phase.
- 32. ValheimModding-Jotunn  v2.30.0   by ValheimModding
+ 32. ValheimModding-Jotunn  v2.30.1   by ValheimModding
      说明：Jötunn (/ˈjɔːtʊn/, 'giant'), the Valheim Library was created with the goal of making the lives of mod developers easier. It enables you to create mods
  33. ValheimModding-JsonDotNET  v13.0.4   by ValheimModding
      说明：Shared version 13.0.3 of Json.NET from Newtonsoft, net45 package for use in Valheim mods. Maintained by the ValheimModding team.
@@ -88,18 +89,26 @@
 ======================================================================
   36. Azumatt-Hooked  v1.1.1   by Azumatt   （2026-09-15 新增：钓鱼小游戏；本包已收敛收益，见更新说明）
 
-【二、已装但禁用（5 个）】—— 文件在档里（.old），想用可在 r2modman 里启用
+【二、已装但禁用（6 个）】—— 文件在档里（.old），想用可在 r2modman 里启用
 ======================================================================
  1. Azumatt-AzuCraftyBoxes  v1.8.19   by Azumatt
  2. Goldenrevolver-Quick_Stack_Store_Sort_Trash_Restock  v1.4.15   by Goldenrevolver
  3. Hex_Viking-HexQuickStackStorage  v1.2.0   by Hex_Viking
  4. hyr-ItemStacks  v1.2.0   by hyr
  5. KuboNinja_Squad-QuickStackStore_Valheim1_Compat  v1.0.0   by KuboNinja_Squad
+ 6. Stonaar-ValheimSkipIntro  v1.0.0   by Stonaar   （游戏已自带跳过片头，故禁用）
 
 ======================================================================
-【三、自制 / 本地插件（4 个，不在 Thunderstore 上，r2modman 不会更新它们）】
+【三、自制 / 本地插件（7 个，不在 Thunderstore 上，r2modman 不会更新它们）】
 ======================================================================
- 1. ChestFlowTweaks.dll  15872 B
+ 1. SafeBox.dll  49664 B
+     说明：自研 0.5.9：随身保险柜。本版＝性能（总开关真的停掉每帧工作；格子「脏才画」；稳定态零写入）＋
+     存档原子替换 + 损坏自动从快照 .recovered 恢复
+ 2. KeepBuffsOnDeath.dll  17408 B
+     说明：自研 1.0.1：死亡保留正面状态效果
+ 3. ItemSkin.dll  29184 B
+     说明：自研 1.0.1：按模型清单的 slots 槽位映射替换外观（多贴图模型不再贴错）
+ 4. ChestFlowTweaks.dll  15872 B
      说明：自研性能补丁 0.3.1：把 ChestFlow 每帧的反射查找改成启动时缓存（旧版掉帧的真凶，48ms/帧 → 修好后 65fps）
  2. InventorySortOnly.dll  16896 B
      说明：自研 1.0.1：只整理 AzuEPI 的常规行，热键栏/收藏格/装备行不动
@@ -112,10 +121,18 @@
 ======================================================================
 【附：需要更新的 md5 出厂校验值（install.ps1 用）】
 ======================================================================
+（与 install.ps1 的 $Expect 表一一对应；打包时 tools/打包分享包.py 会按包内实际文件自动刷新）
+
     "BepInEx\plugins\jg224-ChestFlow\ChestFlow.dll" = "a749310465c4fa9a260f66a4b91f11ff"
     "BepInEx\plugins\ChestFlowTweaks\ChestFlowTweaks.dll" = "4c7460dc819a46bd1905f5ef5bc0fb7b"
-    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "56c35cd9125ef7f9e43c90c77f9dfa6e"
-    "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll" = "4ba6372ed659ec18f897f2dcf9e2e6d8"
+    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "848b7d0192f887e979904c189187a34d"
+    "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll" = "5e632a79528a5fe12c792afbb95e7d65"
     "BepInEx\plugins\VRMGhostFix\VRMGhostFix.dll" = "297936525d808cfdd38b33da54eeb87c"
-    "BepInEx\plugins\PortalBroadcastFix\PortalBroadcastFix.dll" = "2c4a8ec2e1f69781fd97761423e72b64"
     "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"
+    "BepInEx\plugins\SafeBox\SafeBox.dll" = "0ee83cd3688447e723365119649d2a8c"
+    "BepInEx\plugins\KeepBuffsOnDeath\KeepBuffsOnDeath.dll" = "6fc8037642f4bc4508d585312525e191"
+    "BepInEx\plugins\Azumatt-AzuExtendedPlayerInventory\AzuExtendedPlayerInventory.dll" = "8d9f4ac43884e64fb0fafa08b04f609c"
+    "BepInEx\plugins\PortalBroadcastFix\PortalBroadcastFix.dll" = "2c4a8ec2e1f69781fd97761423e72b64"
+    "BepInEx\plugins\ItemSkin\ItemSkin.dll" = "c6a3b2aa698b120726febe59fb055bee"
+    "BepInEx\plugins\Azumatt-Minimal_UI\MinimalUI.dll" = "d81470836d83a1e802fd09446b5fcea0"
+    "BepInEx\plugins\InventorySortOnly\InventorySortOnly.dll" = "957c0c96dafe4d7a738a59a9837144ce"

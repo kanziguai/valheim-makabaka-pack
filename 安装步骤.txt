@@ -228,6 +228,6 @@
 · ValheimVRM_手动安装\说明_ValheimVRM.txt   角色模型那部分的手动做法
 
 
-（本包内容：Thunderstore 42 个包 · 37 启用 / 5 禁用 ＋ 自制插件 6 个
+（本包内容：Thunderstore 42 个包 · 36 启用 / 6 禁用 ＋ 自制插件 7 个
   ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked ＋ Achievement_Enabler_Plus）
 ============================================================
