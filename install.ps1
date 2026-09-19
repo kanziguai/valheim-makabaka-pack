@@ -127,7 +127,7 @@ $MirrorGoodEnough   = 1.5      # MB/s：某条线路已经这么快就用它，�
 $script:ProbeCache  = @{}      # 同一个 URL 只测一次
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.13_20260919.zip"
-$FallbackMd5     = "59b9a2fb20bd534247d86ea96c3b7f6c"
+$FallbackMd5     = "f5862c6efdd557c474703e91993992e4"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
