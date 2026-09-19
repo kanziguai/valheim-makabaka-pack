@@ -99,7 +99,7 @@ $Expect = @{
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
 $ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owner/repo）
-$ScriptBuild    = "2026-09-18"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
+$ScriptBuild    = "2026-09-19"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
 $VrmDefaultModel = ""                                   # 已取消默认模型（清单里 default 为空 → 不重排；菜单顺序=清单顺序=参考图编号）
@@ -126,8 +126,8 @@ $MirrorProbeSeconds = 6        # 测速单条线路超时
 $MirrorGoodEnough   = 1.5      # MB/s：某条线路已经这么快就用它，不再测后面的（省时间）
 $script:ProbeCache  = @{}      # 同一个 URL 只测一次
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.12_20260918.zip"
-$FallbackMd5     = "91327524adace3c91dc4f44308ff0fef"
+$FallbackAsset   = "MAKABAKA_profile_v1.13_20260919.zip"
+$FallbackMd5     = "59b9a2fb20bd534247d86ea96c3b7f6c"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
