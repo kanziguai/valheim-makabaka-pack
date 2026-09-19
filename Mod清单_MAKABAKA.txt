@@ -53,7 +53,7 @@ SafeBox / KeepBuffsOnDeath / ItemSkin / VRMGhostFix / PortalBroadcastFix / Chest
      说明：A few customisation options for fermenters including percentage progress, not requiring cover and custom fermentation time
  20. Korppis-Spearfishing  v1.0.5   by Korppis
      说明：Catch fish with projectile weapons such as spear, harpoon and bow.
- 21. RandyKnapp-EpicLoot  v0.14.8   by RandyKnapp
+ 21. RandyKnapp-EpicLoot  v0.14.10   by RandyKnapp
      说明：Adds loot drops, magic items, and enchanting to Valheim.
  22. Searica-DodgeShortcut  v1.4.0   by Searica
      说明：Simple mod to add a configurable dodge button. Allows you to dodge with a single key press.

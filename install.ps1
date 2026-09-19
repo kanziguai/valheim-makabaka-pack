@@ -84,7 +84,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $Expect = @{
     "BepInEx\plugins\jg224-ChestFlow\ChestFlow.dll"       = "a749310465c4fa9a260f66a4b91f11ff"
     "BepInEx\plugins\ChestFlowTweaks\ChestFlowTweaks.dll" = "4c7460dc819a46bd1905f5ef5bc0fb7b"
-    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "848b7d0192f887e979904c189187a34d"
+    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "4ca65ee6417ace9bc35187f35be2e5d0"
     "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll"   = "5e632a79528a5fe12c792afbb95e7d65"
     "BepInEx\plugins\VRMGhostFix\VRMGhostFix.dll"         = "297936525d808cfdd38b33da54eeb87c"
     "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"
@@ -1445,7 +1445,7 @@ foreach ($rel in $Expect.Keys) {
     if ($h -ne $Expect[$rel]) { $bad += "$rel （内容与出厂不一致）" }
 }
 if ($bad.Count -eq 0) {
-    $critTxt = "ChestFlow 汉化版、ChestFlowTweaks 0.3.1、EpicLoot 0.14.7、Endurance 汉化版"
+    $critTxt = "ChestFlow 汉化版、ChestFlowTweaks 0.3.1、EpicLoot 0.14.10、Endurance 汉化版"
     if (-not $script:EvMode) { $critTxt += "、VRMGhostFix" }
     Say "        关键文件校验通过 ✓（$critTxt）" "Green"
 } else {
@@ -1917,8 +1917,15 @@ if ($vrmPack -and -not $SkipVRM) {
                         }
                     }
                     if ([string]::IsNullOrWhiteSpace($charName) -and $NonInteractive -and $existing.Count -ge 1 -and -not $libOnlyEffective) {
-                        $charName = $existing[0]
-                        Say "        （非交互模式：沿用现有角色名「$charName」）" "DarkGray"
+                        # 只把"真正的角色槽"当候选：它旁边必须有 settings_<名字>.txt；
+                        # 模型库里的模型（<清单名>.vrm）没有配对 settings，不能被当成角色名 —— 否则会把库里的模型覆盖掉
+                        $slotNames = @($existing | Where-Object { Test-Path (Join-Path $vrmTarget ("settings_$_.txt")) })
+                        if ($slotNames.Count -ge 1) {
+                            $charName = $slotNames[0]
+                            Say "        （非交互模式：沿用现有角色名「$charName」）" "DarkGray"
+                        } else {
+                            Say "        （非交互模式：目录里没有现成的角色槽（settings_<角色名>.txt）→ 只补模型库，不碰当前使用的模型）" "DarkGray"
+                        }
                     }
 
                     if ([string]::IsNullOrWhiteSpace($charName) -or $charName -eq "skip") {
