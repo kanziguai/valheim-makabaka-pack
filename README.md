@@ -4,7 +4,7 @@ Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（3
 ＋ 自制插件 7 个（SafeBox 0.5.9、KeepBuffsOnDeath 1.0.1、ItemSkin 1.0.1、VRMGhostFix、PortalBroadcastFix、ChestFlowTweaks 0.3.1、InventorySortOnly 1.0.1）
 ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
 
-**当前版本：v1.12（2026-09-18）** · 安装包 82.4 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
+**当前版本：v1.13（2026-09-19）** · 安装包 82.8 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
 
 > 仓库里只放脚本 + 文档（几百 KB）；安装包 zip 走 Release 附件，不进 git 历史。
 

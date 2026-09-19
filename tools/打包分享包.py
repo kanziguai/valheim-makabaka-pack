@@ -69,6 +69,7 @@ EXCLUDE_RE = [
     (re.compile(r"(^|/)模型凭据\.txt$"), "模型下载凭据（绝不能进包）"),    # ---- 本机诊断探针：只在作者本机跑，永不进包（用户要求：检测仅本地）----
     (re.compile(r"(^|/)(LongRunProbe|VrmCloneDiag|PerfProbe|ModTimer|ModScope|ChestFlowCut|ChestFlowPerfFix)(/|$)"), "本机诊断探针（仅本地）"),
     (re.compile(r"(^|/)longrun_probe\.csv$", re.I), "本机诊断数据（仅本地）"),
+    (re.compile(r"(^|/)_重复副本_"), "去重备份目录"),
 ]
 # 模型目录内容：默认排除（--with-models 可改回"整包带模型"）——注意不能误伤 Models/models.json
 EXCLUDE_MODELS = (re.compile(r"^Models/(?!预览/|武器替换/)[^/]+/", re.I), "模型目录内容（模型改走按需下载；Models/预览/ 与 Models/武器替换/ 例外，随包分发）")

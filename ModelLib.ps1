@@ -55,8 +55,20 @@ function Get-ModelToken([string]$given = "", [string]$packRoot = "", [switch]$Pr
         $t = "" + (Read-Host "  这个模型要从【私有】仓库下载，需要下载凭据（GitHub 令牌，只读权限即可）")
         $t = $t.Trim()
         if ($t -and $Save) {
-            $dst = Get-ModelTokenPaths $packRoot | Select-Object -First 1
-            try { Set-Content -LiteralPath $dst -Value $t -Encoding UTF8 -NoNewline; Say "        （已记住凭据：$dst）" "DarkGray" } catch {}
+            # 存两处：① %LOCALAPPDATA%\MAKABAKA\ 本机固定位置（换脚本目录、重下脚本、重装包都还在）
+            #         ② 脚本旁边那份（想连包一起带走时用）
+            $dstList = @()
+            $dstList += (Join-Path (Join-Path $env:LOCALAPPDATA "MAKABAKA") $ModelTokenFile)
+            $dstList += (Get-ModelTokenPaths $packRoot | Select-Object -First 1)
+            foreach ($dst in ($dstList | Where-Object { $_ } | Select-Object -Unique)) {
+                try {
+                    $dir = Split-Path $dst -Parent
+                    if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+                    Set-Content -LiteralPath $dst -Value $t -Encoding UTF8 -NoNewline
+                } catch {}
+            }
+            Say "        （已记住凭据：$($dstList[0])）" "DarkGray"
+            Say "          以后重跑/更新都不用再输；换电脑就把这个文件放到 install.ps1 旁边" "DarkGray"
         }
         return $t
     }
