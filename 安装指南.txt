@@ -25,12 +25,12 @@
    或 GitHub：https://github.com/ebkr/r2modmanPlus/releases
    我们用的是 3.2.19，你可以用同版本或更新的。
 
-3) Windows 10/11，预留约 1GB（安装包 82MB、解压后约 105MB；角色模型按需下载，每个 13~170MB，下过的存本机）。
+3) Windows 10/11，预留约 1GB（安装包 约 96MB、解压后约 137MB；角色模型按需下载，每个 13~170MB，下过的存本机）。
 
 ----------------------------------------------------------------
 【0.5 本版（v1.4 / 2026-09-17）改了什么】
 ----------------------------------------------------------------
-1) 【角色模型不再打进安装包】改为按需下载：只更新 mod 的人不用再为模型多下几十 MB（安装包 138MB → 82MB），
+1) 【角色模型不再打进安装包】改为按需下载：只更新 mod 的人不用再为模型多下几十 MB（安装包 138MB → 现在约 96MB），
    仓库也瘦了（clone 从 450MB → 约 1MB）；想装/换模型时在脚本里选，下过的存本机、以后切换秒级。详见 模型说明.txt
 2) 新增自制插件 PortalBroadcastFix 1.0.0：新放的传送门，队友不重连也能立刻看到（上游 TargetPortal 未修的 issue #79）
    ⚠ 要装到【服务端】：BepInEx\plugins\PortalBroadcastFix\PortalBroadcastFix.dll
@@ -61,7 +61,7 @@
    · 如果你机器上有【多个】r2modman 数据文件夹（有人每块盘都装过一份），脚本会把它们列出来让你挑：
      会标出哪个"已有 MAKABAKA 档"、哪个是"上次装在这"；直接回车 = 第 1 项，输 9 = 再扫描所有硬盘，
      输 0 = 自己输入路径。只有一个数据文件夹时不会问。
-   · 安装包的【下载/解压位置】首次运行也会问一次（要下约 82MB、解压再占约 105MB，装完自动清理）：
+   · 安装包的【下载/解压位置】首次运行也会问一次（要下约 96MB、解压再占约 137MB，装完自动清理）：
      默认在 %TEMP%\makabaka_pack，不喜欢放 C 盘可以选别的盘。选完会记住（脚本旁的 download-path.txt）；
      想改就删掉那个文件，或用参数 -DownloadDir D:\MAKABAKA_install 指定。
      换模型用的模型缓存也会放进你选的目录里的 VRM_Models\（按需下载的模型都存这儿，每个 13~170MB；
@@ -128,7 +128,7 @@ MAKABAKA\                   ← 整个 r2modman 档（把它放到 profiles 目�
   mods.yml                   r2modman 的 mod 清单（记录启用/禁用状态）
 MAKABAKA_profile.zip        上面这一堆的压缩包（传输用，解压后同上）
 一键安装.bat / install.ps1  一键安装脚本（双击 bat 即可；详细见第 1 节"最快路径"）
-EnhancedValheimVRM_手动安装\        角色换模型（EnhancedValheimVRM）要用的东西：官方包 + 15 个 dll + 说明
+EnhancedValheimVRM_手动安装\        角色换模型（EnhancedValheimVRM 1.3.1）要用的东西：插件与伴随 dll + 18 个 Managed 程序集 + 说明
                             （模型已不在这里 —— 改按需下载，清单见 Models\models.json）
                             （这个 mod 特殊：必须往游戏目录放文件，所以单独放这儿；见第 9 节）
 Mod清单_MAKABAKA.txt        全部 mod 名称 / 版本 / 作者 / 说明
@@ -140,13 +140,13 @@ r2modman使用说明.txt          r2modman 本身的使用说明（装 mod、切
 【3. 包里"没有"的东西（要自己补，或不需要）】
 ----------------------------------------------------------------
 1) 没有游戏本体、没有 r2modman 程序 —— 自己装（见第 0 节）。
-2) 人物模型【不随包】，改为按需下载（v1.4 起）：共 13 个可选（金乌 59.8MB、辰星 36.7MB、菲比 77.2MB…
+2) 人物模型【不随包】，改为按需下载（v1.4 起）：共 15 个可选（金乌 59.8MB、辰星 36.7MB、菲比 77.2MB…
    压缩后单个 13~170MB；脚本用 6 条连接分段并发下载，实测 2~4 MB/s）。装的时候（或双击 换模型.bat）在菜单里多选，脚本会下载并校验 sha256，
    下过的存本机缓存，以后再切换是秒级、不重下。想用你自己的 .vrm：用 -ModelPath 指过去即可。
    模型放在私有仓库的 Release 附件里（不公开，避免二次配布问题）；首次下载要一次只读令牌
    （脚本会问一次并记住）。完整说明见 模型说明.txt；要往游戏目录放文件，做法见第 9 节。
-   **角色名每个人都不一样：脚本问完会按你输入的名字自动生成 <角色名>.vrm 与 settings_<角色名>.txt**，
-   所以不需要自己去文件夹里找文件改名。
+   **新版 EnhancedValheimVRM 不再需要角色名**：选中的模型以清单名放进 <游戏>\EnhancedValheimVRM\ 游戏模型库，
+   进游戏按 F9 选择/切换（<角色名>.vrm 与 settings_<角色名>.txt 是旧版 ValheimVRM 的规则，本包不用），所以不需要自己去文件夹里找文件改名。
 3) 没有世界存档和角色存档（你那台电脑上的进度）。想玩同一个世界就在房主电脑上复制：
       世界： C:\Users\房主\AppData\LocalLow\IronGate\Valheim\worlds_local\  （.db 和 .fwl）
       角色： C:\Users\房主\AppData\LocalLow\IronGate\Valheim\characters\    （.fch）
@@ -276,51 +276,49 @@ hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里�
 这个 mod 和别的不一样：它的文件要落在【两个不同位置】，r2modman 只负责其中一个：
 
   ① 插件（EnhancedValheimVRM.dll + UniVrm.shaders / OldUniVrm.shaders）
-       → r2modman 的档里：<档>\BepInEx\plugins\EnhancedValheimVRM_1.2.2\
+       → r2modman 的档里：<档>\BepInEx\plugins\Rawrtastic-EnhancedValheimVRM\
        （本包 profile 里本来就带着；脚本会再核一遍 md5：缺了补上、不一样就换成一致的）
-  ② 运行时 dll（15 个：VRM10.dll / UniGLTF.dll / MToon.dll / UnityEngine.VRModule.dll …）
+  ② Managed 程序集（18 个：VRM10.dll / UniGLTF.dll / MToon.dll / FreeImage.dll / AsyncImageLoader.Runtime.dll …）
        → 游戏本体里：<游戏>\valheim_Data\Managed\
        （覆盖前自动备份到 <游戏>\_vrm_backup_<时间>\）
-  ③ 模型与设置：<角色名>.vrm + settings_<角色名>.txt（角色名你自己输）
-       → 游戏本体里：<游戏>\EnhancedValheimVRM\
+  ③ 模型库：任意文件名的 .vrm（不需要等于角色名）
+       → 游戏本体里：<游戏>\EnhancedValheimVRM\（进游戏按 F9 选模型/切换，不用重启）
 
 源文件都在包里的  EnhancedValheimVRM_手动安装\  （两个「に入れるファイル」子目录就是①②的源）：
   BepInEx_pluginsに入れるファイル\        ← ① 的源（装进 r2modman 的档）
   valheim_Data_Managedに入れる文件\       ← ② 的源（装进游戏本体）
-  Models\models.json                      ← ③ 的可选模型清单（13 个：名称/大小/sha256/附件名）
-  Models\预览\NN_模型名.jpg                 ← 每个模型的参考图（450×700，13 张共约 0.45 MB，编号=菜单序号）
-  Models\默认settings.txt                 ← ③ 的默认参数（模型自带 settings.txt 时优先用它）
+  Models\models.json                      ← ③ 的可选模型清单（15 个：名称/大小/sha256/附件名）
+  Models\预览\NN_模型名.jpg                 ← 每个模型的参考图（450×700，15 张共约 0.5 MB，编号=菜单序号）
+  （模型参数：新版从 <游戏>\EnhancedValheimVRM\settings_Example.txt.example 起手；详见 模型说明.txt）
   （模型实体不再随包 —— 脚本按清单从私有仓库按需下载到本机缓存，见 模型说明.txt）
 
 自动做法（推荐）：运行 一键安装.bat 时，最后会问「一并配置 EnhancedValheimVRM 吗？」，选 Y（回车）就会：
   · ① 插件：装进 r2modman 的档（逐文件比对 md5，缺的补、不一样的换，换前备份）
-  · ② Managed dll：把那 15 个 dll 放进游戏本体（覆盖前备份到 <游戏>\_vrm_backup_<时间>\）
+  · ② Managed 程序集：把那 18 个程序集放进游戏本体（覆盖前备份到 <游戏>\valheim_Data\Managed\_evv_prev\）
   · ③ 模型：先列出可选模型（★=本机已有 / ↓=需要下载+大小；顺序 = 清单顺序，与 Models\预览\ 参考图编号一致；
            已取消默认模型，回车 = 不换；输 p 看总览图 / p3 看第 3 个 / f 打开参考图文件夹），
        可多选（如 1,3 或 2-4），0 = 不换；首次下载会要一次只读令牌（只问一次并记住），
        下完自动校验 sha256 并存进本机缓存（以后再切换不用重下），
-       再问【你的角色名】—— 直接在脚本里输入就行（每个人不一样；输入 0 可跳过），
-       若目录里已有以前用过的角色名，脚本会列出来让你输编号选用（省事又不会拼错），
-       然后自动复制成 <游戏>\EnhancedValheimVRM\<角色名>.vrm + settings_<角色名>.txt，
+       新版【不再询问角色名】：选中的模型直接以清单名放进 <游戏>\EnhancedValheimVRM\ 游戏模型库
+       （游戏目录里已有同尺寸模型会自动跳过、不重下），进游戏按 F9 选择/切换；
        旧模型默认留着（也可以选一键收进 _旧模型_<时间>\ 备份）
   · 找不到游戏目录时会问你要路径（含 valheim.exe 与 valheim_Data 的那一层）。
     这一步找不到也不影响 ① —— 插件那半照装，之后重跑本脚本补 ②③ 即可
   · 最后打一份「VRM 三处自检」，三行都要是 [✓]：
       [✓] ① 插件（档里）   [✓] ② Managed dll（游戏里）   [✓] ③ 模型（游戏里）
     出问题时照这三行排查即可 —— 那就是最常见的「装了没效果」的清单。
-手动做法：见 EnhancedValheimVRM_手动安装\说明_EnhancedValheimVRM.txt（三步 + 完整 dll 清单 + 文件名规则）。
+手动做法：见 EnhancedValheimVRM_手动安装\README-EnhancedValheimVRM.md（三步 + 完整程序集清单）。
 
-只想换模型 / 换角色名：双击包里的 **换模型.bat**（不用重装整个档，也不重下已装过的模型）：
-  列出模型（★本机已有 = 秒切；↓ = 现场按需下载）→ 你选 → 输角色名 → 自动改名复制 + 三处自检
+只想换模型：双击包里的 **换模型.bat**（不用重装整个档，也不重下已装过的模型）：
+  列出模型（★本机已有 = 秒切；↓ = 现场按需下载）→ 你选 → 模型进游戏模型库（新版不问角色名）+ 三处自检
   （只报告，不动 r2modman 的档）。只想看看有哪些可选：.\install.ps1 -ListModels
 
 三个必须知道的点：
-  1) 文件名必须跟着【角色名】走（插件源码规则）：
-       模型： <游戏>\EnhancedValheimVRM\<角色名>.vrm
-       配置： <游戏>\EnhancedValheimVRM\settings_<角色名>.txt
-     拼写必须和游戏里一模一样（大小写无所谓，字母不能错）；前缀必须是 settings_。
-     缺配置文件不崩：日志警告后用默认值。改完必须完全重启游戏。
-     一个角色一份，多角色/多模型可各放各的文件并存（插件按当前角色名去找）。
+  1) 模型文件名不用等于角色名（新版规则）：丢进 <游戏>\EnhancedValheimVRM\ 的 .vrm 会在游戏内 F9 里
+     按 VRM 自带标题显示，可同屏放多只随时切；参数用 settings_<角色名>.txt 或从
+     settings_Example.txt.example 起手，改完按 F9 重新应用即可，不用重启游戏。
+     （旧版 ValheimVRM 才要求 <角色名>.vrm + settings_<角色名>.txt，本包不再使用；加载是异步的，
+      100MB+ 的模型首次载入会卡几秒属正常。）
   2) Steam「验证游戏文件完整性」会把 Managed 里那些 dll 清掉 → 之后重跑一次 一键安装.bat 就能恢复。
   3) 模型只有本机可见（别人看到的是他自己的模型）。想互相看到，两边都装同一套。
 
@@ -331,9 +329,11 @@ hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里�
 ──────────────────────────────────────────────
 【2026-09-15 补充：自制插件与存档说明】
 ──────────────────────────────────────────────
-1) 本包内有 6 个自制插件（都不在 Thunderstore 上）：
-     SafeBox（随身保险柜）、KeepBuffsOnDeath（死亡保留 buff）、VRMGhostFix（修 VRM 传送分身）、
-     PortalBroadcastFix（传送门全服广播，装服务端才生效）、ChestFlowTweaks、InventorySortOnly
+1) 本包内有 7 个自制/本地插件（都不在 Thunderstore 上）：
+     SafeBox（随身保险柜）、KeepBuffsOnDeath（死亡保留 buff）、ItemSkin（外观替换）、
+     PortalBroadcastFix（传送门全服广播，装服务端才生效）、InventorySortOnly（只整理背包常规行）、
+     SafeQuickStack（P 键快速堆叠，不会抢占箱子所有权）、VRMModelSwitcher（游戏内 F9 换模型面板）
+     （VRMGhostFix 已停用 —— 新加载器自带残留清理；ChestFlowTweaks 已随 ChestFlow 一起移除）
    → 它们不需要额外安装，装上本包就有；**别用 r2modman 对它们做 Update/Reinstall**（会找不到包或覆盖）。
    → install.ps1 装完会核对出厂 md5，日志里能看到是否一致。
 2) 保险柜数据只在本机：BepInEx\config\SafeBox\<玩家ID>_<角色名>.box

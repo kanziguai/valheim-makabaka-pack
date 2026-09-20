@@ -133,7 +133,7 @@ $Expect = @{
     "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "4ca65ee6417ace9bc35187f35be2e5d0"
     "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll"   = "5e632a79528a5fe12c792afbb95e7d65"
     "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"
-    "BepInEx\plugins\SafeBox\SafeBox.dll" = "0ee83cd3688447e723365119649d2a8c"
+    "BepInEx\plugins\SafeBox\SafeBox.dll" = "2978b55e6bd1233d802175e987327b33"
     "BepInEx\plugins\KeepBuffsOnDeath\KeepBuffsOnDeath.dll" = "6fc8037642f4bc4508d585312525e191"
     "BepInEx\plugins\Azumatt-AzuExtendedPlayerInventory\AzuExtendedPlayerInventory.dll" = "8d9f4ac43884e64fb0fafa08b04f609c"
     "BepInEx\plugins\PortalBroadcastFix\PortalBroadcastFix.dll" = "2c4a8ec2e1f69781fd97761423e72b64"
@@ -172,7 +172,7 @@ $MirrorGoodEnough   = 1.5      # MB/s：某条线路已经这么快就用它，�
 $script:ProbeCache  = @{}      # 同一个 URL 只测一次
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.14_20260920.zip"
-$FallbackMd5     = "598b5a2a813f55f7c7ba9fbf574c345d"
+$FallbackMd5     = "15eae2300ecf399469a384ff2400cbfc"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）

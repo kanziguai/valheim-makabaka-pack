@@ -70,6 +70,8 @@ EXCLUDE_RE = [
     (re.compile(r"(^|/)(LongRunProbe|VrmCloneDiag|PerfProbe|ModTimer|ModScope|ChestFlowCut|ChestFlowPerfFix)(/|$)"), "本机诊断探针（仅本地）"),
     (re.compile(r"(^|/)longrun_probe\.csv$", re.I), "本机诊断数据（仅本地）"),
     (re.compile(r"(^|/)_重复副本_"), "去重备份目录"),
+    (re.compile(r"(^|/)_installer_backup_\d*/"), "作者改脚本时的临时备份目录（不进包）"),
+    (re.compile(r"(^|/)_release_prep_backup_\d*/"), "发布前整理用的临时备份目录（不进包）"),
 ]
 # 模型目录内容：默认排除（--with-models 可改回"整包带模型"）——注意不能误伤 Models/models.json
 EXCLUDE_MODELS = (re.compile(r"^Models/(?!预览/|武器替换/)[^/]+/", re.I), "模型目录内容（模型改走按需下载；Models/预览/ 与 Models/武器替换/ 例外，随包分发）")

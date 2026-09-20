@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 chcp 65001 >nul 2>&1
 title 英灵神殿 MAKABAKA 一键安装
 setlocal

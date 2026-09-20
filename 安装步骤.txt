@@ -14,7 +14,7 @@
      （必须做过这一步：它要先建好 profiles 目录，安装脚本才能把档放进去）
 
 3) 系统与磁盘
-   · Windows 10 / 11，磁盘留 1GB 左右（安装包 82MB + 临时解压约 105MB + 档本体；
+   · Windows 10 / 11，磁盘留 1GB 左右（安装包 约 96MB + 临时解压约 137MB + 档本体；
      角色模型按需下载，每个 13~170MB（6 条连接分段并发，实测 2~4 MB/s），下过的存在本机）
    · 如果装了火绒 / 腾讯管家这类，运行时弹窗要点【允许】，否则装到一半会被拦截
 
@@ -44,12 +44,12 @@
   3) 接着跟着提示回答（问什么见【2】）
      注：上面这段会下【两个】文件（install.ps1 + ModelLib.ps1，都在 %TEMP%）；这是必须的 ——
          ModelLib.ps1 是模型清单/下载用的库，少了它模型那一步会报“Get-ModelManifest 不是…”。
-  提示：首装要下约 82MB（不含角色模型），几分钟属正常，别关窗口；下载时会实时显示【百分比 / 当前速度 / 剩余时间】。
+  提示：首装要下约 96MB（不含角色模型），几分钟属正常，别关窗口；下载时会实时显示【百分比 / 当前速度 / 剩余时间】。
        上面这段对每条线路都有 15 秒超时：连不上会明确打印「这条不通：...」，不会一直卡着不动。
        7 条线路全是国内可直连的 GitHub 加速镜像（列表里随便换顺序都行），最后一条是直连 GitHub；
        全不通说明是本机网络/杀软拦了，改走方法二或方法三（手动下 Release 附件）。
        另外还带一条兜底：上面 6 条镜像 + 直连都失败时，会再试一次 jsDelivr 的 CDN 地址。
-       ★ 脚本自己也会挑线路：真正下安装包（82MB）之前，它会先给每条线路测速、
+       ★ 脚本自己也会挑线路：真正下安装包（约 96MB）之前，它会先给每条线路测速、
          用最快的那条下；中途断了会从断点接着下（换线路也不用从头再来）。
 
 ■ 方法二 · git 一段命令（推荐，以后更新最方便）
@@ -69,7 +69,7 @@
        「无法将"elseif"项识别为 cmdlet」。上面这段每行都是独立完整语句，逐行粘或整段粘都安全。
      想更省事可以压成一行（各句用 ; 分隔）：
        $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $d pull } else { git clone https://github.com/kanziguai/valheim-makabaka-pack.git $d }; & "$d\一键安装.bat"
-     仓库本身只有约 1MB（脚本 + 文档），不含 82MB 的大包；脚本会自己去 GitHub 下载（下完自动核对 MD5）。
+     仓库本身只有约 1MB（脚本 + 文档），不含 96MB 的大包；脚本会自己去 GitHub 下载（下完自动核对 MD5）。
   3) 以后更新：**把同一段再粘一次**就行（它会先 pull 再装）
      —— 想手动操作的话：进 C:\Users\你的用户名\valheim-makabaka-pack 双击「一键安装.bat」
      ★ 如果你是【2026-09-17 之前】clone 过仓库的老朋友：这一版把角色模型从仓库历史里移走了（仓库从
@@ -88,7 +88,7 @@
 【2】安装过程中脚本会问你什么（照着答）
 ------------------------------------------------------------
 [1/7] 找安装包      → 自动（本地没有就从 GitHub 下最新版，下完核对 MD5 才用）
-      ★ 第一次运行会先问你【安装包放哪】（要下约 82MB、解压还要占约 105MB，装完自动清理）：
+      ★ 第一次运行会先问你【安装包放哪】（要下约 96MB、解压还要占约 137MB，装完自动清理）：
            1) …\AppData\Local\Temp\makabaka_pack  （默认）
            2) 别的盘，例如 D:\MAKABAKA_install      （不喜欢放 C 盘就选这个）
            0) 我自己输入一个路径（只写 D: 也行）
@@ -131,9 +131,8 @@
                       p3 看第 3 个的大图、f 打开参考图文件夹；看完自动回到菜单再选编号
                     可多选（如 1,3 或 2-4）；0 = 不换；首次下载要一次凭据（只读 GitHub 令牌，脚本会问一次并记住）
           - 下载是按需的：下过的存本机，以后再换不用重下（切换秒级）
-          - 【你的角色名】：填你游戏里的角色名（每人不一样）
-            （脚本会按这个名字自动生成 <角色名>.vrm 与 settings_<角色名>.txt，
-              不需要你自己去文件夹里找文件、改名）
+          - 【角色名】：新版 EnhancedValheimVRM【不再询问角色名】；模型以清单名进游戏模型库，
+            进游戏按 F9 选择/切换（旧版 ValheimVRM 才要 <角色名>.vrm + settings_<角色名>.txt）
           - 目录里其它旧模型要不要收进备份文件夹：(y/N，默认留着)
       · 最后会打印「VRM 三处自检」，三行都要是 [✓]
 
@@ -174,11 +173,11 @@
 · 用方法二（git）装的：  git pull  →  再双击一次「一键安装.bat」
 · 【只想要 mod、不碰模型 / 最省流量】：加一个 -ModsOnly 参数（等价于最后一步答 n）：
      一键安装.bat -ModsOnly        （或命令行 .\install.ps1 -ModsOnly）
-  这样完全不会下载/改动角色模型，整包下载量就是 82MB（模型已不计入）。
+  这样完全不会下载/改动角色模型，整包下载量就是约 96MB（模型已不计入）。
 · 想看看有哪些模型可选（什么都不改）：  .\install.ps1 -ListModels
 · 更新会保留你自己的 F1 设置与收藏格；旧文件先备份到 MAKABAKA_backup-<时间戳>
-· 只想换角色模型 / 换角色名（不想重装整个档）：双击包里的「换模型.bat」，
-  选模型 + 输角色名即可；已下载过的秒切，没下过的会现场下载
+· 只想换角色模型（不想重装整个档）：双击包里的「换模型.bat」，
+  选模型即可（新版不输角色名；模型进 <游戏>\EnhancedValheimVRM\，游戏内 F9 切换）；已下载过的秒切，没下过的会现场下载
   · 模型的来源、下载凭据、缓存位置、常见问题 → 见同目录「模型说明.txt」
 
 
@@ -210,9 +209,9 @@
 1) 别在 r2modman 里对下面这些 mod 点 Update / Reinstall
    （会被官方原版覆盖，丢掉中文化 / 自编译的改动）：
      AzuExtendedPlayerInventory、Recycle_N_Reclaim、MinimalUI、BetterUI、PetPantry、
-     ChestFlow、TargetPortal、PlanBuild、InstantMonsterLootDrop、Endurance，
-     以及自制插件 SafeBox（随身保险柜）、KeepBuffsOnDeath、VRMGhostFix、PortalBroadcastFix
-2) 别在装好 ValheimVRM 的 dll 之后点 Steam 的「验证游戏文件完整性」
+     TargetPortal、PlanBuild、InstantMonsterLootDrop、Endurance，
+     以及自制/本地插件 SafeBox（随身保险柜）、KeepBuffsOnDeath、SafeQuickStack、PortalBroadcastFix
+2) 别在装好模型加载器的程序集之后点 Steam 的「验证游戏文件完整性」
    （会清掉 valheim_Data\Managed 里的 dll；真点了就重跑一次安装脚本）
 
 
@@ -225,9 +224,9 @@
 · r2modman使用说明.txt  管理器怎么用
 · Mod清单_MAKABAKA.txt  这包里到底有哪些 mod
 · 版本号.txt            当前版本与包文件名
-· ValheimVRM_手动安装\说明_ValheimVRM.txt   角色模型那部分的手动做法
+· EnhancedValheimVRM_手动安装\  角色模型那部分的手动做法（README-EnhancedValheimVRM.md + 待放程序集）
 
 
-（本包内容：Thunderstore 42 个包 · 36 启用 / 6 禁用 ＋ 自制插件 7 个
-  ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked ＋ Achievement_Enabler_Plus）
+（本包内容：Thunderstore 43 个包 · 37 启用 / 6 禁用 ＋ 自制/本地插件 7 个
+  ＋ 界面汉化 ＋ Azumatt-Hooked ＋ Achievement_Enabler_Plus）
 ============================================================

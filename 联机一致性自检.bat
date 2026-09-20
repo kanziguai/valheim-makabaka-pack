@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 chcp 65001 >nul
 title MAKABAKA 联机一致性自检
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0联机一致性自检.ps1" %*
