@@ -172,7 +172,7 @@ $MirrorGoodEnough   = 1.5      # MB/s：某条线路已经这么快就用它，�
 $script:ProbeCache  = @{}      # 同一个 URL 只测一次
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
 $FallbackAsset   = "MAKABAKA_profile_v1.14_20260920.zip"
-$FallbackMd5     = "15eae2300ecf399469a384ff2400cbfc"
+$FallbackMd5     = "c6b9dd72876ec92cf7842e3463e14004"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -1650,18 +1650,24 @@ foreach ($rel in $Expect.Keys) {
     if ($h -ne $Expect[$rel]) { $bad += "$rel （内容与出厂不一致）" }
 }
 if ($bad.Count -eq 0) {
-    $critTxt = "ChestFlow 汉化版、ChestFlowTweaks 0.3.1、EpicLoot 0.14.10、Endurance 汉化版"
-    if (-not $script:EvMode) { $critTxt += "、VRMGhostFix" }
+    $critTxt = "EpicLoot 0.14.10、Endurance 汉化版、MinimalUI 汉化+补丁、SafeBox、ItemSkin、InventorySortOnly"
     Say "        关键文件校验通过 ✓（$critTxt）" "Green"
 } else {
     Say "        [注意] 以下文件与出厂版本不一致：" "Yellow"
     foreach ($b in $bad) { Say "          - $b" "Yellow" }
     Say "        （若是刚升级后仍不一致，说明升级没生效，请把本日志发我们）" "Yellow"
 }
-try {
-    $ver = (Get-Content (Join-Path $dst "BepInEx\plugins\jg224-ChestFlow\manifest.json") -Raw -Encoding UTF8 | ConvertFrom-Json).version_number
-    Say "        ChestFlow 版本：$ver（界面已简体汉化）"
-} catch {}
+# 新版自制/本地插件版本上报（ChestFlow 本版已禁用、ChestFlowTweaks 已移除）
+foreach ($pm in @(@{ P = "local-SafeQuickStack"; N = "SafeQuickStack（P 键快速堆叠）" },
+                  @{ P = "local-VRMModelSwitcher"; N = "VRMModelSwitcher（游戏内 F9 换模型）" })) {
+    try {
+        $mf = Join-Path $dst ("BepInEx\plugins\" + $pm.P + "\manifest.json")
+        if (Test-Path $mf) {
+            $ver = (Get-Content $mf -Raw -Encoding UTF8 | ConvertFrom-Json).version_number
+            Say "        $($pm.N)：$ver" "Green"
+        }
+    } catch {}
+}
 if ($script:EvMode) {
     $nDis2 = Disable-LegacyVrmResidue -profRootThis $dst
     if ($nDis2 -gt 0) { Say "        （已停用 $nDis2 个与新版加载器冲突的旧插件：.dll → .dll.old）" "Green" }
@@ -1689,15 +1695,15 @@ Say "  如果 r2modman 列表里某些 mod 显示""未知版本""或提示有更
 Say "   → 正常，别点 Update / Reinstall 就行（里面有汉化和我们自编译的版本）。" "Yellow"
 Say "   → 详见 安装指南.txt 第 8 节""别用 r2modman 点更新的 mod""。" "Yellow"
 Say ""
-Say "  如果帧率还是 15fps 左右（明显卡）：" "Yellow"
-Say "   → 那是旧版自研插件 ChestFlowTweaks 0.3.0 的 bug，本包是 0.3.1。" "Yellow"
-Say "   → 上面第 [6/7] 步若显示""校验通过""就说明已经修好；若显示不一致，把日志发我们。" "Yellow"
+Say "  如果帧率明显偏低：" "Yellow"
+Say "   → 先看上面第 [6/7] 步是否显示""关键文件校验通过""；不一致就把日志发我们。" "Yellow"
+Say "   → 本版已禁用 ChestFlow（多人同开一箱有丢物风险），快速堆叠由自研 SafeQuickStack 接管。" "Yellow"
 
 }   # ← 结束 3~7 步（-VRMOnly 不走这里）
 
 # ---------- 附加：ValheimVRM（角色自定义模型；两处不同落点）----------
 # 源目录里两个子目录名（「…に入れるファイル」/「…に入れる文件」两种写法都认）：
-#   BepInEx_pluginsに入れるファイル      → 装进 r2modman 的档：<档>\BepInEx\plugins\ValheimVRM_1.2.2\
+#   BepInEx_pluginsに入れるファイル      → 装进 r2modman 的档：<档>\BepInEx\plugins\Rawrtastic-EnhancedValheimVRM\
 #   valheim_Data_Managedに入れるファイル → 装进游戏本体：<游戏>\valheim_Data\Managed\
 # 模型与设置（ValheimVRM.zip 里的 .vrm + settings_*.txt）→ <游戏>\ValheimVRM\
 function Resolve-VrmSub([string]$parent, [string]$baseName) {
@@ -1754,7 +1760,7 @@ if ($vrmPack -and -not $SkipVRM) {
             $found = Get-ChildItem -Path $pluginsDir -Recurse -File -Filter "ValheimVRM.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($found) { $plugDst = $found.DirectoryName }
         }
-        if (-not $plugDst) { $plugDst = Join-Path $pluginsDir "ValheimVRM_1.2.2" }
+        if (-not $plugDst) { $plugDst = Join-Path $pluginsDir "Rawrtastic-EnhancedValheimVRM" }
         if ($script:EvMode) {
             # 新版加载器在场，或新包正在把旧方案迁移到新版：先把新版插件本体放入档。
             # -VRMOnly 承诺不写档，因此只报告，不复制。
