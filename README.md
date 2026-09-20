@@ -1,10 +1,10 @@
-﻿# 英灵神殿 MAKABAKA 整合档 · 一键安装
+﻿﻿# 英灵神殿 MAKABAKA 整合档 · 一键安装
 
 Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（36 启用 / 6 禁用）**
-＋ 自制插件 7 个（SafeBox 0.5.9、KeepBuffsOnDeath 1.0.1、ItemSkin 1.0.1、VRMGhostFix、PortalBroadcastFix、ChestFlowTweaks 0.3.1、InventorySortOnly 1.0.1）
+＋ 自制插件（SafeBox 0.6.0、SafeQuickStack 0.1.0、KeepBuffsOnDeath 1.0.1、ItemSkin 1.0.1、PortalBroadcastFix、InventorySortOnly 1.0.1）
 ＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
 
-**当前版本：v1.12（2026-09-18）** · 安装包 82.4 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
+**当前版本：v1.14（2026-09-20）** · 安装包 82.8 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
 
 > 仓库里只放脚本 + 文档（几百 KB）；安装包 zip 走 Release 附件，不进 git 历史。
 
@@ -118,7 +118,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 
 到 **[Releases](../../releases)** 下载 `MAKABAKA_profile_vX.Y_YYYYMMDD.zip` → 解压 → 双击解压出来的 `一键安装.bat`。
 
-> 这个 zip 是**自包含**的：档本体 + 脚本 + 全部说明文档 + `ValheimVRM_手动安装/` 都在里面。
+> 这个 zip 是**自包含**的：档本体 + 脚本 + 全部说明文档 + `EnhancedValheimVRM_手动安装/` 都在里面。
 
 ---
 
@@ -132,17 +132,17 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 | 4 | 没装过 → 全新安装；装过 → **原地升级**（优先保留你的设置，旧文件先备份）|
 | 5 | 复制（升级模式跳过 `BepInEx\config`，只补缺失的配置文件）|
 | 6 | 校验：9 个关键文件 MD5 ＋ mod 启用/禁用计数 ＋ ChestFlow 版本 |
-| 7 | 收尾：告诉你怎么启动（r2modman 里选 `MAKABAKA` → `Start modded`）+ 可选配置 ValheimVRM（见下） |
+| 7 | 收尾：告诉你怎么启动（r2modman 里选 `MAKABAKA` → `Start modded`）+ 可选配置 EnhancedValheimVRM（见下） |
 
-### ValheimVRM（角色换模型）：文件要落在两个不同位置
+### EnhancedValheimVRM（角色换模型）：文件要落在两个不同位置
 
 这是本包里唯一一个**不能只靠 r2modman 装**的 mod —— 它的文件分两处（选 Y 时脚本会全部自动做好）：
 
 | 放什么 | 源目录 | 装到哪里 |
 |---|---|---|
-| 插件 `ValheimVRM.dll` + `ValheimVRM.shaders` | `ValheimVRM_手动安装\BepInEx_pluginsに入れるファイル\` | **r2modman 的档里**：`<档>\BepInEx\plugins\ValheimVRM_1.2.2\` |
-| 运行时 dll（15 个，`VRM10.dll`/`UniGLTF.dll`/`MToon.dll`…） | `ValheimVRM_手动安装\valheim_Data_Managedに入れる文件\` | **游戏本体里**：`<游戏>\valheim_Data\Managed\`（覆盖前自动备份到 `<游戏>\_vrm_backup_<时间>\`） |
-| 模型与设置 | 按需下载（见下）/ 本机缓存 / `-ModelPath` 指定的本地文件 | **游戏本体里**：`<游戏>\ValheimVRM\<角色名>.vrm` + `settings_<角色名>.txt` |
+| 插件 `EnhancedValheimVRM.dll` + `UniVrm.shaders / OldUniVrm.shaders` | `EnhancedValheimVRM_手动安装\BepInEx_pluginsに入れるファイル\` | **r2modman 的档里**：`<档>\BepInEx\plugins\Rawrtastic-EnhancedValheimVRM\` |
+| 运行时 dll（15 个，`VRM10.dll`/`UniGLTF.dll`/`MToon.dll`…） | `EnhancedValheimVRM_手动安装\valheim_Data_Managedに入れる文件\` | **游戏本体里**：`<游戏>\valheim_Data\Managed\`（覆盖前自动备份到 `<游戏>\_vrm_backup_<时间>\`） |
+| 模型与设置 | 按需下载（见下）/ 本机缓存 / `-ModelPath` 指定的本地文件 | **游戏本体里**：`<游戏>\EnhancedValheimVRM\（新版不需要角色名或 settings 文件）` |
 
 **从 v1.4 起，角色模型不再进安装包**（安装包只含 mod 本体+脚本+文档，日常更新只下几十 MB）：
 
@@ -164,7 +164,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
   目录里已有以前用过的角色名时会列出来、输编号即可；旧模型默认留着，也可选一键收进 `_旧模型_<时间>\`。
 - 完整说明见包内 **`模型说明.txt`**。
 
-> 文件名规则（照上游源码确认）：`<游戏>\ValheimVRM\<角色名>.vrm` 与 `settings_<角色名>.txt`。
+> 新版 EnhancedValheimVRM 由 F9 面板读取游戏模型库，不需要按角色名生成文件。
 > 拼写必须与游戏里角色名一致（大小写无所谓，字母不能错），前缀必须是 `settings_`；
 > 缺配置文件不会崩，插件会用默认值（模型大小 1.1、亮度 0.8…）。改完要完全重启游戏。
 
@@ -172,7 +172,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 三行都得是 `[✓]`：`① 插件（档里）` / `② Managed dll（游戏里）` / `③ 模型（游戏里）`。
 游戏目录没找到也不影响 ①，之后重跑一次就能补 ②③。
 
-> 常见故障排查、手动三步做法、以及「改名要跟着角色名」这条，见 `ValheimVRM_手动安装\说明_ValheimVRM.txt`。
+> 常见故障排查、手动三步做法、以及「改名要跟着角色名」这条，见 `EnhancedValheimVRM_手动安装\说明_EnhancedValheimVRM.txt`。
 
 日志写到桌面：`MAKABAKA安装日志.txt`。
 
@@ -180,7 +180,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 
 ```
 -ProfilesRoot <路径>  指定 profiles 目录        -Fresh      强制全新重装
--SkipVRM              跳过 ValheimVRM 那一步    -Offline    只用本地文件、不联网
+-SkipVRM              跳过 EnhancedValheimVRM 那一步    -Offline    只用本地文件、不联网
 -ModsOnly             只更新 mod（= -SkipVRM）    -ListModels 只列出可选模型后退出
 -Models "名1,名2"      指定要下载并缓存的模型     -ModelPath <文件|目录>  用本地 .vrm
 -ModelSource <url>    覆盖模型清单来源           -ModelToken <令牌>      私有仓库下载凭据
@@ -227,7 +227,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
    AzuExtendedPlayerInventory、Recycle_N_Reclaim（自编译）、MinimalUI / BetterUI / PetPantry /
    ChestFlow / TargetPortal / PlanBuild / InstantMonsterLootDrop（汉化或补丁）、Endurance（汉化版）、
    以及三个自制插件（SafeBox / KeepBuffsOnDeath / VRMGhostFix）。完整清单见 `安装指南.txt` 第 8 节。
-2. **别在装完 ValheimVRM 的 dll 后点 Steam 的"验证游戏文件完整性"** —— 会清掉 `valheim_Data\Managed`
+2. **别在装完 EnhancedValheimVRM 的 dll 后点 Steam 的"验证游戏文件完整性"** —— 会清掉 `valheim_Data\Managed`
    里那些 dll（重跑脚本即可恢复）。
 
 带 `[Synced with Server]` 的配置项（AzuEPI 快捷栏行数、EpicLoot baseconfig、Endurance 阈值/经验倍率…）

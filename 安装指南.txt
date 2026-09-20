@@ -1,4 +1,4 @@
-﻿================================================================
+﻿﻿================================================================
 英灵神殿（Valheim）r2modman 整合档 移植指南
 档名：MAKABAKA      本版：v1.4 / 2026-09-17（角色模型改为按需下载 + 新增自制插件 PortalBroadcastFix）
 【要装的人看这份就够】安装步骤.txt —— 从零到进游戏的完整步骤（三种装法），本文件是详细版补充
@@ -52,7 +52,7 @@
        · 装过旧版（包括那个会掉到 15fps 的旧包）→ 它会问你一句，选 [1] 升级 即可：
          只更新 mod 文件，你自己的 F1 设置、收藏格、热键都保留，旧文件自动备份一份
          （备份在你解压出来的包目录里，名字 MAKABAKA_backup-<时间>）。
-       · 最后还会问「一并配置 ValheimVRM 吗？」——那是角色换模型用的（要往游戏目录放文件，
+       · 最后还会问「一并配置 EnhancedValheimVRM 吗？」——那是角色换模型用的（要往游戏目录放文件，
          r2modman 不管这些），选 Y 就自动放好。详见第 9 节。
      装完按窗口提示做：打开 r2modman → 选中 MAKABAKA → Start modded。
   3) 若双击无反应（被安全软件拦住等），就用下面的手动步骤，效果完全一样。
@@ -128,7 +128,7 @@ MAKABAKA\                   ← 整个 r2modman 档（把它放到 profiles 目�
   mods.yml                   r2modman 的 mod 清单（记录启用/禁用状态）
 MAKABAKA_profile.zip        上面这一堆的压缩包（传输用，解压后同上）
 一键安装.bat / install.ps1  一键安装脚本（双击 bat 即可；详细见第 1 节"最快路径"）
-ValheimVRM_手动安装\        角色换模型（ValheimVRM）要用的东西：官方包 + 15 个 dll + 说明
+EnhancedValheimVRM_手动安装\        角色换模型（EnhancedValheimVRM）要用的东西：官方包 + 15 个 dll + 说明
                             （模型已不在这里 —— 改按需下载，清单见 Models\models.json）
                             （这个 mod 特殊：必须往游戏目录放文件，所以单独放这儿；见第 9 节）
 Mod清单_MAKABAKA.txt        全部 mod 名称 / 版本 / 作者 / 说明
@@ -223,7 +223,7 @@ Q: r2modman 里提示 mod "已更新"或想重装
   或直接删掉 ...\profiles\MAKABAKA 文件夹。
 - 想彻底干净：删掉 profiles 目录（r2modman 的其它档也会一起没），
   以及游戏目录里被同步进去的 BepInEx / winhttp.dll / doorstop_config.ini /
-  doorstop_libs / ValheimVRM 这些文件（这些原本就是 mod 相关，删掉不影响正版游戏，
+  doorstop_libs / EnhancedValheimVRM 这些文件（这些原本就是 mod 相关，删掉不影响正版游戏，
   Steam 验证文件完整性即可恢复原状）。
 
 ----------------------------------------------------------------
@@ -251,7 +251,7 @@ hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里�
   InventorySortOnly  —— 背包里加"整理"按钮（只排常规行，跳过收藏格，不动装备行）
   SafeBox            —— 随身保险柜（柜档只在本机：BepInEx\config\SafeBox\<玩家ID>_<角色名>.box）
   KeepBuffsOnDeath   —— 死亡保留 buff
-  VRMGhostFix        —— 修 ValheimVRM 传送后多出一个人物模型（上游自 2024 未修）
+  VRMGhostFix        —— 修 EnhancedValheimVRM 传送后多出一个人物模型（上游自 2024 未修）
   PortalBroadcastFix 1.0.0 —— 新放的传送门，队友不重连也能立刻看到（⚠ 要装到服务端才生效）
 
 ----------------------------------------------------------------
@@ -271,20 +271,20 @@ hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里�
 真需要升级上面某个时，把包名发我们，重打好汉化/补丁再给你。
 
 ----------------------------------------------------------------
-【9. ValheimVRM（角色换模型）怎么装】—— 要放两个不同的地方
+【9. EnhancedValheimVRM（角色换模型）怎么装】—— 要放两个不同的地方
 ----------------------------------------------------------------
 这个 mod 和别的不一样：它的文件要落在【两个不同位置】，r2modman 只负责其中一个：
 
-  ① 插件（ValheimVRM.dll + ValheimVRM.shaders）
-       → r2modman 的档里：<档>\BepInEx\plugins\ValheimVRM_1.2.2\
+  ① 插件（EnhancedValheimVRM.dll + UniVrm.shaders / OldUniVrm.shaders）
+       → r2modman 的档里：<档>\BepInEx\plugins\EnhancedValheimVRM_1.2.2\
        （本包 profile 里本来就带着；脚本会再核一遍 md5：缺了补上、不一样就换成一致的）
   ② 运行时 dll（15 个：VRM10.dll / UniGLTF.dll / MToon.dll / UnityEngine.VRModule.dll …）
        → 游戏本体里：<游戏>\valheim_Data\Managed\
        （覆盖前自动备份到 <游戏>\_vrm_backup_<时间>\）
   ③ 模型与设置：<角色名>.vrm + settings_<角色名>.txt（角色名你自己输）
-       → 游戏本体里：<游戏>\ValheimVRM\
+       → 游戏本体里：<游戏>\EnhancedValheimVRM\
 
-源文件都在包里的  ValheimVRM_手动安装\  （两个「に入れるファイル」子目录就是①②的源）：
+源文件都在包里的  EnhancedValheimVRM_手动安装\  （两个「に入れるファイル」子目录就是①②的源）：
   BepInEx_pluginsに入れるファイル\        ← ① 的源（装进 r2modman 的档）
   valheim_Data_Managedに入れる文件\       ← ② 的源（装进游戏本体）
   Models\models.json                      ← ③ 的可选模型清单（13 个：名称/大小/sha256/附件名）
@@ -292,7 +292,7 @@ hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里�
   Models\默认settings.txt                 ← ③ 的默认参数（模型自带 settings.txt 时优先用它）
   （模型实体不再随包 —— 脚本按清单从私有仓库按需下载到本机缓存，见 模型说明.txt）
 
-自动做法（推荐）：运行 一键安装.bat 时，最后会问「一并配置 ValheimVRM 吗？」，选 Y（回车）就会：
+自动做法（推荐）：运行 一键安装.bat 时，最后会问「一并配置 EnhancedValheimVRM 吗？」，选 Y（回车）就会：
   · ① 插件：装进 r2modman 的档（逐文件比对 md5，缺的补、不一样的换，换前备份）
   · ② Managed dll：把那 15 个 dll 放进游戏本体（覆盖前备份到 <游戏>\_vrm_backup_<时间>\）
   · ③ 模型：先列出可选模型（★=本机已有 / ↓=需要下载+大小；顺序 = 清单顺序，与 Models\预览\ 参考图编号一致；
@@ -301,14 +301,14 @@ hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里�
        下完自动校验 sha256 并存进本机缓存（以后再切换不用重下），
        再问【你的角色名】—— 直接在脚本里输入就行（每个人不一样；输入 0 可跳过），
        若目录里已有以前用过的角色名，脚本会列出来让你输编号选用（省事又不会拼错），
-       然后自动复制成 <游戏>\ValheimVRM\<角色名>.vrm + settings_<角色名>.txt，
+       然后自动复制成 <游戏>\EnhancedValheimVRM\<角色名>.vrm + settings_<角色名>.txt，
        旧模型默认留着（也可以选一键收进 _旧模型_<时间>\ 备份）
   · 找不到游戏目录时会问你要路径（含 valheim.exe 与 valheim_Data 的那一层）。
     这一步找不到也不影响 ① —— 插件那半照装，之后重跑本脚本补 ②③ 即可
   · 最后打一份「VRM 三处自检」，三行都要是 [✓]：
       [✓] ① 插件（档里）   [✓] ② Managed dll（游戏里）   [✓] ③ 模型（游戏里）
     出问题时照这三行排查即可 —— 那就是最常见的「装了没效果」的清单。
-手动做法：见 ValheimVRM_手动安装\说明_ValheimVRM.txt（三步 + 完整 dll 清单 + 文件名规则）。
+手动做法：见 EnhancedValheimVRM_手动安装\说明_EnhancedValheimVRM.txt（三步 + 完整 dll 清单 + 文件名规则）。
 
 只想换模型 / 换角色名：双击包里的 **换模型.bat**（不用重装整个档，也不重下已装过的模型）：
   列出模型（★本机已有 = 秒切；↓ = 现场按需下载）→ 你选 → 输角色名 → 自动改名复制 + 三处自检
@@ -316,8 +316,8 @@ hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里�
 
 三个必须知道的点：
   1) 文件名必须跟着【角色名】走（插件源码规则）：
-       模型： <游戏>\ValheimVRM\<角色名>.vrm
-       配置： <游戏>\ValheimVRM\settings_<角色名>.txt
+       模型： <游戏>\EnhancedValheimVRM\<角色名>.vrm
+       配置： <游戏>\EnhancedValheimVRM\settings_<角色名>.txt
      拼写必须和游戏里一模一样（大小写无所谓，字母不能错）；前缀必须是 settings_。
      缺配置文件不崩：日志警告后用默认值。改完必须完全重启游戏。
      一个角色一份，多角色/多模型可各放各的文件并存（插件按当前角色名去找）。

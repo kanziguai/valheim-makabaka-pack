@@ -19,12 +19,18 @@
     -NonInteractive        不提问：自动关 r2modman、已装过则默认走"升级"
     -Fresh                 已装过时强制"全新重装"（旧档改名备份）
     -DetectOnly            只显示"探测到的 profiles 目录"然后退出（不动任何文件）
+    -DryRun                只演练：打印"将要做什么"（档内哪些文件会被新增/覆盖、VRM 三处、要下哪些模型）后退出，
+                           不写任何文件 —— 用来验证安装脚本的流程
+    -Verify                只读自检：核对本机"装好没有"（加载器/面板/程序集/旧 loader/模型库/settings/F9 占用），
+                           逐项 ✅/⚠️/❌ 后退出；退出码 1 = 有未通过项
     -NoRemember            不使用/不写入 install-path.txt（不记住上次的路径）
     -GameDir <路径>        指定 Valheim 游戏目录（一般不填，脚本自己找 Steam 库）
     -SkipVRM               跳过"附加：ValheimVRM"这一步（只想装档、不碰游戏目录时用）
     -ModsOnly              只更新 mod 本体（= 不装/不换模型）：日常升级用这个最省流量
     -ListModels            只列出可选的 VRM 模型（本机已缓存 / 需下载 + 大小）后退出，不动任何文件
-    -Models <名字1,名字2>  要下载并缓存哪些模型（逗号分隔；名字从 -ListModels 抄）
+    -Models <名字1,名字2>  要下载并缓存哪些模型（逗号分隔；名字从 -ListModels 抄；写 all = 全部）
+    -AllModels             下载【全部】模型并放进模型库（配合 -VRMOnly：一次补齐，之后进游戏按 F9 随便切）
+    -LibraryOnly           只把模型放进模型库，不改"当前正在用的那只"
     -ModelPath <文件|目录> 直接用本地的 .vrm（自己下的、别人发的模型拖进来即可）
     -ModelSource <url|文件> 模型清单来源覆盖（默认：包内 Models\models.json → 公开仓库在线清单）
     -ModelToken <令牌>     私有模型仓库的下载凭据（也可设环境变量 MAKABAKA_MODEL_TOKEN，或存 模型凭据.txt）
@@ -33,15 +39,25 @@
   挪到别的盘，所以本脚本按以下顺序找（找到就用）：
     ① 命令行 -ProfilesRoot 指定 ② 上次记住的 install-path.txt ③ r2modman 自己记录过的路径
     ④ 默认位置（%APPDATA%\r2modmanPlus-local 等，含通过符号链接/联结点搬家的情况）
+       —— 只有"里面确实还有档"才算候选；只剩空壳（数据文件夹被挪走了）就只提示、不当目标，
+          免得 r2modman 明明在别的盘、脚本却静默装到 C 盘去
     ⑤ 逐个扫描所有固定硬盘（找 r2modmanPlus-local 或含 <游戏>\profiles 的目录）
     ⑥ 实在找不到就问你要路径（r2modman→设置→Locations→Browse data folder）
+  找到 2 个以上候选（或加了 -Pick）会列出来让你选；只找到 1 个就直接用 —— [2/7] 会写出来源
+    -Pick                  只找到一个数据文件夹时也列出来让你选一次（想装到别处时用）
 #>
 param(
     [string]$ProfilesRoot = "",
     [string]$ProfileName = "MAKABAKA",
     [switch]$NonInteractive,
     [switch]$Fresh,
+    [switch]$Rollback,              # 从已选 profiles 根下的备份恢复档
+    [switch]$ListBackups,           # 只列出可回滚备份，不改任何文件
+    [string]$BackupPath = "",      # 指定回滚备份目录
+    [switch]$Pick,               # 就算只找到一个数据文件夹也列出来让你选（想装到别处时用）
     [switch]$DetectOnly,
+    [switch]$DryRun,             # 只演练：把将要做的每一步（改哪些档内文件、VRM 三处、要下哪些模型）打印出来，不写任何文件
+    [switch]$Verify,             # 只读自检：核对"装好没有"，逐项 ✅/⚠️/❌ 后退出（退出码 1 = 有 ❌）
     [switch]$NoRemember,
     [string]$GameDir = "",
     [switch]$SkipVRM,
@@ -55,6 +71,8 @@ param(
     [string]$CharName = "",
     [string]$DownloadDir = "",
     [switch]$ModsOnly,
+    [switch]$AllModels,          # 下载【全部】模型并放进模型库（配 -VRMOnly 用：只补库，不动当前使用的那只）
+    [switch]$LibraryOnly,        # 只把模型放进模型库，不改"当前使用"的 <角色名>.vrm
     [switch]$ListModels,
     [string]$Models = "",
     [string]$ModelPath = "",
@@ -66,17 +84,54 @@ param(
     [switch]$NoMirrorProbe       # 不测速：直接按脚本内置顺序用（默认先给每条线路测速，选最快的先下）
 )
 
+$script:MenuSelected = $false
+if (-not $NonInteractive -and $PSBoundParameters.Count -eq 0) {
+    while ($true) {
+        Clear-Host
+        Write-Host "============================================================" -ForegroundColor Cyan
+        Write-Host "  英灵神殿 MAKABAKA 一键安装器" -ForegroundColor Cyan
+        Write-Host "============================================================" -ForegroundColor Cyan
+        Write-Host "  1) 安装 / 升级（推荐）"
+        Write-Host "  2) 选择 r2modman 数据文件夹后安装 / 升级"
+        Write-Host "  3) 列出备份"
+        Write-Host "  4) 从备份回滚"
+        Write-Host "  5) 安装结果自检（只读）"
+        Write-Host "  6) 升级前演练（只读）"
+        Write-Host "  7) 查看可选 VRM 模型"
+        Write-Host "  8) 只安装 / 更换 VRM"
+        Write-Host "  9) 只更新 mod，不处理 VRM"
+        Write-Host "  0) 退出"
+        Write-Host ""
+        $menu = Read-Host "请输入编号"
+        switch ($menu.Trim()) {
+            '1' { $script:MenuSelected = $true; break }
+            '2' {
+                $ProfilesRoot = Read-Host "请输入 r2modman 数据文件夹、Valheim 文件夹或 profiles 文件夹路径"
+                if ([string]::IsNullOrWhiteSpace($ProfilesRoot)) { continue }
+                $Pick = $true; $script:MenuSelected = $true; break
+            }
+            '3' { $ListBackups = $true; $script:MenuSelected = $true; break }
+            '4' { $Rollback = $true; $script:MenuSelected = $true; break }
+            '5' { $Verify = $true; $script:MenuSelected = $true; break }
+            '6' { $DryRun = $true; $script:MenuSelected = $true; break }
+            '7' { $ListModels = $true; $script:MenuSelected = $true; break }
+            '8' { $VRMOnly = $true; $script:MenuSelected = $true; break }
+            '9' { $ModsOnly = $true; $SkipVRM = $true; $script:MenuSelected = $true; break }
+            '0' { exit 0 }
+            default { Write-Host "输入无效，请输入 0 到 9。" -ForegroundColor Yellow; Start-Sleep -Seconds 1 }
+        }
+        if ($script:MenuSelected) { break }
+    }
+}
+
 $ErrorActionPreference = "Stop"
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
 # ---------- 出厂校验值（不一致只提示，不阻断）----------
 $Expect = @{
-    "BepInEx\plugins\jg224-ChestFlow\ChestFlow.dll"       = "a749310465c4fa9a260f66a4b91f11ff"
-    "BepInEx\plugins\ChestFlowTweaks\ChestFlowTweaks.dll" = "4c7460dc819a46bd1905f5ef5bc0fb7b"
-    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "848b7d0192f887e979904c189187a34d"
+    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "4ca65ee6417ace9bc35187f35be2e5d0"
     "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll"   = "5e632a79528a5fe12c792afbb95e7d65"
-    "BepInEx\plugins\VRMGhostFix\VRMGhostFix.dll"         = "297936525d808cfdd38b33da54eeb87c"
     "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"
     "BepInEx\plugins\SafeBox\SafeBox.dll" = "0ee83cd3688447e723365119649d2a8c"
     "BepInEx\plugins\KeepBuffsOnDeath\KeepBuffsOnDeath.dll" = "6fc8037642f4bc4508d585312525e191"
@@ -89,7 +144,7 @@ $Expect = @{
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
 $ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owner/repo）
-$ScriptBuild    = "2026-09-18"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
+$ScriptBuild    = "2026-09-20"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
 $VrmDefaultModel = ""                                   # 已取消默认模型（清单里 default 为空 → 不重排；菜单顺序=清单顺序=参考图编号）
@@ -116,8 +171,8 @@ $MirrorProbeSeconds = 6        # 测速单条线路超时
 $MirrorGoodEnough   = 1.5      # MB/s：某条线路已经这么快就用它，不再测后面的（省时间）
 $script:ProbeCache  = @{}      # 同一个 URL 只测一次
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.12_20260918.zip"
-$FallbackMd5     = "91327524adace3c91dc4f44308ff0fef"
+$FallbackAsset   = "MAKABAKA_profile_v1.14_20260920.zip"
+$FallbackMd5     = "598b5a2a813f55f7c7ba9fbf574c345d"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -156,10 +211,29 @@ function Get-ModelCacheDir([string]$workDir) {
 
 # r2modman 数据文件夹候选（有人每块盘都装过一份；同一个目录的不同写法只算一个）
 $script:ProfCands = New-Object System.Collections.Generic.List[string]
-function Add-ProfCand([string]$p) {
+$script:ProfSrc   = @{}       # 候选 → 来源（命令行 / 记住的 / r2modman 记录过 / 默认位置 / 扫盘找到）
+$script:DefaultShell = $null  # 默认位置那个"一个档都没有"的空壳（数据文件夹被挪走后留下的）
+function Add-ProfCand([string]$p, [string]$Src = "") {
     if ([string]::IsNullOrWhiteSpace($p)) { return }
-    foreach ($x in $script:ProfCands) { if ($x -ieq $p) { return } }
+    foreach ($x in $script:ProfCands) {
+        if ($x -ieq $p) { if ($Src -and -not $script:ProfSrc.ContainsKey($x)) { $script:ProfSrc[$x] = $Src }; return }
+    }
     $script:ProfCands.Add($p)
+    if ($Src) { $script:ProfSrc[$p] = $Src }
+}
+function Get-ProfSrc([string]$p) {
+    if ($p -and $script:ProfSrc.ContainsKey($p)) { return $script:ProfSrc[$p] }
+    return ""
+}
+# 这个数据文件夹里是否"真的还有档"（至少一个档里有 mods.yml）—— 空壳不算
+function Test-ProfRootHasProfiles([string]$root) {
+    if ([string]::IsNullOrWhiteSpace($root) -or -not (Test-Path $root)) { return $false }
+    try {
+        foreach ($d in (Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue)) {
+            if (Test-Path (Join-Path $d.FullName "mods.yml")) { return $true }
+        }
+    } catch {}
+    return $false
 }
 function Get-ProfCandNote([string]$root) {
     $yml = Join-Path (Join-Path $root $ProfileName) "mods.yml"
@@ -195,20 +269,20 @@ function Resolve-WorkDir([string]$Given, [switch]$NoPrompt) {
     for ($i = 0; $i -lt $cands.Count; $i++) { Say ("    {0}) {1}   （{2}）" -f ($i + 1), $cands[$i].Path, $cands[$i].Note) }
     Say "    0) 我自己输入一个路径（例如 D:\MAKABAKA_install；只写 D: 也行）"
     $ansW = "" + (Read-Host "  选哪个？(直接回车 = 1)")
-    $pick = $cands[0].Path
-    if ($ansW -match '^\s*$') { $pick = $cands[0].Path }
+    $downloadPick = $cands[0].Path
+    if ($ansW -match '^\s*$') { $downloadPick = $cands[0].Path }
     elseif ($ansW -match '^\s*0\s*$') {
         $typedW = ("" + (Read-Host "  把路径粘进来（只写盘符如 D: 也行）")).Trim().Trim('"')
         if ($typedW -match '^[A-Za-z]:$') { $typedW = Join-Path ($typedW + "\") "MAKABAKA_install" }
-        if (-not [string]::IsNullOrWhiteSpace($typedW)) { $pick = $typedW }
+        if (-not [string]::IsNullOrWhiteSpace($typedW)) { $downloadPick = $typedW }
     }
-    elseif ($ansW -match '^\d+$' -and [int]$ansW -ge 1 -and [int]$ansW -le $cands.Count) { $pick = $cands[[int]$ansW - 1].Path }
+    elseif ($ansW -match '^\d+$' -and [int]$ansW -ge 1 -and [int]$ansW -le $cands.Count) { $downloadPick = $cands[[int]$ansW - 1].Path }
     else { Say "  输入看不懂，按默认来。" "Yellow" }
-    $freeW = Get-FreeGB $pick
+    $freeW = Get-FreeGB $downloadPick
     if ($freeW -ne $null -and $freeW -lt 1.2) { Say "  [注意] 这个位置所在盘只剩 $freeW GB，可能不够（约需 1 GB）；不够会在下载/解压时报错。" "Yellow" }
-    try { [System.IO.File]::WriteAllText($script:DlRememberFile, $pick, (New-Object System.Text.UTF8Encoding($false))) } catch {}
+    try { [System.IO.File]::WriteAllText($script:DlRememberFile, $downloadPick, (New-Object System.Text.UTF8Encoding($false))) } catch {}
     Say "  ✓ 记住这个位置了（下次不再问；想改就删掉脚本旁的 download-path.txt，或用 -DownloadDir 指定）" "DarkGray"
-    return $pick
+    return $downloadPick
 }
 
 # 真正要用到"下载/解压"时才解析（-VRMOnly 不弹问、本地文件夹也不需要）
@@ -518,6 +592,92 @@ function Fail([string]$msg) {
     SaveLog
     Exit 1
 }
+function Resolve-ExplicitProfilesRoot([string]$inputPath) {
+    if ([string]::IsNullOrWhiteSpace($inputPath)) { return $null }
+    $p = $inputPath.Trim().Trim('"').TrimEnd('\')
+    if ((Split-Path $p -Leaf) -ieq $ProfileName -and (Test-Path (Join-Path $p 'mods.yml'))) { return $p }
+    if ((Split-Path $p -Leaf) -ieq 'profiles') { return $p }
+    $direct = Join-Path $p "$GameName\profiles"
+    if (Test-Path $direct) { return $direct }
+    # Existing Valheim data root may be supplied as ...\Valheim.
+    if ((Split-Path $p -Leaf) -ieq $GameName) {
+        return (Join-Path $p 'profiles')
+    }
+    # A new drive/root selection is interpreted as r2modman data root,
+    # never as an arbitrary profiles parent.
+    if (Test-Path $p) { return (Join-Path $p "$GameName\profiles") }
+    return (Join-Path $p "$GameName\profiles")
+}
+function Get-BackupRoot([string]$profilesRoot) {
+    if ([string]::IsNullOrWhiteSpace($profilesRoot)) { return $null }
+    $parent = Split-Path $profilesRoot -Parent
+    if (-not $parent) { return $null }
+    $root = Join-Path $parent "MAKABAKA_backups"
+    try { New-Item -ItemType Directory -Path $root -Force | Out-Null } catch { return $null }
+    return $root
+}
+function Get-BackupDirs([string]$profilesRoot) {
+    $root = Get-BackupRoot $profilesRoot
+    $all = New-Object System.Collections.Generic.List[object]
+    if ($root -and (Test-Path $root)) {
+        foreach ($d in (Get-ChildItem -Path $root -Directory -Filter "$ProfileName.backup-*" -ErrorAction SilentlyContinue)) { $all.Add($d) }
+    }
+    # Legacy installers used a sibling directory named MAKABAKA.backup-*.
+    $parent = Split-Path $profilesRoot -Parent
+    if ($parent -and (Test-Path $parent)) {
+        foreach ($d in (Get-ChildItem -Path $parent -Directory -Filter "$ProfileName.backup-*" -ErrorAction SilentlyContinue)) { $all.Add($d) }
+        foreach ($d in (Get-ChildItem -Path $parent -Directory -Filter "${ProfileName}_backup-*" -ErrorAction SilentlyContinue)) { $all.Add($d) }
+    }
+    return @($all | Sort-Object FullName -Unique -Descending LastWriteTime)
+}
+function Copy-ProfileBackup([string]$profileDir, [string]$profilesRoot, [string]$reason) {
+    if (-not (Test-Path $profileDir)) { return $null }
+    $root = Get-BackupRoot $profilesRoot
+    if (-not $root) { Fail "无法创建备份目录。升级/重装已停止，原档未修改。" }
+    $dest = Join-Path $root ("$ProfileName.backup-" + (Get-Date -Format "yyyyMMdd-HHmmss") + "-" + $reason)
+    try {
+        New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        $rb = Join-Path $env:SystemRoot "System32\robocopy.exe"
+        if (Test-Path $rb) {
+            & $rb $profileDir $dest /E /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
+            if ($LASTEXITCODE -ge 8) { throw "robocopy exit $LASTEXITCODE" }
+        } else { Copy-Item (Join-Path $profileDir '*') $dest -Recurse -Force }
+        Say "        升级前完整备份：$dest" "Green"
+        return $dest
+    } catch {
+        if (Test-Path $dest) { Remove-Item $dest -Recurse -Force -ErrorAction SilentlyContinue }
+        Fail "升级前备份失败：$($_.Exception.Message)。原档未修改。"
+    }
+}
+function Restore-ProfileBackup([string]$profilesRoot, [string]$backupPath) {
+    $dirs = @(Get-BackupDirs $profilesRoot)
+    if ($backupPath) { $chosen = Get-Item -LiteralPath $backupPath -ErrorAction SilentlyContinue }
+    elseif ($NonInteractive) { $chosen = $dirs | Select-Object -First 1 }
+    else {
+        if ($dirs.Count -eq 0) { Fail "没有找到可回滚备份：$(Get-BackupRoot $profilesRoot)" }
+        Say "可回滚备份：" "Cyan"
+        for ($i=0; $i -lt $dirs.Count; $i++) { Say ("  {0}) {1}  {2}" -f ($i+1), $dirs[$i].Name, $dirs[$i].LastWriteTime) }
+        $ans = Read-Host "选择编号（回车=最新，0=取消）"
+        if ($ans -match '^\s*0\s*$') { Exit 0 }
+        $idx = if ([string]::IsNullOrWhiteSpace($ans)) { 0 } else { [int]$ans - 1 }
+        if ($idx -lt 0 -or $idx -ge $dirs.Count) { Fail "备份编号无效。" }
+        $chosen = $dirs[$idx]
+    }
+    if (-not $chosen -or -not (Test-Path $chosen.FullName)) { Fail "指定的备份不存在：$backupPath" }
+    $dst = Join-Path $profilesRoot $ProfileName
+    if (Test-Path $dst) {
+        $safety = Copy-ProfileBackup $dst $profilesRoot "before-rollback"
+        Remove-Item $dst -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $dst -Force | Out-Null
+    Copy-Item (Join-Path $chosen.FullName '*') $dst -Recurse -Force
+    Say "已从备份恢复：$($chosen.FullName)" "Green"
+}
+function Show-Backups([string]$profilesRoot) {
+    $dirs = @(Get-BackupDirs $profilesRoot)
+    if ($dirs.Count -eq 0) { Say "没有找到备份。" "Yellow"; return }
+    foreach ($d in $dirs) { Say ("{0}  {1}" -f $d.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss'), $d.FullName) }
+}
 
 # ---------- 模型库载入：ModelLib.ps1（方法一只下 install.ps1 时会缺 → 自愈下载一份）----------
 $script:ModelLibPath = Join-Path $PSScriptRoot "ModelLib.ps1"
@@ -565,6 +725,61 @@ foreach ($skinTry in @($script:SkinLibPath, (Join-Path $env:TEMP "MAKABAKA-SkinL
     }
 }
 
+# 本机模型库目录（新版加载器 = <游戏>\EnhancedValheimVRM；旧方案 = <游戏>\ValheimVRM）
+function Get-LocalVrmLibraryDir {
+    $g = if (-not [string]::IsNullOrWhiteSpace($GameDir)) { $GameDir.Trim().Trim('"').TrimEnd('\') } else { Find-ValheimGameDir }
+    if (-not $g) { return $null }
+    $ev = Join-Path $g "EnhancedValheimVRM"
+    if (Test-Path $ev) { return $ev }        # 新版加载器的模型库优先
+    $old = Join-Path $g "ValheimVRM"
+    if (Test-Path $old) { return $old }      # 旧方案
+    return $null
+}
+# 打印"本机模型库已覆盖多少个清单里的模型"（按 .vrm 大小匹配；安装时会按同样规则跳过下载）
+function Show-LibraryStatus($cands) {
+    $d = Get-LocalVrmLibraryDir
+    if (-not $d) { return }
+    $files = @(Get-ChildItem -Path $d -Filter "*.vrm" -File -ErrorAction SilentlyContinue)
+    $n = 0
+    foreach ($c in $cands) {
+        if (-not $c.SizeMB) { continue }
+        $want = [int64]($c.SizeMB * 1MB)
+        if (@($files | Where-Object { [math]::Abs($_.Length - $want) -le 102400 }).Count -gt 0) { $n++ }
+    }
+    Say "  本机模型库：$d" "Green"
+    Say "   已有 $($files.Count) 个 .vrm；清单 $($cands.Count) 个里已覆盖 $n 个（覆盖了就不用再下：脚本按大小自动跳过）" "Green"
+}
+
+function Find-ValheimGameDir {
+    # 找 Valheim 游戏目录（含 valheim_Data\Managed 的那一层）：Steam 注册表 + 库文件，再兜底扫盘
+    $cands = New-Object System.Collections.Generic.List[string]
+    foreach ($k in @("HKCU:\Software\Valve\Steam","HKLM:\SOFTWARE\WOW6432Node\Valve\Steam","HKLM:\SOFTWARE\Valve\Steam")) {
+        try {
+            $sp = (Get-ItemProperty -Path $k -Name SteamPath -ErrorAction SilentlyContinue).SteamPath
+            if ([string]::IsNullOrWhiteSpace($sp)) { continue }
+            $sp = ($sp -replace '/', '\').TrimEnd('\')
+            $cands.Add((Join-Path $sp "steamapps\common\Valheim"))
+            $vdf = Join-Path $sp "steamapps\libraryfolders.vdf"
+            if (Test-Path $vdf) {
+                $vtxt = Get-Content $vdf -Raw
+                foreach ($m in [regex]::Matches($vtxt, '"path"\s+"([^"]+)"')) {
+                    $lib = ($m.Groups[1].Value -replace '\\\\', '\').TrimEnd('\')
+                    $cands.Add((Join-Path $lib "steamapps\common\Valheim"))
+                }
+            }
+        } catch {}
+    }
+    foreach ($c in $cands) { if (Test-Path (Join-Path $c "valheim_Data\Managed")) { return $c } }
+    try {
+        foreach ($d in @([System.IO.DriveInfo]::GetDrives() | Where-Object { $_.DriveType -eq 'Fixed' -and $_.IsReady } | ForEach-Object { $_.RootDirectory.FullName })) {
+            foreach ($m in (Get-ChildItem -Path $d -Directory -Depth 4 -Filter "Valheim" -ErrorAction SilentlyContinue)) {
+                if ($m.FullName -match '(?i)steamapps\\common\\Valheim$' -and (Test-Path (Join-Path $m.FullName "valheim_Data\Managed"))) { return $m.FullName }
+            }
+        }
+    } catch {}
+    return $null
+}
+
 # ---------- -ListModels：只列模型清单就退出（不下载、不动任何文件）----------
 if ($ListModels) {
     if (-not $script:ModelLibLoaded) { Fail '模型库（ModelLib.ps1）不可用，没法列清单 —— 请重跑一次安装脚本（会自动补下），或直接用 -Models "名字1,名字2" 指定模型。' }
@@ -575,9 +790,11 @@ if ($ListModels) {
         Say "  没读到任何模型：包内没有 Models\models.json，也没联网取到清单。" "Yellow"
         Say "  （想直接用本地文件：把 .vrm 拖进来，或用 -ModelPath <文件>）" "DarkGray"
     } else { Show-ModelCandidates $cands $cacheLM }
+    Show-LibraryStatus $cands
     Say '  （参考图：打开本包目录里的 Models\预览\ 文件夹，文件名编号与上面序号一致）' "DarkGray"
     Say ""
-    Say '  装/换模型：双击 换模型.bat，或用 -Models "名字1,名字2" 指定。' "DarkGray"
+    Say '  装/换模型：双击 换模型.bat，或在主菜单选择 8。' "DarkGray"
+    if ($script:MenuSelected) { Read-Host "按回车返回主菜单" | Out-Null }
     exit 0
 }
 
@@ -598,17 +815,17 @@ if ($VRMOnly) {
     # -VRMOnly（只换模型）：不动 r2modman 的档、不下载安装包，只处理 VRM 的模型与设置
     Say "  [只换模型模式] 不改动 r2modman 的档，只处理 VRM 的模型与设置（并做三处自检）" "Cyan"
     $packRoot = $PSScriptRoot
-    if (-not (Test-Path (Join-Path $PSScriptRoot "Models\models.json")) -and -not (Test-Path (Join-Path $PSScriptRoot "Models")) -and -not (Test-Path (Join-Path $PSScriptRoot "ValheimVRM_手动安装"))) {
+    if (-not (Test-Path (Join-Path $PSScriptRoot "Models\models.json")) -and -not (Test-Path (Join-Path $PSScriptRoot "Models")) -and -not (Test-Path (Join-Path $PSScriptRoot "EnhancedValheimVRM_手动安装"))) {
         $up = Split-Path $PSScriptRoot -Parent
-        if ($up -and ((Test-Path (Join-Path $up "Models")) -or (Test-Path (Join-Path $up "ValheimVRM_手动安装")))) { $packRoot = $up }
+        if ($up -and ((Test-Path (Join-Path $up "Models")) -or (Test-Path (Join-Path $up "EnhancedValheimVRM_手动安装")))) { $packRoot = $up }
     }
     $src = $packRoot   # 占位：只换模型不需要档源
     if ($ModelPath -and -not $ModelSource -and -not (Test-Path (Join-Path $packRoot "Models"))) {
         # 只有本地 .vrm 也能换模型（清单取在线）
         Say "  [只换模型] 用 -ModelPath 指定的本地文件" "DarkGray"
     }
-    if (-not (Test-Path (Join-Path $packRoot "ValheimVRM_手动安装")) -and -not (Test-Path (Join-Path $packRoot "Models")) -and -not $ModelPath) {
-        Fail "没找到 VRM 的模型源（ValheimVRM_手动安装\ 或 Models\）。把 换模型.bat 和它们放在同一个目录，或用 -ProfilesRoot/-PackRoot 相关参数指定。"
+    if (-not (Test-Path (Join-Path $packRoot "EnhancedValheimVRM_手动安装")) -and -not (Test-Path (Join-Path $packRoot "Models")) -and -not $ModelPath) {
+        Fail "没找到 VRM 的模型源（EnhancedValheimVRM_手动安装\ 或 Models\）。把 换模型.bat 和它们放在同一个目录，或用 -ProfilesRoot/-PackRoot 相关参数指定。"
     }
 }
 elseif (Test-Path (Join-Path $PSScriptRoot "$ProfileName\mods.yml")) {
@@ -756,21 +973,41 @@ function Try-AnyProfilesRoot([string]$p) {
     return $null
 }
 function Get-PathsFromAppFiles {
+    # 找"r2modman 自己记录过的数据文件夹路径"。
+    # r2modman 是 Electron 应用：路径可能写在日志/配置里（ANSI/UTF-8），也可能写在 LevelDB 里（UTF-16），
+    # 所以同一份文件两种编码各读一遍；每个文件最多留 40 条、总量最多 800 条，避免拖慢安装。
     $roots = @()
-    if ($env:APPDATA)      { $roots += (Join-Path $env:APPDATA "r2modman") }
-    if ($env:LOCALAPPDATA) { $roots += (Join-Path $env:LOCALAPPDATA "r2modman") }
+    if ($env:APPDATA)      { $roots += (Join-Path $env:APPDATA "r2modman"); $roots += (Join-Path $env:APPDATA "r2modmanPlus-local\config") }
+    if ($env:LOCALAPPDATA) { $roots += (Join-Path $env:LOCALAPPDATA "r2modman"); $roots += (Join-Path $env:LOCALAPPDATA "r2modmanPlus-local\config") }
     $found = New-Object System.Collections.Generic.List[string]
+    $seen  = New-Object System.Collections.Generic.HashSet[string]
     foreach ($r in $roots) {
-        if (-not (Test-Path $r)) { continue }
-        $files = Get-ChildItem -Path $r -Recurse -File -ErrorAction SilentlyContinue |
-                 Where-Object { $_.Length -lt (64MB) -and $_.Extension -match '^\.(log|ldb|sst|blob|json|yml|yaml|txt|db)$' }
+        try { if (-not (Test-Path $r)) { continue } } catch { continue }
+        $files = $null
+        try {
+            $files = Get-ChildItem -Path $r -Recurse -File -ErrorAction SilentlyContinue |
+                     Where-Object { $_.Length -lt (64MB) -and (($_.Extension -eq "") -or ($_.Extension -match '^\.(log|ldb|sst|blob|json|yml|yaml|txt|db|config|dat|ini|cfg|json5)$')) }
+        } catch { continue }
         foreach ($f in $files) {
             try {
-                $txt = [System.Text.Encoding]::GetEncoding(28591).GetString([System.IO.File]::ReadAllBytes($f.FullName))
-                foreach ($m in [regex]::Matches($txt, '[A-Za-z]:\\[^\x00-\x1F<>|:*?"\r\n]{2,120}')) {
-                    if ($m.Value -match 'r2modman') { $found.Add($m.Value) }
+                $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
+                $perFile = 0
+                foreach ($encName in @("utf8", "latin", "u16")) {
+                    if (($perFile -ge 40) -or ($found.Count -ge 800)) { break }
+                    try {
+                        if ($encName -eq "utf8")       { $txt = [System.Text.Encoding]::UTF8.GetString($bytes) }
+                        elseif ($encName -eq "latin")  { $txt = [System.Text.Encoding]::GetEncoding(28591).GetString($bytes) }
+                        else                           { $txt = [System.Text.Encoding]::Unicode.GetString($bytes) }
+                    } catch { continue }
+                    foreach ($m in [regex]::Matches($txt, '[A-Za-z]:\\[^\x00-\x1F<>|:*?"\r\n]{2,140}')) {
+                        if ($m.Value -match 'r2modman') {
+                            $val = $m.Value.TrimEnd('\')
+                            if ($seen.Add($val)) { $found.Add($val); $perFile++ }
+                            if (($perFile -ge 40) -or ($found.Count -ge 800)) { break }
+                        }
+                    }
                 }
-            } catch {}
+            } catch { }
         }
     }
     return $found
@@ -800,43 +1037,15 @@ function Scan-ProfCands {
     foreach ($d in (Find-DataFolderOnDrives)) {
         $c = Try-ProfilesRoot $d
         if (-not $c) { $c = Try-AnyProfilesRoot $d }
-        if ($c) { Add-ProfCand $c }
+        if ($c -and (Test-ProfRootHasProfiles $c)) { Add-ProfCand $c "扫盘找到" }
     }
     return ($script:ProfCands.Count - $before)
 }
 
-function Find-ValheimGameDir {
-    # 找 Valheim 游戏目录（含 valheim_Data\Managed 的那一层）：Steam 注册表 + 库文件，再兜底扫盘
-    $cands = New-Object System.Collections.Generic.List[string]
-    foreach ($k in @("HKCU:\Software\Valve\Steam","HKLM:\SOFTWARE\WOW6432Node\Valve\Steam","HKLM:\SOFTWARE\Valve\Steam")) {
-        try {
-            $sp = (Get-ItemProperty -Path $k -Name SteamPath -ErrorAction SilentlyContinue).SteamPath
-            if ([string]::IsNullOrWhiteSpace($sp)) { continue }
-            $sp = ($sp -replace '/', '\').TrimEnd('\')
-            $cands.Add((Join-Path $sp "steamapps\common\Valheim"))
-            $vdf = Join-Path $sp "steamapps\libraryfolders.vdf"
-            if (Test-Path $vdf) {
-                $vtxt = Get-Content $vdf -Raw
-                foreach ($m in [regex]::Matches($vtxt, '"path"\s+"([^"]+)"')) {
-                    $lib = ($m.Groups[1].Value -replace '\\\\', '\').TrimEnd('\')
-                    $cands.Add((Join-Path $lib "steamapps\common\Valheim"))
-                }
-            }
-        } catch {}
-    }
-    foreach ($c in $cands) { if (Test-Path (Join-Path $c "valheim_Data\Managed")) { return $c } }
-    try {
-        foreach ($d in @([System.IO.DriveInfo]::GetDrives() | Where-Object { $_.DriveType -eq 'Fixed' -and $_.IsReady } | ForEach-Object { $_.RootDirectory.FullName })) {
-            foreach ($m in (Get-ChildItem -Path $d -Directory -Depth 4 -Filter "Valheim" -ErrorAction SilentlyContinue)) {
-                if ($m.FullName -match '(?i)steamapps\\common\\Valheim$' -and (Test-Path (Join-Path $m.FullName "valheim_Data\Managed"))) { return $m.FullName }
-            }
-        }
-    } catch {}
-    return $null
-}
 
 if ($VRMOnly) {
     # 只换模型：只做"轻量探测"（不扫盘、不写 install-path.txt），探测不到也不阻断
+    if ([string]::IsNullOrWhiteSpace($dst) -and -not [string]::IsNullOrWhiteSpace($ProfilesRoot)) { $dst = Join-Path $ProfilesRoot $ProfileName }   # 兜底：后面有些模块会引用它（VRMOnly 里通常拿不到档根，留着空即可）
     $script:WorkDir = Resolve-WorkDir $DownloadDir -NoPrompt
     $script:ModelCacheDir = Get-ModelCacheDir $script:WorkDir
     $resolved = $null
@@ -867,9 +1076,13 @@ $scanned = $false
 #    —— 明确指定了就不再问
 if (-not [string]::IsNullOrWhiteSpace($ProfilesRoot)) {
     $given = $ProfilesRoot.Trim().Trim('"').TrimEnd('\')
-    $asData = Try-ProfilesRoot $given
-    if ($asData) { $resolved = $asData } else { $resolved = $given }
+    $resolved = Resolve-ExplicitProfilesRoot $given
+    # If the user selected an existing profile itself, do not append Valheim\profiles.
+    if ((Split-Path $given -Leaf) -ieq $ProfileName -and (Test-Path (Join-Path $given 'mods.yml'))) {
+        $resolved = $given
+    }
     $script:PathSource = "命令行指定"
+    Say "        目标 profiles：$resolved" "DarkGray"
 }
 
 if (-not $resolved) {
@@ -883,19 +1096,29 @@ if (-not $resolved) {
         } catch {}
     }
     # ③ r2modman 自己记录过的路径（换过数据文件夹的人可能留下好几个）
-    foreach ($hit in (Get-PathsFromAppFiles)) {
-        $variants = @($hit)
-        if ($hit -match '\\\\') { $variants += ($hit -replace '\\\\', '\') }
-        foreach ($v in $variants) {
-            if ($v -match '(?i)^(.*?r2modmanPlus-local)') { $c1 = Try-AnyProfilesRoot $Matches[1]; if ($c1) { Add-ProfCand $c1 } }
-            if ($v -match '(?i)^(.*?)\Valheim(\profiles)?') { $c2 = Try-AnyProfilesRoot $Matches[1]; if ($c2) { Add-ProfCand $c2 } }
+    #    整段包 try/catch：某个文件/正则出问题也不能把整个安装打断（曾经一个非法转义就在这里把脚本崩掉）
+    try {
+        foreach ($hit in (Get-PathsFromAppFiles)) {
+            try {
+                $variants = @($hit)
+                if ($hit -match '\\\\') { $variants += ($hit -replace '\\\\', '\') }
+                foreach ($v in $variants) {
+                    if ($v -match '(?i)^(.*?r2modmanPlus-local)') { $c1 = Try-AnyProfilesRoot $Matches[1]; if ($c1) { Add-ProfCand $c1 "r2modman 记录过的路径" } }
+                    if ($v -match '(?i)^(.*?)\\Valheim(\\profiles)?') { $c2 = Try-AnyProfilesRoot $Matches[1]; if ($c2) { Add-ProfCand $c2 "r2modman 记录过的路径" } }
+                }
+            } catch { }
         }
-    }
+    } catch { Say "        （读 r2modman 自己的记录时出错，已跳过这一步）" "DarkGray" }
     # ④ 默认位置（APPDATA / LOCALAPPDATA / USERPROFILE）
+    #    只有"里面真的还有档"才算候选；只有空壳（数据文件夹被挪到别的盘后留下的）就只记下来当提示，
+    #    免得 r2modman 明明在别的盘、脚本却因为 C 盘这个残留静默装到 C 盘去。
     foreach ($d in @((Join-Path $env:APPDATA "r2modmanPlus-local"), (Join-Path $env:LOCALAPPDATA "r2modmanPlus-local"), (Join-Path $env:USERPROFILE "AppData\Roaming\r2modmanPlus-local"))) {
         $c = Try-ProfilesRoot $d
         if (-not $c) { $c = Try-AnyProfilesRoot $d }
-        if ($c) { Add-ProfCand $c }
+        if ($c) {
+            if (Test-ProfRootHasProfiles $c) { Add-ProfCand $c "默认位置" }
+            elseif (-not $script:DefaultShell) { $script:DefaultShell = $c }
+        }
     }
     # 一个都没找到 → 扫盘
     if ($script:ProfCands.Count -eq 0) {
@@ -911,21 +1134,34 @@ if (-not $resolved) {
         elseif ($idxR -lt 0) { $script:ProfCands.Insert(0, $remembered) }
     }
 
-    if ($script:ProfCands.Count -eq 1) {
-        $resolved = $script:ProfCands[0]
-        $script:PathSource = "自动找到"
+    if ($script:ProfCands.Count -eq 0 -and $script:DefaultShell) {
+        Say "  注意：默认位置有个 r2modman 数据文件夹，但里面【一个档都没有】：" "Yellow"
+        Say "        $($script:DefaultShell)" "DarkGray"
+        Say "        这多半是数据文件夹被挪到别的盘（r2modman→设置→Locations）后留下的空壳，所以没把它当目标。" "Yellow"
     }
-    elseif (($script:ProfCands.Count -gt 1) -and $NonInteractive) {
+    if (($script:ProfCands.Count -eq 1) -and $NonInteractive -and -not $Pick) {
+        $resolved = $script:ProfCands[0]
+        $src1 = Get-ProfSrc $resolved
+        if ($src1) { $script:PathSource = "自动找到（$src1，-NonInteractive）" } else { $script:PathSource = "自动找到（-NonInteractive）" }
+        Say "        非交互模式使用唯一候选：$resolved" "DarkGray"
+    }
+    elseif (($script:ProfCands.Count -ge 1 -or $Pick) -and $NonInteractive) {
         $resolved = $script:ProfCands[0]
         $script:PathSource = "自动选了第 1 个（-NonInteractive）"
         Say "  [非交互] 检测到 $($script:ProfCands.Count) 个 r2modman 数据文件夹，用了第 1 个：" "Yellow"
         for ($i = 0; $i -lt $script:ProfCands.Count; $i++) { Say ("          {0}) {1}   （{2}）" -f ($i + 1), $script:ProfCands[$i], (Get-ProfCandNote $script:ProfCands[$i])) "DarkGray" }
         Say "        想指定别的：-ProfilesRoot <路径>" "DarkGray"
     }
-    elseif ($script:ProfCands.Count -gt 1) {
+    elseif ($script:ProfCands.Count -gt 1 -or $Pick) {
         # ---- 交互：把所有找到的数据文件夹列出来让你选（装在哪个盘、哪一份，由你定）----
+        if ($Pick -and ($script:ProfCands.Count -eq 0) -and -not $scanned) {
+            Say "  [ -Pick ] 先扫描各硬盘找找数据文件夹（最多十几秒）…" "Yellow"
+            $null = Scan-ProfCands
+            $scanned = $true
+        }
         function Show-ProfCands {
             Say "  现在有 $($script:ProfCands.Count) 个候选（数据文件夹）：" "Cyan"
+            if ($script:ProfCands.Count -eq 0) { Say "    （还没有候选：输 9 扫盘，或 0 自己输入路径）" "DarkGray" }
             for ($i = 0; $i -lt $script:ProfCands.Count; $i++) {
                 $tagP = ""
                 if ($remembered -and ($script:ProfCands[$i] -ieq $remembered)) { $tagP = "   ← 上次装在这" }
@@ -938,9 +1174,18 @@ if (-not $resolved) {
         Say ""
         Say "  检测到 $($script:ProfCands.Count) 个 r2modman 数据文件夹（有人每块盘都装过一份，所以要你确认一次）" "Cyan"
         Show-ProfCands
+        $emptyTries = 0
         while (-not $resolved) {
             $ansP = "" + (Read-Host "  装到哪个？(直接回车 = 1)")
-            if ($ansP -match '^\s*$') { $resolved = $script:ProfCands[0]; $script:PathSource = "你选的（第 1 项）" }
+            if ($ansP -match '^\s*$') {
+                if ($script:ProfCands.Count -eq 0) {
+                    $emptyTries++
+                    Say "        现在还没有候选：输 9 = 扫描各硬盘找，输 0 = 自己粘贴数据文件夹路径。" "Yellow"
+                    if ($emptyTries -ge 3) { Say "        连续 3 次没选 → 放弃自动探测，改走手动指定。" "Yellow"; break }
+                    continue
+                }
+                $resolved = $script:ProfCands[0]; $script:PathSource = "你选的（第 1 项）"
+            }
             elseif (($ansP -match '^\s*9\s*$') -and (-not $scanned)) {
                 Say "        扫描中（最多十几秒）…" "Yellow"
                 $added = Scan-ProfCands
@@ -955,13 +1200,11 @@ if (-not $resolved) {
                 continue
             }
             elseif ($ansP -match '^\s*0\s*$') {
-                $typedP = ("" + (Read-Host "  把数据文件夹路径粘进来（回车=放弃）")).Trim().Trim('"').TrimEnd('\')
+                $typedP = ("" + (Read-Host "  把数据文件夹路径粘进来（可输入完整 MAKABAKA 档目录；回车=放弃）")).Trim().Trim('"').TrimEnd('\')
                 if ([string]::IsNullOrWhiteSpace($typedP)) { continue }
-                $rT = Try-ProfilesRoot $typedP
-                if (-not $rT) { $rT = Try-AnyProfilesRoot $typedP }
-                if (-not $rT -and (Test-Path $typedP)) { $rT = $typedP }
+                $rT = Resolve-ExplicitProfilesRoot $typedP
                 if ($rT) { $resolved = $rT; $script:PathSource = "你手动指定" }
-                else { Say "        这个路径用不了（不存在，或不是 r2modman 数据文件夹），再试一次。" "Yellow" }
+                else { Say "        这个路径用不了，再试一次。" "Yellow" }
                 continue
             }
             elseif (($ansP -match '^\d+$') -and ([int]$ansP -ge 1) -and ([int]$ansP -le $script:ProfCands.Count)) {
@@ -975,6 +1218,12 @@ if (-not $resolved) {
 # ⑥ 问用户
 if (-not $resolved -and -not $NonInteractive) {
     Say ""
+    if ($script:DefaultShell) {
+        Say "  注意：默认位置有个 r2modman 数据文件夹，但里面【一个档都没有】：" "Yellow"
+        Say "        $($script:DefaultShell)" "DarkGray"
+        Say "        这多半是数据文件夹被挪到别的盘后留下的空壳，所以这次没把它当目标。" "Yellow"
+        Say ""
+    }
     Say "  没能自动找到 r2modman 的档目录。手动找法：" "Yellow"
     Say "    打开 r2modman → 左下 Settings（设置）→ Locations 标签页 → 点 Browse data folder" "Yellow"
     Say "    弹出的文件夹就是数据文件夹（里面有 Valheim、config、image-cache 等）" "Yellow"
@@ -987,10 +1236,15 @@ if (-not $resolved -and -not $NonInteractive) {
     }
 }
 if (-not $resolved) {
-    Fail "找不到 r2modman 的 profiles 目录（可能在别的盘）。请先运行一次 r2modman 并选好 Valheim，或把数据文件夹路径告诉脚本。"
+    $shellHint = ""
+    if ($script:DefaultShell) { $shellHint = " 检测到默认位置有个「一个档都没有的空壳」：$($script:DefaultShell) —— 说明数据文件夹很可能被挪到别的盘了。" }
+    Fail "找不到 r2modman 的 profiles 目录（可能在别的盘）。$shellHint 请用 一键安装.bat -ProfilesRoot <数据文件夹> 指定，或先运行一次 r2modman 并选好 Valheim。"
 }
 
 $ProfilesRoot = $resolved
+# 回滚/列备份必须在任何安装写入前处理。
+if ($ListBackups) { Show-Backups $ProfilesRoot; SaveLog; Exit 0 }
+if ($Rollback) { Restore-ProfileBackup $ProfilesRoot $BackupPath; SaveLog; Exit 0 }
 # 配置里读出来的路径可能带双反斜杠（JSON 转义），若正常写法也存在就用正常写法
 if ($ProfilesRoot -match '\\\\') {
     $norm = $ProfilesRoot -replace '\\\\', '\'
@@ -998,8 +1252,131 @@ if ($ProfilesRoot -match '\\\\') {
 }
 Say "  [2/7] 目标目录（来源：$($script:PathSource)）" "Green"
 Say "        $ProfilesRoot" "Green"
-if (-not $NoRemember) {
+if (-not $NoRemember -and -not $DryRun -and -not $DetectOnly) {
     try { [System.IO.File]::WriteAllText($rememberFile, $ProfilesRoot, (New-Object System.Text.UTF8Encoding($false))) } catch {}
+}
+
+# ---------- 只读自检（-Verify）：核对"装好没有"，不写任何文件 ----------
+if ($Verify) {
+    Say ""
+    Say "  ============================================================" "Cyan"
+    Say "   安装结果自检（-Verify：只读，不写任何文件）" "Cyan"
+    Say "  ============================================================" "Cyan"
+    $vProf = Join-Path $ProfilesRoot $ProfileName
+    $vGame = if (-not [string]::IsNullOrWhiteSpace($GameDir)) { $GameDir.Trim().Trim('"').TrimEnd('\') } else { Find-ValheimGameDir }
+    Say "   档     : $vProf"
+    Say "   游戏   : $(if ($vGame) { $vGame } else { '(未找到)' })"
+    Say ""
+    $script:VOk = 0; $script:VWarn = 0; $script:VFail = 0
+    function VOk  { param($m) $script:VOk++;   Say "   ✅ $m" "Green" }
+    function VWarn{ param($m) $script:VWarn++; Say "   ⚠️  $m" "Yellow" }
+    function VBad { param($m) $script:VFail++; Say "   ❌ $m" "Red" }
+    function HashOf($p) { try { (Get-FileHash -LiteralPath $p -Algorithm MD5).Hash } catch { "" } }
+
+    $pluginsDir = Join-Path $vProf "BepInEx\plugins"
+    $evDir = $null
+    foreach ($cand in @((Join-Path $pluginsDir "Rawrtastic-EnhancedValheimVRM"), (Join-Path $pluginsDir "EnhancedValheimVRM"))) {
+        if (Test-Path $cand) { $evDir = $cand; break }
+    }
+    $swDll   = Join-Path (Join-Path $pluginsDir "VRMModelSwitcher") "VRMModelSwitcher.dll"
+    $legacy  = Join-Path $pluginsDir "ValheimVRM_1.2.2"
+    $lib     = if ($vGame) { Join-Path $vGame "EnhancedValheimVRM" } else { $null }
+    $libOld  = if ($vGame) { Join-Path $vGame "ValheimVRM" } else { $null }
+    $managed = if ($vGame) { Join-Path $vGame "valheim_Data\Managed" } else { $null }
+
+    # —— 新布局（EnhancedValheimVRM + F9 面板）——
+    $asm = @()
+    if ($evDir) {
+        VOk "加载器插件目录存在：$evDir"
+        $evDll = Join-Path $evDir "EnhancedValheimVRM.dll"
+        if (Test-Path $evDll) { VOk ("加载器插件：EnhancedValheimVRM.dll  " + (HashOf $evDll).Substring(0,12)) } else { VBad "加载器插件 DLL 缺失：$evDll" }
+        $sh = @(Get-ChildItem -Path $evDir -Filter "*.shaders" -File -ErrorAction SilentlyContinue)
+        if ($sh.Count -ge 2) { VOk "shader 包 $($sh.Count) 个（UniVrm / OldUniVrm）" } elseif ($sh.Count -eq 1) { VWarn "shader 包只有 1 个（建议 2 个）" } else { VWarn "shader 包缺失" }
+        $asm = @(Get-ChildItem -Path $evDir -Filter "*.dll" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "EnhancedValheimVRM.dll" })
+        if ($asm.Count -ge 18) { VOk "插件目录内 UniVRM 程序集 $($asm.Count) 个（≥18）" }
+        elseif ($asm.Count -gt 0) { VBad "插件目录内程序集只有 $($asm.Count) 个（应为 18）" }
+        else { VWarn "插件目录里没有程序集（加载器没装全）" }
+        if ($managed -and $asm.Count -gt 0) {
+            $same = 0; $diff = 0; $miss = 0
+            foreach ($f in $asm) {
+                $t = Join-Path $managed $f.Name
+                if (-not (Test-Path $t)) { $miss++ }
+                elseif ((HashOf $f.FullName) -eq (HashOf $t)) { $same++ }
+                else { $diff++ }
+            }
+            if ($miss -eq 0 -and $diff -eq 0) { VOk "游戏 valheim_Data\Managed：$same 个程序集与插件目录逐字节一致" }
+            else { VBad "程序集不一致：一致 $same / 不同 $diff / 缺失 $miss（重跑本脚本或同步脚本）" }
+        }
+    } else {
+        VWarn "未发现新加载器插件目录（本机还是旧 ValheimVRM 1.2.2 方案）"
+    }
+    if (Test-Path $swDll) {
+        $swHash = HashOf $swDll
+        VOk ("F9 面板存在：VRMModelSwitcher.dll  " + $swHash.Substring(0,12))
+    } elseif ($evDir) { VWarn "F9 面板缺失：$swDll（进游戏按 F9 不会有反应）" }
+
+    # —— 旧 loader 状态 ——
+    $lgDll = Join-Path $legacy "ValheimVRM.dll"
+    $lgOld = Join-Path $legacy "ValheimVRM.dll.old"
+    if (Test-Path $lgDll) {
+        if ($evDir) { VBad "旧 loader 仍启用（plugins\ValheimVRM_1.2.2\ValheimVRM.dll）：两个 loader 会同时 patch Player.Awake，必须只留一个" }
+        else { VWarn "旧 loader 启用中（当前是 v1.12 旧方案，属正常；升级到新版时会自动改名 .dll.old）" }
+    } elseif (Test-Path $lgOld) { VOk "旧 loader 已禁用（ValheimVRM.dll.old）" } else { VOk "档内没有旧 loader" }
+
+    # —— 旧布局（v1.12）的运行时 dll ——
+    if (-not $evDir -and $managed) {
+        if (-not (Test-Path (Join-Path $managed "assembly_valheim.dll"))) {
+            VWarn "游戏目录不完整（没有 valheim_Data\Managed\assembly_valheim.dll）→ 跳过旧布局的运行时 dll 核对（沙盒/没装游戏的机器会这样）"
+        } else {
+        $v12 = @("VRM.dll","VRM10.dll","VrmLib.dll","UniGLTF.dll","UniGLTF.Utils.dll","UniHumanoid.dll","MToon.dll",
+                 "FastSpringBone.dll","FastSpringBone10.dll","UnityEngine.VRModule.dll",
+                 "VRMShaders.GLTF.IO.Runtime.dll","VRMShaders.GLTF.UniUnlit.Runtime.dll",
+                 "VRMShaders.VRM.IO.Runtime.dll","VRMShaders.VRM10.Format.Runtime.dll","VRMShaders.VRM10.MToon10.Runtime.dll")
+        $m = @($v12 | Where-Object { -not (Test-Path (Join-Path $managed $_)) })
+        if ($m.Count -eq 0) { VOk "旧布局：游戏 Managed 里 15 个运行时 dll 都在" } else { VBad "旧布局：Managed 缺 $($m.Count) 个（$($m -join ', ')）→ Steam 校验文件完整性会清掉，重跑本脚本即可" }
+        }
+    }
+
+    # —— 模型库与设置 ——
+    if ($lib) {
+        if (Test-Path $lib) {
+            $vrms = @(Get-ChildItem -Path $lib -Filter "*.vrm" -File -ErrorAction SilentlyContinue)
+            if ($script:EvMode -and $lib) {
+                if ($vrms.Count -gt 0) { VOk "新版模型库：$($vrms.Count) 个 .vrm @ $lib（由 F9 选择，不需要角色名槽）" } else { VWarn "新版模型库存在但没有 .vrm：$lib" }
+            } elseif ($vrms.Count -gt 0) { VOk "旧版模型库：$($vrms.Count) 个 .vrm @ $lib" }
+            $sh = @(Get-ChildItem -Path $lib -Filter "settings_*.txt" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike "*Example*" -and $_.Name -notlike "*____Default*" })
+            if ($script:EvMode) {
+                if ($sh.Count -gt 0) { VWarn "新版模型库仍有 settings_<角色名>.txt（新版不使用角色名槽，请保留或清理旧残留）" }
+            } elseif ($sh.Count -gt 0) {
+                $s1 = $sh[0]
+                $at = (Select-String -LiteralPath $s1.FullName -Pattern '^\s*AttemptTextureFix\s*=\s*(\S+)' -ErrorAction SilentlyContinue | Select-Object -Last 1).Matches.Groups[1].Value
+                $mb = (Select-String -LiteralPath $s1.FullName -Pattern '^\s*ModelBrightness\s*=\s*(\S+)' -ErrorAction SilentlyContinue | Select-Object -Last 1).Matches.Groups[1].Value
+                VOk "settings：$($s1.Name)  AttemptTextureFix=$at  ModelBrightness=$mb"
+                if ("$at" -notmatch "true") { VWarn "AttemptTextureFix 不是 true → 模型会保留无光照着色器（发灰 / 眼睛发黑 / 半透明）" }
+            } else { VWarn "旧版模型库下没有 settings_<角色名>.txt（插件会用默认值）" }
+        } else { VWarn "没有模型库目录：$lib（还没进过游戏，或没跑过模型那一步）" }
+    }
+    if ($libOld -and (Test-Path $libOld)) { VWarn "旧 loader 的模型目录还在：$libOld（新版不读它；可以整个挪走备份）" }
+
+    # —— 热键占用（F9）——
+    $cfgDir = Join-Path $vProf "BepInEx\config"
+    if (Test-Path $cfgDir) {
+        $occ = @(Get-ChildItem -Path $cfgDir -Filter *.cfg -File -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Name -notlike "*modelswitcher*" } |
+                 Where-Object { (Get-Content -LiteralPath $_.FullName -Encoding UTF8 -ErrorAction SilentlyContinue) -match '=\s*F9\s*$' })
+        if ($occ.Count -gt 0) { VWarn "F9 被其它 cfg 占用：$((@($occ | ForEach-Object { $_.Name })) -join ', ')" } else { VOk "F9 未被其它 mod 占用" }
+    }
+
+    Say ""
+    Say "  ------------------------------------------------------------" "Cyan"
+    Say "   ✅ $($script:VOk)   ⚠️  $($script:VWarn)   ❌ $($script:VFail)" "Cyan"
+    if ($script:VFail -eq 0) { Say "   结论：与文档一致（警告项按需处理）" "Green" } else { Say "   结论：有未通过项，见上面 ❌" "Red" }
+    Say "  ============================================================" "Cyan"
+    if ($script:packTmpExtract -and (Test-Path $script:packTmpExtract)) {
+        try { Remove-Item $script:packTmpExtract -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+    }
+    SaveLog
+    if ($script:VFail -eq 0) { Exit 0 } else { Exit 1 }
 }
 
 if ($DetectOnly) {
@@ -1014,6 +1391,96 @@ if ($DetectOnly) {
     Exit 0
 }
 
+# ---------- 只演练（-DryRun）：打印"将要做什么"，不写任何文件 ----------
+if ($DryRun) {
+    Say ""
+    Say "  ============================================================" "Cyan"
+    Say "   安装流程演练（-DryRun：不写任何文件；去掉该参数即照此执行）" "Cyan"
+    Say "  ============================================================" "Cyan"
+    $dDst = Join-Path $ProfilesRoot $ProfileName
+    $dEvPlug = Join-Path (Join-Path (Join-Path $ProfilesRoot $ProfileName) "BepInEx\plugins") "Rawrtastic-EnhancedValheimVRM"
+    $dEvMode = (Test-Path (Join-Path $dEvPlug "EnhancedValheimVRM.dll"))
+    $dGame = if (-not [string]::IsNullOrWhiteSpace($GameDir)) { $GameDir.Trim().Trim('"').TrimEnd('\') } else { Find-ValheimGameDir }
+    Say "   源档   : $(if ($src) { $src } else { '(未解析到)' })"
+    Say "   目标档 : $dDst   $(if (Test-Path $dDst) { '（已存在 → 默认【升级】；-Fresh 则整档改名备份后重装）' } else { '（不存在 → 全新安装）' })"
+    Say "   游戏   : $(if ($dGame) { $dGame } else { '(未找到，VRM 那步会问你)' })"
+    Say ""
+
+    # —— 1) 档内文件差异（BepInEx\config 会跳过，保留你的设置）——
+    if ($src -and (Test-Path $src)) {
+        $dNew = 0; $dChg = 0; $dSame = 0
+        $show = New-Object System.Collections.Generic.List[string]
+        Get-ChildItem -Path $src -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+            $rel = $_.FullName.Substring($src.Length).TrimStart('\')
+            if ($rel -like "BepInEx\config\*") { return }
+            # 与 robocopy 的排除保持一致（否则演练会把自己这几份文件误报成"新增"）
+            if ($script:SelfFiles -contains $_.Name) { return }
+            if ($_.Name -like "*.bak-*") { return }
+            if ($dEvMode -and ($_.Name -eq "ValheimVRM.dll" -or $_.Name -eq "VRMGhostFix.dll")) { return }   # 与 robocopy 的 /XF 对齐
+            $t = Join-Path $dDst $rel
+            if (-not (Test-Path $t)) { $dNew++; if ($show.Count -lt 12) { $show.Add("       新增   $rel") } }
+            else {
+                $h1 = (Get-FileHash -LiteralPath $_.FullName -Algorithm MD5).Hash
+                $h2 = (Get-FileHash -LiteralPath $t -Algorithm MD5).Hash
+                if ($h1 -ne $h2) { $dChg++; if ($show.Count -lt 12) { $show.Add("       覆盖   $rel") } } else { $dSame++ }
+            }
+        }
+        Say "   [档] 复制计划：新增 $dNew / 覆盖 $dChg / 已一致 $dSame（BepInEx\config 不动）"
+        foreach ($l in $show) { Say $l "DarkGray" }
+        if (($dNew + $dChg) -gt $show.Count) { Say "       …（其余差异省略）" "DarkGray" }
+    } else { Say "   [档] 源档没解析到，无法列差异" "Yellow" }
+
+    # —— 2) VRM 那一步（包内找 BepInEx_plugins* / valheim_Data_Managed* 两个子目录）——
+    $dPackRoot = $PSScriptRoot
+    $dVrmPack = $null
+    foreach ($cand in @((Join-Path $dPackRoot "EnhancedValheimVRM_手动安装"), (Join-Path $dPackRoot "vrm"), $dPackRoot)) {
+        if ([string]::IsNullOrWhiteSpace($cand) -or -not (Test-Path $cand)) { continue }
+        $subs = @(Get-ChildItem -Path $cand -Directory -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Name -like "BepInEx_plugins*" -or $_.Name -like "valheim_Data_Managed*" })
+        if ($subs.Count -gt 0) { $dVrmPack = $cand; break }
+    }
+    Say ""
+    if ($dVrmPack) {
+        $dPlug = @(Get-ChildItem -Path $dVrmPack -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "BepInEx_plugins*" } | Select-Object -First 1)
+        $dMan  = @(Get-ChildItem -Path $dVrmPack -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "valheim_Data_Managed*" } | Select-Object -First 1)
+        $nPlug = if ($dPlug) { @(Get-ChildItem $dPlug.FullName -File -ErrorAction SilentlyContinue).Count } else { 0 }
+        $nMan  = if ($dMan)  { @(Get-ChildItem $dMan.FullName  -File -ErrorAction SilentlyContinue).Count } else { 0 }
+        if ($dEvMode) {
+            Say "   [VRM] 本档已装【新版加载器 EnhancedValheimVRM】→ 这一步会按新版维护：" "Yellow"
+            Say "         · 不写旧包的 15 个 dll；改为把新版加载器的 UniVRM 程序集同步进 <游戏>\valheim_Data\Managed\" "DarkGray"
+            Say "         · 档里残留的 ValheimVRM.dll / VRMGhostFix.dll 会被停用（.dll → .dll.old）" "DarkGray"
+            Say "         · 模型库放 <游戏>\EnhancedValheimVRM\，进游戏按 F9 选择（不需要角色名，也不生成 settings_<角色名>.txt）" "DarkGray"
+        }
+        if (-not $dEvMode) { Say "   [VRM/角色模型] 三处（源：$(Split-Path $dVrmPack -Leaf)）：" }
+        if (-not $dEvMode) {
+            Say "       ① 插件      → <档>\BepInEx\plugins\...            （$nPlug 个文件）" "DarkGray"
+            Say "       ② 运行时 dll → <游戏>\valheim_Data\Managed\         （$nMan 个文件；覆盖前备份到 <游戏>\_vrm_backup_<时间>\）" "DarkGray"
+            Say "       ③ 模型与设置 → <游戏>\ValheimVRM\<角色名>.vrm + settings_<角色名>.txt（交互时问你角色名）" "DarkGray"
+            Say "       末尾会打印 VRM 三处自检。" "DarkGray"
+        }
+    } else {
+        Say "   [VRM] 新版 EnhancedValheimVRM：选模型后放入游戏模型库，进游戏按 F9 切换，不询问角色名。" "DarkGray"
+    }
+
+    # —— 3) 模型下载/缓存计划 ——
+    Say ""
+    if (-not [string]::IsNullOrWhiteSpace($ModelPath)) { Say "   [模型] 用你给的本地文件：$ModelPath" "DarkGray" }
+    elseif (-not [string]::IsNullOrWhiteSpace($Models)) { Say "   [模型] 下载/缓存：$Models" "DarkGray" }
+    elseif ($VRMOnly) { Say "   [模型] -VRMOnly：会问你选一只模型（演练不提问）" "DarkGray" }
+    else { Say "   [模型] 交互模式：会问「一并配置 VRM 吗」+ 选模型（演练不提问）；不想装用 -ModsOnly / -SkipVRM" "DarkGray" }
+
+    Say ""
+    Say "   其余步骤：关 r2modman（若在运行）→ 复制/升级档 → [6/7] 关键文件校验 → 外观替换（若未 -SkipSkin）→ 清理临时目录 → 写日志" "DarkGray"
+    Say "   日志路径：$(Join-Path $env:USERPROFILE 'Desktop\MAKABAKA安装日志.txt')" "DarkGray"
+    if ($script:packTmpExtract -and (Test-Path $script:packTmpExtract)) {
+        try { Remove-Item $script:packTmpExtract -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+    }
+    SaveLog
+    Say ""
+    Say "   （演练结束：未改动任何档内文件、游戏目录、模型缓存；临时解压目录已清理）" "Green"
+    Exit 0
+}
+
 if (-not (Test-Path $ProfilesRoot)) {
     try { New-Item -ItemType Directory -Path $ProfilesRoot -Force | Out-Null }
     catch { Fail "无法创建目录 $ProfilesRoot ：$($_.Exception.Message)" }
@@ -1022,6 +1489,38 @@ if (-not (Test-Path $ProfilesRoot)) {
     Say "             （它会自己建立目录并让你选 Valheim 安装位置），再运行本脚本。" "Yellow"
 }
 }   # ← 结束"完整安装"的档目录探测（-VRMOnly 走上面的轻量分支）
+
+# ---- 新版加载器（EnhancedValheimVRM）检测：新旧两套不能共存 ----
+# 新版加载器要的是【更新版】UniVRM 程序集；旧 ValheimVRM 1.2.2 自带的那 15 个 dll 是旧版。
+# 一旦被本脚本覆盖回游戏 Managed，新版加载器就会加载到旧程序集（表现为模型不生效/报错）。
+# 所以只要档里装了新版加载器，这一步就改成"维护新版加载器"，绝不写旧 loader 的任何东西。
+$evPlugDir = Join-Path (Join-Path (Join-Path $ProfilesRoot $ProfileName) "BepInEx\plugins") "Rawrtastic-EnhancedValheimVRM"
+# 新包源若带 EnhancedValheimVRM，即使目标机器仍是旧 loader，也必须走迁移分支。
+# 否则首次升级会把新 DLL 错放进 ValheimVRM_1.2.2，随后 VRM 仍按旧方案运行。
+$sourceEnhancedVrm = $false
+if (-not [string]::IsNullOrWhiteSpace($packRoot) -and (Test-Path $packRoot)) {
+    $sourceEnhancedVrm = [bool](Get-ChildItem -Path $packRoot -Recurse -File -Filter "EnhancedValheimVRM.dll" -ErrorAction SilentlyContinue | Select-Object -First 1)
+}
+$script:EvMode = (Test-Path (Join-Path $evPlugDir "EnhancedValheimVRM.dll")) -or $sourceEnhancedVrm
+
+# 停用与新版加载器冲突的旧插件（ValheimVRM 1.2.2 的 dll / VRMGhostFix）：先备份，再 .dll → .dll.old
+# 注意 Rename-Item 在目标已存在时会报错（.old 上一轮就在）⇒ 一律"先拷 .old 再删原文件"
+function Disable-LegacyVrmResidue([string]$profRootThis) {
+    $pluginsX = Join-Path $profRootThis "BepInEx\plugins"
+    $bakX = Join-Path (Join-Path $profRootThis "BepInEx") ("_vrm_backup_" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+    $n = 0
+    foreach ($it in @(@{ D = "ValheimVRM_1.2.2"; F = "ValheimVRM.dll" }, @{ D = "VRMGhostFix"; F = "VRMGhostFix.dll" })) {
+        $f = Join-Path (Join-Path $pluginsX $it.D) $it.F
+        if (-not (Test-Path $f)) { continue }
+        New-Item -ItemType Directory -Path $bakX -Force | Out-Null
+        Copy-Item $f (Join-Path $bakX $it.F) -Force
+        Copy-Item $f "$f.old" -Force
+        Remove-Item $f -Force
+        Say "        ① $($it.F) → .old（与新版加载器不能共存；备份在 $(Split-Path $bakX -Leaf)）" "Green"
+        $n++
+    }
+    return $n
+}
 
 # ---------- 3~7) 只在"完整安装"时执行；-VRMOnly 直接跳到下面的 VRM 段 ----------
 if (-not $VRMOnly) {
@@ -1061,34 +1560,12 @@ if (Test-Path $dst) {
     }
 
     if ($mode -eq "fresh") {
-        $bakName = "$ProfileName.backup-" + (Get-Date -Format "yyyyMMdd-HHmmss")
-        try { Rename-Item -Path $dst -NewName $bakName }
-        catch { Fail "备份旧档失败：$($_.Exception.Message)" }
-        Say "        旧档已改名备份为：$bakName" "Green"
+        $backup = Copy-ProfileBackup $dst $ProfilesRoot "before-reinstall"
+        Remove-Item $dst -Recurse -Force
+        Say "        旧档已移除，完整备份保留在：$backup" "Green"
     }
     else {
-        # 在线安装时 $packRoot 在 %TEMP% 里（结束时会被清理），所以备份要放到能留住的位置
-        $bakParent = $packRoot
-        if ($script:packTmpExtract -or ($env:TEMP -and ($bakParent -like "$env:TEMP*"))) {
-            $bakParent = if (Test-Path (Join-Path $env:USERPROFILE "Desktop")) { Join-Path $env:USERPROFILE "Desktop" } else { $env:USERPROFILE }
-        }
-        $bakRoot = Join-Path $bakParent ("MAKABAKA_backup-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
-        Say "        升级前备份旧文件到：$bakRoot"
-        try {
-            New-Item -ItemType Directory -Path $bakRoot -Force | Out-Null
-            $rb = Join-Path $env:SystemRoot "System32\robocopy.exe"
-            if (Test-Path $rb) {
-                & $rb (Join-Path $dst "BepInEx\plugins") (Join-Path $bakRoot "plugins") /E /NFL /NDL /NJH /NJS /R:1 /W:1 /NP | Out-Null
-            } else {
-                Copy-Item (Join-Path $dst "BepInEx\plugins") (Join-Path $bakRoot "plugins") -Recurse -Force
-            }
-            if (Test-Path (Join-Path $dst "mods.yml")) {
-                Copy-Item (Join-Path $dst "mods.yml") (Join-Path $bakRoot "mods.yml") -Force
-                Say "        备份完成（plugins 目录 + mods.yml）。" "Green"
-            } else {
-                Say "        备份完成（plugins 目录）。[注意] 档里没有 mods.yml，档可能不完整。" "Yellow"
-            }
-        } catch { Fail "升级前备份失败：$($_.Exception.Message)" }
+        $backup = Copy-ProfileBackup $dst $ProfilesRoot "before-upgrade"
     }
 } else {
     Say "  [4/7] 没有已安装的档 → 全新安装 ✓" "Green"
@@ -1098,6 +1575,8 @@ if (Test-Path $dst) {
 $rb = Join-Path $env:SystemRoot "System32\robocopy.exe"
 $xf = @()
 foreach ($f in $script:SelfFiles) { $xf += "/XF"; $xf += $f }
+# 装了新版加载器的档：绝不再把旧 loader / VRMGhostFix 拷回档里（否则每次 -ModsOnly 都会把它们复活）
+if ($script:EvMode) { $xf += "/XF"; $xf += "ValheimVRM.dll"; $xf += "VRMGhostFix.dll" }
 $xf += "/XF"; $xf += "*.bak-*"
 if ($mode -eq "upgrade") {
     Say "  [5/7] 升级中：覆盖 mod 文件，跳过 BepInEx\config（保留你的设置）…"
@@ -1110,6 +1589,7 @@ if ($mode -eq "upgrade") {
     $dstCfg = Join-Path $dst "BepInEx\config"
     if ((Test-Path $srcCfg) -and (Test-Path $dstCfg)) {
         & $rb $srcCfg $dstCfg /E /XC /XN /XO /NFL /NDL /NJH /NJS /R:1 /W:1 /NP | Out-Null
+        if ($LASTEXITCODE -ge 8) { Say "        [注意] 补充配置文件时有几项没复制成功（robocopy 退出码 $LASTEXITCODE）；mod 本体已更新，不影响进游戏。" "Yellow" }
     }
     Say "        升级完成（mod 文件已更新）。" "Green"
 } else {
@@ -1163,13 +1643,16 @@ if ($dstCount -lt $srcFiles.Count) {
 
 $bad = @()
 foreach ($rel in $Expect.Keys) {
+    if ($script:EvMode -and $rel -like "*VRMGhostFix*") { continue }   # 新版加载器方案下它被停用
     $f = Join-Path $dst $rel
     if (-not (Test-Path $f)) { $bad += "$rel （缺失）"; continue }
     $h = (Get-FileHash -Path $f -Algorithm MD5).Hash.ToLower()
     if ($h -ne $Expect[$rel]) { $bad += "$rel （内容与出厂不一致）" }
 }
 if ($bad.Count -eq 0) {
-    Say "        关键文件校验通过 ✓（ChestFlow 汉化版、ChestFlowTweaks 0.3.1、EpicLoot 0.14.7、Endurance 汉化版、VRMGhostFix）" "Green"
+    $critTxt = "ChestFlow 汉化版、ChestFlowTweaks 0.3.1、EpicLoot 0.14.10、Endurance 汉化版"
+    if (-not $script:EvMode) { $critTxt += "、VRMGhostFix" }
+    Say "        关键文件校验通过 ✓（$critTxt）" "Green"
 } else {
     Say "        [注意] 以下文件与出厂版本不一致：" "Yellow"
     foreach ($b in $bad) { Say "          - $b" "Yellow" }
@@ -1179,6 +1662,10 @@ try {
     $ver = (Get-Content (Join-Path $dst "BepInEx\plugins\jg224-ChestFlow\manifest.json") -Raw -Encoding UTF8 | ConvertFrom-Json).version_number
     Say "        ChestFlow 版本：$ver（界面已简体汉化）"
 } catch {}
+if ($script:EvMode) {
+    $nDis2 = Disable-LegacyVrmResidue -profRootThis $dst
+    if ($nDis2 -gt 0) { Say "        （已停用 $nDis2 个与新版加载器冲突的旧插件：.dll → .dll.old）" "Green" }
+}
 try {
     $mods = Get-Content (Join-Path $dst "mods.yml") -Raw
     $enabled = ([regex]::Matches($mods, "(?m)^  enabled: true")).Count
@@ -1221,7 +1708,7 @@ function Resolve-VrmSub([string]$parent, [string]$baseName) {
     return $null
 }
 $vrmPack = $null
-foreach ($cand in @((Join-Path $packRoot "ValheimVRM_手动安装"), (Join-Path $packRoot "vrm"), $packRoot)) {
+foreach ($cand in @((Join-Path $packRoot "EnhancedValheimVRM_手动安装"), (Join-Path $packRoot "vrm"), $packRoot)) {
     if ([string]::IsNullOrWhiteSpace($cand) -or -not (Test-Path $cand)) { continue }
     if ((Resolve-VrmSub $cand "BepInEx_pluginsに入れる") -or (Resolve-VrmSub $cand "valheim_Data_Managedに入れる")) { $vrmPack = $cand; break }
 }
@@ -1238,6 +1725,14 @@ if ($vrmPack -and -not $SkipVRM) {
     Say "    ① 插件   → r2modman 的档里 : <档>\BepInEx\plugins\ValheimVRM_1.2.2\"
     Say "    ② 运行时 dll → 游戏本体里   : <游戏>\valheim_Data\Managed\"
     Say "    ③ 模型与设置 → 游戏本体里   : <游戏>\ValheimVRM\<角色名>.vrm + settings_<角色名>.txt"
+    if ($script:EvMode) {
+        Say ""
+        Say "  ★ 本档已装【新版加载器 EnhancedValheimVRM】→ 本节改为维护新版加载器：" "Cyan"
+        Say "    · 不再安装旧的 ValheimVRM 1.2.2（两个 loader 会同时 patch Player.Awake，只能留一个）" "Cyan"
+        Say "    · 档里若残留旧 loader / VRMGhostFix → 自动停用（.dll → .dll.old，先备份）" "Cyan"
+        Say "    · 游戏 Managed 里改为同步新版加载器的 UniVRM 程序集（不用旧包那 15 个）" "Cyan"
+        Say "    · 模型目录改为 <游戏>\EnhancedValheimVRM\<角色名>.vrm（进游戏按 F9 换模型）" "Cyan"
+    }
     $doVrm = $true
     if (-not $NonInteractive) {
         $ansV = "" + (Read-Host "  一并配置 ValheimVRM 吗？(Y/n)")
@@ -1260,7 +1755,34 @@ if ($vrmPack -and -not $SkipVRM) {
             if ($found) { $plugDst = $found.DirectoryName }
         }
         if (-not $plugDst) { $plugDst = Join-Path $pluginsDir "ValheimVRM_1.2.2" }
-        if ($srcVrmPlugins -and $VRMOnly) {
+        if ($script:EvMode) {
+            # 新版加载器在场，或新包正在把旧方案迁移到新版：先把新版插件本体放入档。
+            # -VRMOnly 承诺不写档，因此只报告，不复制。
+            $srcEvPlugin = $null
+            if ($vrmPack) {
+                $evFound = Get-ChildItem -Path $vrmPack -Recurse -File -Filter "EnhancedValheimVRM.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($evFound) { $srcEvPlugin = $evFound.DirectoryName }
+            }
+            if ($VRMOnly) {
+                if (Test-Path (Join-Path $evPlugDir "EnhancedValheimVRM.dll")) { Say "        ① 加载器：新版 EnhancedValheimVRM 已在档里 ✓（只换模型模式不写档）" "Green" }
+                elseif ($srcEvPlugin) { Say "        ① [注意] 新包带新版加载器，但档里尚未迁移；跑一次完整安装会复制到 $evPlugDir（只换模型模式不写档）" "Yellow" }
+                else { Say "        ① [×] 找不到新版加载器源文件" "Red" }
+            } else {
+                try {
+                    if (-not (Test-Path $evPlugDir)) { New-Item -ItemType Directory -Path $evPlugDir -Force | Out-Null }
+                    if ($srcEvPlugin) {
+                        foreach ($f in (Get-ChildItem -Path $srcEvPlugin -File)) { Copy-Item $f.FullName (Join-Path $evPlugDir $f.Name) -Force }
+                        Say "        已将新版加载器复制到档：$evPlugDir" "Green"
+                    } elseif (-not (Test-Path (Join-Path $evPlugDir "EnhancedValheimVRM.dll"))) {
+                        Say "        [注意] 找不到新版加载器源文件，无法迁移" "Yellow"
+                    }
+                } catch { Fail "复制新版 EnhancedValheimVRM 到档失败：$($_.Exception.Message)" }
+                $nDis = Disable-LegacyVrmResidue -profRootThis $profRootThis
+                if ($nDis -eq 0) { Say "        ① 旧 loader / VRMGhostFix：未发现（本档就是新版加载器方案）✓" "Green" }
+                $vrmOk["插件"] = (Test-Path (Join-Path $evPlugDir "EnhancedValheimVRM.dll"))
+            }
+        }
+        elseif ($srcVrmPlugins -and $VRMOnly) {
             # 只换模型模式：① 只做检查（不写档里的任何文件）
             $pMissing = @()
             foreach ($f in (Get-ChildItem -Path $srcVrmPlugins -File)) {
@@ -1318,7 +1840,25 @@ if ($vrmPack -and -not $SkipVRM) {
             $managed   = Join-Path $game "valheim_Data\Managed"
             $bakDir    = Join-Path $game ("_vrm_backup_" + (Get-Date -Format "yyyyMMdd-HHmmss"))
             $copied = 0; $replaced = 0; $same = 0
-            if ($srcVrmManaged) {
+            if ($script:EvMode) {
+                # 同步【新版加载器】的 UniVRM 程序集到 Managed（不再写旧包的 15 个）
+                $evAsm = @(Get-ChildItem -Path $evPlugDir -Filter "*.dll" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "EnhancedValheimVRM.dll" })
+                $evBak = Join-Path $managed "_evv_prev"
+                $cEv = 0; $sEv = 0; $bEv = 0
+                foreach ($f in $evAsm) {
+                    $t = Join-Path $managed $f.Name
+                    if (Test-Path $t) {
+                        if ((Get-FileHash $f.FullName -Algorithm MD5).Hash -eq (Get-FileHash $t -Algorithm MD5).Hash) { $sEv++; continue }
+                        New-Item -ItemType Directory -Path $evBak -Force | Out-Null
+                        Copy-Item $t (Join-Path $evBak $f.Name) -Force; $bEv++
+                    }
+                    Copy-Item $f.FullName $t -Force; $cEv++
+                }
+                Say "        ② Managed 程序集 → $managed" "Green"
+                Say "           新放/更新 $cEv 个（新版加载器的 $($evAsm.Count) 个；本来就一致 $sEv 个；替换前备份 $bEv 个 → _evv_prev）"
+                $vrmOk["Managed"] = $true
+            }
+            elseif ($srcVrmManaged) {
                 foreach ($f in (Get-ChildItem -Path $srcVrmManaged -File)) {
                     $t = Join-Path $managed $f.Name
                     if (Test-Path $t) {
@@ -1334,7 +1874,8 @@ if ($vrmPack -and -not $SkipVRM) {
                 Say "        ② [注意] 包里缺少 valheim_Data_Managedに入れるファイル 目录，未能放 dll。" "Yellow"
             }
 
-            $vrmTarget = Join-Path $game "ValheimVRM"
+            $vrmDirName = if ($script:EvMode) { "EnhancedValheimVRM" } else { "ValheimVRM" }
+            $vrmTarget = Join-Path $game $vrmDirName
             try { New-Item -ItemType Directory -Path $vrmTarget -Force | Out-Null } catch {}
 
             # ---- 3a) 候选模型：清单(包内/在线) + 包内 Models\ + -ModelPath + 本机缓存 ----
@@ -1352,13 +1893,14 @@ if ($vrmPack -and -not $SkipVRM) {
                     if ($man.repo) { $script:ModelRepo = "" + $man.repo }
                     if ($man.tag)  { $script:ModelTag  = "" + $man.tag }
                 }
-                $modelList = Get-ModelCandidates -packRoot $packRoot -cacheDir $cacheDir -modelPath $ModelPath -manifestSource $ModelSource -manifest $man
+                $modelList = Get-ModelCandidates -packRoot $packRoot -cacheDir $cacheDir -libraryDir $vrmTarget -modelPath $ModelPath -manifestSource $ModelSource -manifest $man
             } else {
                 Say "        ③ [跳过] 缺模型库 ModelLib.ps1 → 这一步跳过（只更新 mod 不受影响；以后用 换模型.bat 可单独装模型）" "Yellow"
             }
             if ($modelList.Count -gt 0) {
                 $nC = @($modelList | Where-Object { $_.Cached }).Count
-                Say ("  模型：可选 {0} 个（本机已有 {1} 个，需下载 {2} 个）" -f $modelList.Count, $nC, ($modelList.Count - $nC)) "DarkGray"
+                Say ("  模型：可选 {0} 个（本机缓存 {1} 个）" -f $modelList.Count, $nC) "DarkGray"
+                Show-LibraryStatus $modelList
                 if ($modelList.Count -gt $nC) { Say "         模型在私有仓库里按需下载；不选就不会下，装过的以后换模型不用重下" "DarkGray" }
             }
             # 兼容老包 / 手工放法：ValheimVRM.zip（旧版布局）或包根直接丢的 .vrm
@@ -1397,7 +1939,13 @@ if ($vrmPack -and -not $SkipVRM) {
             } else {
                 # ---- 3b) 选哪个/哪几个（多选：选中的下载进缓存；第一个作为当前使用的）----
                 $picks = @()
-                if (-not [string]::IsNullOrWhiteSpace($VrmModel)) {
+                $wantAll = ($AllModels -or (($Models -as [string]) -match '^(?i)\s*(all|全部|所有)\s*$'))
+                if ($wantAll) {
+                    $picks = @($modelList)
+                    Say "        已选【全部 $($modelList.Count) 个】模型（本机已有 $(@($modelList | Where-Object { $_.Cached }).Count) 个，需下载 $(@($modelList | Where-Object { -not $_.Cached }).Count) 个）" "Cyan"
+                    $LibraryOnly = $true   # 全量补库：默认不动"当前使用的那只"（要同时设当前用，加 -CharName）
+                }
+                if ($picks.Count -eq 0 -and -not [string]::IsNullOrWhiteSpace($VrmModel)) {
                     $VrmModel = $VrmModel.Trim().Trim('"')
                     if (Test-Path $VrmModel) {
                         $picks = @([pscustomobject]@{ Name = (Split-Path $VrmModel -Leaf); Vrm = (Resolve-Path $VrmModel).Path; Settings = $null; Cached = $true })
@@ -1487,6 +2035,16 @@ if ($vrmPack -and -not $SkipVRM) {
                     $okPicks = @()
                     foreach ($pc in $picks) {
                         if ($pc.Cached -and $pc.Vrm) { $okPicks += $pc; continue }
+                        # 模型库里已经有"同大小、只是名字不同"的文件（老版本入的库）→ 不必再下一遍
+                        if ($pc.SizeMB) {
+                            $wantSz = [int64]($pc.SizeMB * 1MB)
+                            $dupLib = @(Get-ChildItem -Path $vrmTarget -Filter "*.vrm" -File -ErrorAction SilentlyContinue |
+                                        Where-Object { [math]::Abs($_.Length - $wantSz) -le 102400 } | Select-Object -First 1)
+                            if ($dupLib) {
+                                Say "        「$($pc.Name)」库里已有同大小的 $($dupLib.Name) → 跳过下载（不重复占盘）" "DarkGray"
+                                continue
+                            }
+                        }
                         Say ""
                         if ([string]::IsNullOrWhiteSpace($mToken) -and -not $pc.Url) {
                             Say "        [×] 没有下载凭据 → 跳过「$($pc.Name)」（也可以用 -ModelPath 直接把 .vrm 给它）" "Yellow"
@@ -1499,17 +2057,53 @@ if ($vrmPack -and -not $SkipVRM) {
                     $picks = @($okPicks)
                     if ($picks.Count -gt 1) { Say "        （另外 $($picks.Count - 1) 个也已存到本机，之后用 换模型.bat 秒切、不用再下）" "DarkGray" }
                 }
-                $pick = $null
-                if ($picks.Count -gt 0) { $pick = $picks[0] }
-                if (-not $pick) { $pick = "skip" }
+                # ---- 3b-3) 把选中的模型【都】放进模型库（各自独立文件名）→ 进游戏 F9 可随时切 ----
+                # 先记下"入库前"目录里已有哪些文件（角色名候选 / 旧模型提示都只看它们，免得把刚入库的模型名当角色名）
+                $existingBefore = @(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm" -ErrorAction SilentlyContinue | ForEach-Object { $_.BaseName })
+                if ($picks.Count -gt 0) {
+                    $libNew = 0; $libSame = 0
+                    foreach ($pc in $picks) {
+                        if (-not $pc.Vrm -or -not (Test-Path $pc.Vrm)) { continue }
+                        $libName = (($pc.Name -replace '[\\/:*?"<>|]', '_').Trim()) + ".vrm"
+                        $libPath = Join-Path $vrmTarget $libName
+                        if (Test-Path $libPath) {
+                            if ((Get-FileHash $libPath -Algorithm MD5).Hash -eq (Get-FileHash $pc.Vrm -Algorithm MD5).Hash) { $libSame++; continue }
+                        } else {
+                            # 库里已经有"同大小、只是名字不同"的文件（老命名）→ 不重复入库
+                            $pcSz = [int64](Get-Item -LiteralPath $pc.Vrm).Length
+                            $dup2 = @(Get-ChildItem -Path $vrmTarget -Filter "*.vrm" -File -ErrorAction SilentlyContinue | Where-Object { [math]::Abs($_.Length - $pcSz) -le 102400 } | Select-Object -First 1)
+                            if ($dup2) { Say "        「$($pc.Name)」库里已有同大小的 $($dup2.Name) → 不重复入库" "DarkGray"; $libSame++; continue }
+                        }
+                        try { Copy-Item $pc.Vrm $libPath -Force; $libNew++ } catch { Say "        [注意] 没能入库「$($pc.Name)」：$($_.Exception.Message)" "Yellow" }
+                    }
+                    $libCount = @(Get-ChildItem -Path $vrmTarget -Filter "*.vrm" -File -ErrorAction SilentlyContinue).Count
+                    Say "        ③a 模型库 → $vrmTarget" "Green"
+                    Say "           本机现有 $libCount 个模型（本次新入库 $libNew 个 / 已一致 $libSame 个）→ 进游戏按 F9 就能切" "Green"
+                }
+                $selectedModel = $null
+                if ($script:EvMode) {
+                    # 新版 EnhancedValheimVRM：模型库由 F9 读取，不使用角色名槽位。
+                    # 选中的模型只需入库；当前使用哪一个由游戏内 F9 选择。
+                    $selectedModel = "skip"
+                    if ($picks.Count -gt 0) {
+                        Say "        ③ 新版加载器不需要角色名：选中的模型已放入模型库，进游戏按 F9 选择。" "Green"
+                    } else {
+                        Say "        ③ 未选择模型：保持当前游戏内 F9 选择不变。" "DarkGray"
+                    }
+                } elseif ($picks.Count -gt 0) { $selectedModel = $picks[0] }
+                # -LibraryOnly / -AllModels 未给 -CharName 时：只补模型库，不动"当前使用"的那只
+                $libOnlyEffective = (-not $script:EvMode) -and ($LibraryOnly -and [string]::IsNullOrWhiteSpace($CharName))
+                if ($libOnlyEffective) { $selectedModel = $null }
+                if ($null -eq $selectedModel) { $selectedModel = "skip" }
 
-                if ($pick -eq "skip") {
-                    Say "        ③ 已跳过（保持现有模型不动）" "DarkGray"
+                if ($selectedModel -eq "skip") {
+                    if ($picks.Count -gt 0) { Say "        ③ 当前使用的模型未改动（模型已入进上面的模型库；想换进游戏按 F9，或加 -CharName 指定）" "DarkGray" }
+                    else { Say "        ③ 已跳过（保持现有模型不动）" "DarkGray" }
                     $vrmOk["模型"] = (@(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count -gt 0)
                 } else {
                     # ---- 3c) 问角色名（每个人的名字不同，由玩家自己输）----
                     $charName = $CharName.Trim().Trim('"')
-                    $existing = @(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm" -ErrorAction SilentlyContinue | ForEach-Object { $_.BaseName })
+                    $existing = $existingBefore
                     if (-not [string]::IsNullOrWhiteSpace($charName) -and ($charName -match '[\\/:*?"<>|]')) {
                         Say "        [注意] -CharName 里有不能用于文件名的字符，改用交互输入。" "Yellow"
                         $charName = ""
@@ -1549,24 +2143,31 @@ if ($vrmPack -and -not $SkipVRM) {
                             break
                         }
                     }
-                    if ([string]::IsNullOrWhiteSpace($charName) -and $NonInteractive -and $existing.Count -ge 1) {
-                        $charName = $existing[0]
-                        Say "        （非交互模式：沿用现有角色名「$charName」）" "DarkGray"
+                    if ([string]::IsNullOrWhiteSpace($charName) -and $NonInteractive -and $existing.Count -ge 1 -and -not $libOnlyEffective) {
+                        # 只把"真正的角色槽"当候选：它旁边必须有 settings_<名字>.txt；
+                        # 模型库里的模型（<清单名>.vrm）没有配对 settings，不能被当成角色名 —— 否则会把库里的模型覆盖掉
+                        $slotNames = @($existing | Where-Object { Test-Path (Join-Path $vrmTarget ("settings_$_.txt")) })
+                        if ($slotNames.Count -ge 1) {
+                            $charName = $slotNames[0]
+                            Say "        （非交互模式：沿用现有角色名「$charName」）" "DarkGray"
+                        } else {
+                            Say "        （非交互模式：目录里没有现成的角色槽（settings_<角色名>.txt）→ 只补模型库，不碰当前使用的模型）" "DarkGray"
+                        }
                     }
 
                     if ([string]::IsNullOrWhiteSpace($charName) -or $charName -eq "skip") {
                         Say "        ③ 没有拿到角色名 → 模型这步跳过（想装：重跑本脚本，或双击 换模型.bat）" "Yellow"
                         $vrmOk["模型"] = (@(Get-ChildItem -Path $vrmTarget -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count -gt 0)
                     } else {
-                        Copy-Item $pick.Vrm (Join-Path $vrmTarget "$charName.vrm") -Force
+                        Copy-Item $selectedModel.Vrm (Join-Path $vrmTarget "$charName.vrm") -Force
                         $setDst = Join-Path $vrmTarget "settings_$charName.txt"
-                        if ($pick.Settings -and (Test-Path $pick.Settings)) { Copy-Item $pick.Settings $setDst -Force }
+                        if ($selectedModel.Settings -and (Test-Path $selectedModel.Settings)) { Copy-Item $selectedModel.Settings $setDst -Force }
                         Say "        ③ 模型 → $vrmTarget" "Green"
-                        Say "           模型： $charName.vrm（用的「$($pick.Name)」，只是复制一份改名；源文件没动）"
+                        Say "           模型： $charName.vrm（用的「$($selectedModel.Name)」，只是复制一份改名；源文件没动）"
                         if (Test-Path $setDst) { Say "           设置： settings_$charName.txt ✓" "Green" }
                         else { Say "           设置： 缺失（插件会退回默认值：模型大小 1.1、亮度 0.8…）" "Yellow" }
                         $others = @($existing | Where-Object { $_ -ne $charName } | ForEach-Object { "$_.vrm" })
-                        if ($others.Count -gt 0) {
+                        if ($others.Count -gt 0 -and -not $script:EvMode) {
                             Say "           目录里还有其它角色的模型：$($others -join '、')（不影响使用：插件只按你当前角色名找文件）" "DarkGray"
                             if (-not $NonInteractive) {
                                 $ansMove = "" + (Read-Host "           要把这些旧模型收进备份文件夹吗？(y/N，默认留着)")
@@ -1624,29 +2225,41 @@ if ($vrmPack -and -not $SkipVRM) {
         # ---- ④ 三处自检（照说明文档里那三条排查项自动核一遍）----
         Say ""
         Say "        —— VRM 三处自检 ——"
-        $plugFile = Join-Path $plugDst "ValheimVRM.dll"
-        if (Test-Path $plugFile) { Say "        [✓] ① 插件（档里）：$plugDst" "Green" }
-        else { Say "        [×] ① 插件缺失：$plugDst（BepInEx\plugins\ 下应有 ValheimVRM.dll + ValheimVRM.shaders）" "Red" }
+        if ($script:EvMode) {
+            if (Test-Path (Join-Path $evPlugDir "EnhancedValheimVRM.dll")) {
+                if (Test-Path (Join-Path $plugDst "ValheimVRM.dll")) { Say "        [×] ① 旧 loader 又启用了：$plugDst\ValheimVRM.dll（与新版加载器冲突，必须改名 .old）" "Red" }
+                else { Say "        [✓] ① 加载器（档里）：新版 EnhancedValheimVRM；旧 loader 未启用" "Green" }
+            } else { Say "        [×] ① 新版加载器插件缺失：$evPlugDir" "Red" }
+        } else {
+            $plugFile = Join-Path $plugDst "ValheimVRM.dll"
+            if (Test-Path $plugFile) { Say "        [✓] ① 插件（档里）：$plugDst" "Green" }
+            else { Say "        [×] ① 插件缺失：$plugDst（BepInEx\plugins\ 下应有 ValheimVRM.dll + ValheimVRM.shaders）" "Red" }
+        }
         if ($game) {
             $mOk = $true
-            if ($srcVrmManaged) {
-                foreach ($f in (Get-ChildItem -Path $srcVrmManaged -File)) {
-                    if (-not (Test-Path (Join-Path (Join-Path $game "valheim_Data\Managed") $f.Name))) { $mOk = $false; break }
-                }
+            $mSrc = @()
+            if ($script:EvMode) { $mSrc = @(Get-ChildItem -Path $evPlugDir -Filter "*.dll" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "EnhancedValheimVRM.dll" }) }
+            elseif ($srcVrmManaged) { $mSrc = @(Get-ChildItem -Path $srcVrmManaged -File) }
+            foreach ($f in $mSrc) {
+                $t = Join-Path (Join-Path $game "valheim_Data\Managed") $f.Name
+                if (-not (Test-Path $t)) { $mOk = $false; break }
+                if ((Get-FileHash $f.FullName -Algorithm MD5).Hash -ne (Get-FileHash $t -Algorithm MD5).Hash) { $mOk = $false; break }
             }
-            if ($mOk) { Say "        [✓] ② Managed dll（游戏里）：$((@(Get-ChildItem -Path $srcVrmManaged -File)).Count) 个都在" "Green" }
-            else { Say "        [×] ② Managed 里缺 dll（Steam 验证文件完整性会清掉，重跑本脚本即可）" "Red" }
-            $vrmCount = @(Get-ChildItem -Path (Join-Path $game "ValheimVRM") -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count
+            if ($mOk) { Say "        [✓] ② Managed 程序集（游戏里）：$($mSrc.Count) 个与加载器目录逐字节一致" "Green" }
+            else { Say "        [×] ② Managed 里的程序集缺失或不一致（Steam 验证文件完整性会清掉旧 loader 的 dll；新版方案重跑本脚本即可）" "Red" }
+            $selfDirName = if ($script:EvMode) { "EnhancedValheimVRM" } else { "ValheimVRM" }
+            $selfVrmDir = Join-Path $game $selfDirName
+            $vrmCount = @(Get-ChildItem -Path $selfVrmDir -File -Filter "*.vrm" -ErrorAction SilentlyContinue).Count
             if ($script:vrmActiveName) {
-                $vf = Join-Path (Join-Path $game "ValheimVRM") "$($script:vrmActiveName).vrm"
-                $sf = Join-Path (Join-Path $game "ValheimVRM") "settings_$($script:vrmActiveName).txt"
+                $vf = Join-Path $selfVrmDir "$($script:vrmActiveName).vrm"
+                $sf = Join-Path $selfVrmDir "settings_$($script:vrmActiveName).txt"
                 if ((Test-Path $vf) -and (Test-Path $sf)) { Say "        [✓] ③ 模型（游戏里）：$($script:vrmActiveName).vrm + settings_$($script:vrmActiveName).txt 都在" "Green" }
                 elseif (Test-Path $vf) { Say "        [✓] ③ 模型（游戏里）：$($script:vrmActiveName).vrm 在；settings_$($script:vrmActiveName).txt 没有（插件会用默认值）" "Yellow" }
-                else { Say "        [×] ③ 模型缺失：$(Join-Path $game 'ValheimVRM')\$($script:vrmActiveName).vrm" "Red" }
+                else { Say "        [×] ③ 模型缺失：$vf" "Red" }
             }
-            elseif ($vrmCount -gt 0) { Say "        [✓] ③ 模型（游戏里）：$vrmCount 个 .vrm 在 $(Join-Path $game 'ValheimVRM')" "Green" }
+            elseif ($vrmCount -gt 0) { Say "        [✓] ③ 模型（游戏里）：$vrmCount 个 .vrm 在 $selfVrmDir" "Green" }
             else {
-                Say "        [×] ③ 没找到 .vrm 模型：$(Join-Path $game 'ValheimVRM')" "Red"
+                Say "        [×] ③ 没找到 .vrm 模型：$selfVrmDir" "Red"
                 Say "            （想装模型：重跑本脚本、或双击 换模型.bat 选一个模型并输入你的角色名；脚本会自动命名）" "Yellow"
             }
         } else {
@@ -1657,7 +2270,10 @@ if ($vrmPack -and -not $SkipVRM) {
 
 # ---------- ④ 武器/物品外观替换（独立模块）----------
 if (-not $SkipSkin) {
-    if (-not $script:SkinLibLoaded) {
+    if ($VRMOnly -and [string]::IsNullOrWhiteSpace($SkinTarget)) {
+        Say "  [—] 只换模型模式：跳过武器/物品外观替换（要一起改就加 -SkinTarget/-SkinModel）" "DarkGray"
+    }
+    elseif (-not $script:SkinLibLoaded) {
         Say "  [—] 外观替换模块不可用（缺 SkinLib.ps1）→ 跳过（不影响 mod 更新）" "Yellow"
     } else {
         Say ""
@@ -1685,7 +2301,15 @@ if (-not $SkipSkin) {
 
             if (Get-Command Get-ModelToken -ErrorAction SilentlyContinue) { $skinToken = Get-ModelToken -given $ModelToken -packRoot $packRoot }
 
-            if (-not $skinToken) { Say "        [注意] 没找到模型凭据：只有本地已有的模型可用，需下载的模型会跳过" "DarkGray" }
+            if (-not $skinToken -and -not $NonInteractive) {
+                # 和角色模型同一套做法：外观模型实体也在私有仓库 → 没凭据就问一次并记住
+                $skinRemote = @(Get-SkinModels -LibDir $skinLibDir | Where-Object { $_.Remote })
+                if ($skinRemote.Count -gt 0) {
+                    Say "        外观模型也在【私有】仓库里，下载要一次凭据（GitHub 令牌，只读权限即可；输一次会记住）" "Yellow"
+                    $skinToken = Get-ModelToken -packRoot $packRoot -Prompt -Save
+                }
+            }
+            if (-not $skinToken) { Say "        [注意] 没拿到模型凭据：只有本机已有的模型能用，需要下载的会跳过（把 模型凭据.txt 放到 install.ps1 旁边，或去掉 -NonInteractive 让它问你一次）" "Yellow" }
 
             $skinLog = { param($m) Say $m }
             if ($NonInteractive) {

@@ -1,0 +1,17 @@
+﻿MAKABAKA v1.14（2026-09-20）
+
+本版更新：
+
+- 更新一键安装器：支持中文数字菜单、r2modman 路径自动识别、完整备份、备份列表和回滚。
+- 修复完整 MAKABAKA profile 路径被重复追加 Valheim\profiles\MAKABAKA 的问题。
+- 新版 EnhancedValheimVRM 与旧版 ValheimVRM 分流：新版模型不再询问角色名，模型进入游戏模型库后在游戏内按 F9 切换。
+- 修复新版模型库只检查下载缓存、误报“需要下载”的问题；现在同时检查游戏目录 EnhancedValheimVRM 模型库。
+- 修复 SafeQuickStack 多个运行时私有成员访问问题；P 键快速堆叠可连续处理多个物品，不调用 ClaimOwnership()。
+- 更新 SafeBox UI：保险柜面板向右移动 120 像素。
+- 清理当前安装文档中已经过时的旧 VRM、VRMGhostFix 和 ChestFlow 运行说明。
+
+升级提示：
+- 升级前安装器会自动创建完整 profile 备份。
+- 新版 VRM 进入游戏后按 F9 选择模型，不需要输入角色名。
+- ChestFlow 保持禁用；HexQuickStackStorage 保持禁用；快速堆叠使用 SafeQuickStack 与 QSS 的现有组合。
+- 仍建议所有联机玩家使用同一版本整合包。

@@ -60,11 +60,11 @@
   InstantMonsterLootDrop   怪物死亡立刻掉落
   MinimalUI / BetterUI     界面外观优化（MinimalUI 背景图已配置）
 
-【角色外观（ValheimVRM，可选）】
+【角色外观（EnhancedValheimVRM，可选）】
   换模型                   装法见 安装指南.txt 第 9 节（要往游戏目录放文件，一键安装脚本会问你）
-  模型命名规则              <游戏>\ValheimVRM\<角色名>.vrm  +  settings_<角色名>.txt
-                           两个文件名都要跟【你自己的角色名】一致（每人不同，脚本会问你）
-                           换模型/换角色名：双击 换模型.bat（脚本自动命名；改完必须重启游戏）
+  新版模型位置              <游戏>\EnhancedValheimVRM\
+                           进游戏按 F9 选择模型，不需要角色名，也不生成 settings 文件
+                           换模型：双击 换模型.bat 选模型；改完必须重启游戏
   注意                      模型只有本机可见（别人看到的是他自己的）；Steam 验证游戏完整性后
                            要重跑一次 一键安装.bat 恢复 Managed 里那些 dll
 
@@ -120,7 +120,10 @@
   · 想关掉：删掉服务器的 BepInEx\plugins\PortalBroadcastFix 目录，或 F1 里关它的 Enabled
 
 ================================================================
-【VRM 传送幽灵修复（VRMGhostFix 1.0.0，自制）】
+【旧版 VRM 兼容说明】
+  当前包使用 EnhancedValheimVRM + VRMModelSwitcher；进游戏按 F9 切换模型。
+
+【旧版 ValheimVRM / VRMGhostFix】
 ================================================================
   ValheimVRM 1.2.2 的已知 bug：传送到另一个传送门时会多出一个自己的人物模型，再传一次才消失。
   本档内置自制补丁修好了：传完自动清理残留模型（日志里会写一行“清理幽灵模型 …”）。
