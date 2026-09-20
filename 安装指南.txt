@@ -238,34 +238,34 @@ Q: r2modman 里提示 mod "已更新"或想重装
       （Recycle N Reclaim）、UI（BetterUI、MinimalUI）、跑动中换装、闪避快捷键、
       斜坡战斗修正、钓鱼、天气不毁建筑等。
 
-关于"已装的 5 个禁用 mod"（AzuCraftyBoxes、QuickStackStore、HexQuickStackStorage、
-hyr-ItemStacks、QuickStackStore 兼容补丁）：文件和配置都在包里，但状态是禁用——
-这是原机主刻意选的方案（QuickStackStore 与 ChestFlow 冲突，曾被拒绝加载），
-建议保持禁用，需要时在 r2modman 里勾选启用即可。
+关于"已装的 6 个禁用 mod"（jg224-ChestFlow、HexQuickStackStorage、hyr-ItemStacks、
+QuickStackStore 兼容补丁、ValheimSkipIntro、ValheimVRM 1.2.2）：文件和配置都在包里，状态是禁用 ——
+ChestFlow 是本版刻意禁用的（多人同开一箱有丢物风险，快速堆叠改用自研 SafeQuickStack）；
+ValheimVRM 1.2.2 已被新版 EnhancedValheimVRM 取代。需要时可在 r2modman 里勾选启用（ChestFlow 慎用）。
 
-自制插件六个（包里有 dll 和配置，务必别丢；都不在 Thunderstore 上）：
-  ChestFlowTweaks v0.3.1 —— 关掉 ChestFlow 的 Alt+左键锁定循环和"丢弃"按钮，
-                      并让 ChestFlow 认 AzuEPI 的收藏标记；
-                      v0.3.1 修掉了一个"每帧反射查找"造成的掉帧 bug
-                      （旧版 0.3.0 会让帧率从 60 掉到 15）
-  InventorySortOnly  —— 背包里加"整理"按钮（只排常规行，跳过收藏格，不动装备行）
+自制 / 本地插件七个（包里有 dll 和配置，务必别丢；都不在 Thunderstore 上）：
   SafeBox            —— 随身保险柜（柜档只在本机：BepInEx\config\SafeBox\<玩家ID>_<角色名>.box）
   KeepBuffsOnDeath   —— 死亡保留 buff
-  VRMGhostFix        —— 修 EnhancedValheimVRM 传送后多出一个人物模型（上游自 2024 未修）
+  ItemSkin           —— 按模型清单的槽位映射替换武器/物品外观
+  InventorySortOnly  —— 背包里加"整理"按钮（只排常规行，跳过收藏格，不动装备行）
+  SafeQuickStack     —— P 键快速堆叠（P2P 安全，不抢占箱子所有权）
+  VRMModelSwitcher   —— 游戏内 F9 换模型面板（配合 EnhancedValheimVRM）
   PortalBroadcastFix 1.0.0 —— 新放的传送门，队友不重连也能立刻看到（⚠ 要装到服务端才生效）
+  （ChestFlowTweaks 与 VRMGhostFix 本版已不再随包：前者随 ChestFlow 一起移除，后者由新加载器自带清理取代）
 
 ----------------------------------------------------------------
 【8. 别用 r2modman 点"更新 / 重装"的 mod（会覆盖本地改动）】
 ----------------------------------------------------------------
 下面这些我们改过或汉化过，r2modman 的 Update / Reinstall 会把改动冲掉：
-  jg224-ChestFlow            0.5.7 界面简体汉化
   Azumatt-Minimal_UI         汉化 + 箱子界面默认位置
+  BetterUI_ForeverMaintained 汉化
   BetterUI_ForeverMaintained 汉化
   Azumatt-PetPantry          IL 补丁版（官方版在 Unity6 下起不来）
   Azumatt-Recycle_N_Reclaim  已摘除"丢弃"功能
-  Azumatt-AzuExtendedPlayerInventory  自编译 2.4.13（官方才 2.4.8）
-  Azumatt-AzuCraftyBoxes              自编译 1.8.18（官方才 1.8.15，本档里禁用）
-  ChestFlowTweaks / InventorySortOnly 自制插件，不在 Thunderstore 上（重装清单里不会出现，别删）
+  Azumatt-AzuExtendedPlayerInventory  自编译版（官方版本更旧）
+  Azumatt-AzuCraftyBoxes              自编译 1.8.18（官方才 1.8.15）
+  ItemSkin / SafeBox / InventorySortOnly / SafeQuickStack / VRMModelSwitcher / KeepBuffsOnDeath / PortalBroadcastFix
+                                    自制或本地插件，不在 Thunderstore 上（重装清单里不会出现，别删）
 
 其余 mod（EpicLoot、Jotunn、PlanBuild、OneMap、ConfigurationManager 等）没动过，可以放心更新。
 真需要升级上面某个时，把包名发我们，重打好汉化/补丁再给你。

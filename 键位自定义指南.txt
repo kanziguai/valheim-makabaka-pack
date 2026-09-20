@@ -30,8 +30,8 @@
 【3. 表 A：按键组合类（42 项，F1 里点一下就能捕获新键）】
   功能                                          当前键                  所在文件
   --------------------------------------------------------------------------------------------------------------------
-  一键填满（熔炉/篝火）修饰键【已禁用】         LeftShift               Azumatt.AzuCraftyBoxes.cfg
-  禁止从附近容器取料【已禁用】                  O + LeftAlt             Azumatt.AzuCraftyBoxes.cfg
+  一键填满（熔炉/篝火）修饰键                   LeftShift               Azumatt.AzuCraftyBoxes.cfg
+  禁止从附近容器取料                            O + LeftAlt             Azumatt.AzuCraftyBoxes.cfg
   收藏修饰键（按住+左键点物品/右键点格子）      LeftAlt                 Azumatt.AzuExtendedPlayerInventory.cfg
   拖动摆放快捷槽栏（鼠标+修饰键）               Mouse0 + LeftControl    Azumatt.AzuExtendedPlayerInventory.cfg
   快捷槽 1                                      Z + LeftAlt             Azumatt.AzuExtendedPlayerInventory.cfg
@@ -121,10 +121,11 @@
   组合写法（表 A 用）：主键 + 修饰键，例如 “X + LeftAlt”；修饰键可多个：“LeftControl + LeftShift”
   不使用：None（部分项支持）、留空（个别项：留空表示只用界面按钮）
 
-【7. 这些文件里的键位别管（对应 mod 已禁用，改了不生效）】
-  shudnal.ExtraSlots.cfg、goldenrevolver.quick_stack_store.cfg、sighsorry.InventoryActions.cfg、
+【7. 这些文件里的键位别管（对应 mod 已禁用或不在本包里，改了不生效）】
+  shudnal.ExtraSlots.cfg、sighsorry.InventoryActions.cfg、
   ZenDragon.Zen.ModLib.cfg、ZenDragon.ZenPlayer.cfg、aedenthorn.AutoBuildingRepair.cfg、
   com.hex.quickstackstorage.cfg、hyr.ItemStacks.cfg、local.chestflow.cut.cfg、eu.mydayyy.plugins.serversidemap.cfg
+  （另：goldenrevolver.quick_stack_store.cfg 本版【已启用】，它的键位没列进表 A/B —— 要改就在 F1 里搜 QuickStackStore。）
   （想清爽可以直接删掉，游戏下次启动有需要会重建；删错也不影响游戏。）
 
 【8. 原版键位（WASD、E、空格、Tab、AltPlace 等）在哪改】

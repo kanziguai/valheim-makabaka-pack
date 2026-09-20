@@ -25,7 +25,7 @@
   （本版禁用）ChestFlow     共享箱子/自动喂动物/自动补货/储物规则这一套本版【已禁用】，
                           相关快捷键（Alt+S 整理箱子、Alt+左键 锁定/补货循环）都不生效；
                           真的需要可在 r2modman 里自行启用（注意：多人同开一箱有丢物风险）。
-  （注意）原 ChestFlow 的"丢弃"按钮已关闭，箱子里不会出现永久销毁物品的按钮。
+  （提示）ChestFlow 本版不随包/已禁用；它的快速存取由自研 SafeQuickStack（P 键）替代。
 
 【建造 / 工具】
   F1                       打开/关闭 配置管理器（改任何 mod 的设置，Escape 关闭）
@@ -33,8 +33,8 @@
   Alt（建造/工具时）        PlanBuild 的 AltModifier：切换工具模式；
                            PlanBuild 蓝图可通过建造菜单的 Blueprint 页使用
   PlantEasily              批量种植：种一次后自动按行列铺开（Alt 强制放置已关）
-  （注）AzuCraftyBoxes 已安装但在本档里是"禁用"状态，所以它的 O+Alt 快捷键不生效；
-  想用就在 r2modman 里把它启用。
+  AzuCraftyBoxes            本版【已启用】：可从附近箱子取材料来建造/制作（范围 20 米），
+                           LeftShift + 左键 = 一键填满（熔炉/篝火）；O + LeftAlt = 暂时禁止从附近容器取料。
 
 【战斗 / 移动】
   Alt + 方向               闪避（DodgeShortcut，按住 Alt 再按移动方向翻滚）
