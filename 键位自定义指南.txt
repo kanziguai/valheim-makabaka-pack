@@ -1,4 +1,4 @@
-==============================================================================
+﻿==============================================================================
 键位自定义指南（客户端）    —— MAKABAKA 整合包 / Valheim 1.0
 ==============================================================================
 生成日期：2026-09-15    适用：本整合包的客户端（r2modman 档 MAKABAKA）
@@ -56,7 +56,7 @@
   配置管理器窗口复位                            F1 + LeftControl        _shudnal.ConfigurationManager.cfg
   配置管理器窗口缩放复位                        F1 + LeftShift          _shudnal.ConfigurationManager.cfg
   批量种植/收成总开关（与 F8 撞）               F8                      advize.PlantEasily.cfg
-  种植网格吸附开关（与 ModCore 的 F10 撞）      F10                     advize.PlantEasily.cfg
+  种植网格吸附开关                            F10                     advize.PlantEasily.cfg
   收成后自动补种开关（与 MinimalUI 的 F6 撞）   F6                      advize.PlantEasily.cfg
   种植网格列数 +                                RightArrow              advize.PlantEasily.cfg
   种植网格行数 +                                UpArrow                 advize.PlantEasily.cfg
@@ -66,12 +66,11 @@
   批量模式修饰键（手柄）                        JoystickButton4         advize.PlantEasily.cfg
   批量收割修饰键                                LeftShift               advize.PlantEasily.cfg
   边跑边装备 开关（与 BetterUI 的 F7 撞）       F7                      hex.EquipWhileRunning.cfg
-  同类物品快速存进附近箱子（与 P 撞）           P                       jg224.chestflow.cfg
-  整理当前打开的箱子（Alt+S，与翻滚共用 Alt）   LeftAlt + S             jg224.chestflow.cfg
-  兼容性状态面板（与 F10 撞）                   F10                     jg224.modcore.cfg
+  同类物品快速存进附近箱子（自研 SafeQuickStack）P                       local.safe.quickstack.cfg
   整理背包热键（自研插件，默认留空）            （留空）                local.inventory.sort.only.cfg
   传送门交互修饰键                              LeftShift               org.bepinex.plugins.targetportal.cfg
-  地图上显示传送门图标（与 ChestFlow 的 P 撞）  P                       org.bepinex.plugins.targetportal.cfg
+  地图上显示传送门图标（与 SafeQuickStack 的 P 撞）P                    org.bepinex.plugins.targetportal.cfg
+  模型别名：立即同步（自研 VRMAliasLink）        F4                      local.vrm.aliaslink.cfg
 
 【4. 表 B：单键名类（13 项，F1 里要输入键名）】
   功能                                          当前键                  所在文件
@@ -98,15 +97,17 @@
      在 F1 里把它们一起改成一致即可（这个不影响实际按键，只影响 HUD 上显示的文字）。
 
 【5. 已知“一键两用”（默认值层面，不改也能玩，但同键会同时响应）】
-  Alt（最挤的键，5 个功能）：翻滚(DodgeShortcut) / 收藏修饰(AzuEPI) / 建造工具修饰(PlanBuild)
-                            / 宝石插槽修饰(EpicLoot) / 整理打开的箱子(ChestFlow: Alt+S)
+  Alt（最挤的键，4 个功能）：翻滚(DodgeShortcut) / 收藏修饰(AzuEPI) / 建造工具修饰(PlanBuild)
+                            / 宝石插槽修饰(EpicLoot)
      建议：翻滚换成鼠标侧键——DodgeShortcut 里把 DodgeShortcut 改成 Mouse3(中键) 或 Mouse4(后侧键)。
            （作者本人也在配置说明里推荐这么干：Alt 会跟别的 mod 撞。）
   F6：MinimalUI 编辑模式 / PlantEasily 收成后自动补种      → 建议 MinimalUI 改 F9
   F7：BetterUI 的 HUD 编辑 / EquipWhileRunning 开关        → 建议 EquipWhileRunning 改 F11
   F8：只有 PlantEasily 的总开关在用（另一个 F8 来自已移除 mod 的残留 cfg，不生效）
-  F10：PlantEasily 吸附开关 / ModCore 状态面板             → 建议 ModCore 改 BackQuote(`)
-  P：ChestFlow 附近入库 / TargetPortal 地图图标             → 建议 TargetPortal 改 N
+  F10：只有 PlantEasily 吸附开关在用（ModCore 已随包移除；模型别名插件的默认键原为 F10，本版已改成 F4）
+  F4：只有自研 VRMAliasLink 的"立即同步"在用（模型别名；默认不生效，无冲突）
+  P：SafeQuickStack 快速堆叠 / TargetPortal 地图图标         → 建议 TargetPortal 改 N
+  O：QSS 整理（开着箱子时 = 箱子+背包）
   G：MinimalUI 网格开关 / EpicLoot 技能热键 1(g，在 EpicLoot 自己的界面里) → 建议 MinimalUI 改 H
   X：Recycle 标记待回收修饰 / AzuEPI 快捷槽 2(Alt+X)        → 若要分清，可把 Recycle 改成 Y
   Z：Recycle 撤销(Ctrl+Z) / AzuEPI 快捷槽 1(Alt+Z)          → 一般不用改（一个是 Ctrl+Z，一个是 Alt+Z）
@@ -124,8 +125,9 @@
 【7. 这些文件里的键位别管（对应 mod 已禁用或不在本包里，改了不生效）】
   shudnal.ExtraSlots.cfg、sighsorry.InventoryActions.cfg、
   ZenDragon.Zen.ModLib.cfg、ZenDragon.ZenPlayer.cfg、aedenthorn.AutoBuildingRepair.cfg、
-  com.hex.quickstackstorage.cfg、hyr.ItemStacks.cfg、local.chestflow.cut.cfg、eu.mydayyy.plugins.serversidemap.cfg
+  eu.mydayyy.plugins.serversidemap.cfg
   （另：goldenrevolver.quick_stack_store.cfg 本版【已启用】，它的键位没列进表 A/B —— 要改就在 F1 里搜 QuickStackStore。）
+  （另：自研 QssButtonNudge 与 TablePullGate 没有热键，只有 F1 里的开关，不在表 A/B 里。）
   （想清爽可以直接删掉，游戏下次启动有需要会重建；删错也不影响游戏。）
 
 【8. 原版键位（WASD、E、空格、Tab、AltPlace 等）在哪改】

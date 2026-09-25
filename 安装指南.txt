@@ -1,4 +1,4 @@
-﻿﻿================================================================
+﻿================================================================
 英灵神殿（Valheim）r2modman 整合档 移植指南
 档名：MAKABAKA      本版：v1.4 / 2026-09-17（角色模型改为按需下载 + 新增自制插件 PortalBroadcastFix）
 【要装的人看这份就够】安装步骤.txt —— 从零到进游戏的完整步骤（三种装法），本文件是详细版补充
@@ -67,11 +67,25 @@
      换模型用的模型缓存也会放进你选的目录里的 VRM_Models\（按需下载的模型都存这儿，每个 13~170MB；
      下过一次以后切换秒级、不用重下）；用默认位置时则放 %LOCALAPPDATA%\MAKABAKA\VRM\Models。
     查找顺序：① 命令行 -ProfilesRoot 指定 → ② 上次记住的路径（install-path.txt）→
-    ③ r2modman 自己记录过的路径 → ④ 默认位置（%APPDATA%\r2modmanPlus-local 等，含用符号链接搬家的）
-    → ⑤ 逐个扫描所有固定硬盘 → ⑥ 都找不到就弹窗让你粘贴路径。
+    ③ r2modman 自己记录过的路径（它自己的日志/配置里出现的绝对路径；路径里只要带 \Valheim\profiles 就认，
+       所以数据文件夹改过名、搬到别的盘也能认出来；只翻它的小文件，每个只读开头，最多 6 秒，
+       翻到能用的就立刻收工）→
+    ④ 默认位置（%APPDATA% / %LOCALAPPDATA% / 用户目录 下的 r2modmanPlus-local、r2modman、
+       Thunderstore Mod Manager 等，含用符号链接搬家的）→
+    ⑤ 逐个扫描所有固定硬盘（最多 6 层，跳过 Windows / Program Files 等大目录，最多 12 秒）
+    → ⑥ 都找不到才让你粘贴路径 —— 这时会先把"排查明细"打出来（上面各步查了什么、结果如何）。
+    ④⑤ 找到的【全都会列出来】，不管前面找没找到都扫一遍：有人 C 盘一份、D 盘也一份，两个都列出来让你挑；
+    排序时"里面还有档的"排前面，"空壳"（一个档都没有的数据文件夹）一律排最后。只有一个位置"里面真有档"时
+    不会停下来问你 —— 直接用那份，其它位置只当信息打出来。
+    探测一开始就会打一行"正在找 r2modman 的数据文件夹…"，正常 1~2 秒就出结果，扫盘那趟约 5 秒；
+    （v1.19 之前这一步会静默几十秒到一分钟，看起来像卡死 —— 已修）
+    ★ 脚本不会自己新建路径：只装到机器上【现有】的 r2modman 数据文件夹里。只有你自己明确指定的路径
+      （-ProfilesRoot <路径>、或装的时候自己粘进去的路径）不存在时，才会按你说的建出来
+      （这时屏幕上会写明"这条路径是你自己指定的、机器上还没有"）。
     屏幕第 [2/7] 步会打印它最终用的是哪个目录、以及是怎么找到的（来源），可以对着核对。
     想只看它认到哪儿、不装任何东西：命令行运行 install.ps1 -DetectOnly
     （在包目录按住 Shift 右键 →「在此处打开 PowerShell 窗口」→ .\install.ps1 -DetectOnly）
+    完全找不到、或想搞清它到底翻了哪些地方：install.ps1 -Diag（只读；菜单里也有：选 10）
 
 --- 手动步骤（不想用脚本时照这个做）---
 
@@ -128,7 +142,7 @@ MAKABAKA\                   ← 整个 r2modman 档（把它放到 profiles 目�
   mods.yml                   r2modman 的 mod 清单（记录启用/禁用状态）
 MAKABAKA_profile.zip        上面这一堆的压缩包（传输用，解压后同上）
 一键安装.bat / install.ps1  一键安装脚本（双击 bat 即可；详细见第 1 节"最快路径"）
-EnhancedValheimVRM_手动安装\        角色换模型（EnhancedValheimVRM 1.3.1）要用的东西：插件与伴随 dll + 18 个 Managed 程序集 + 说明
+EnhancedValheimVRM_手动安装\        角色换模型（EnhancedValheimVRM 1.4.1）要用的东西：插件与伴随 dll + 13 个 Managed 程序集 + 说明
                             （模型已不在这里 —— 改按需下载，清单见 Models\models.json）
                             （这个 mod 特殊：必须往游戏目录放文件，所以单独放这儿；见第 9 节）
 Mod清单_MAKABAKA.txt        全部 mod 名称 / 版本 / 作者 / 说明
@@ -185,11 +199,10 @@ Q: Alt+右键 / Alt+左键 没反应
      也可以在 F1 配置管理器里搜 AzuExtendedPlayerInventory 查看 "Favoriting Modifier Key"。
 
 Q: 帧率只有 15fps 左右、明显卡（主菜单也卡）
-   → 这是旧版自制插件 ChestFlowTweaks 0.3.0 的 bug：它在每帧执行的一次补丁里做了
-     "遍历所有已加载程序集"的反射查找，实测每帧白白多花约 48ms（GPU/CPU 都闲着却只有 15fps）。
-     本包用的是修好的 0.3.1，正常应 60fps 左右。
-     补救：把 BepInEx\plugins\ChestFlowTweaks\ChestFlowTweaks.dll 换成 0.3.1（本包里就是），
-     或者直接重新装一次本包。
+   → 旧版包里那个自制插件 ChestFlowTweaks 0.3.0 有性能 bug（每帧遍历已加载程序集做反射查找，
+     实测每帧白花约 48ms）。它自 v1.15 起已随 ChestFlow 一起从包里移除，本版不会再出现这个问题。
+     如果还看到 15fps：先看第 [6/7] 步是否"关键文件校验通过"，再把日志发我们；
+     也检查档里是否还残留 BepInEx\plugins\ChestFlowTweaks\（升级时会自动清掉并备份）。
 
 Q: 我以前装过旧版，怎么升级到这一版？
    → 解压新包 → 双击 一键安装.bat → 它会检测到已装的档并问你：
@@ -207,14 +220,17 @@ Q: 我的 r2modman 数据文件夹不在 C 盘（用 设置→Locations→Change
      把已有档搬过去（官方行为），所以要装到这个新位置就装到这里；旧位置那些档不受影响。
    → 如果它认错了位置，命令行运行：  .\install.ps1 -ProfilesRoot "D:\你的\r2modmanPlus-local\Valheim\profiles"
      想只看它认到哪儿不加 -ProfilesRoot 而加 -DetectOnly。
+   → 想看清它到底翻了哪些地方（正在运行的 r2modman、常见默认位置、r2modman 记录过的路径、扫盘结果
+     全打出来，只读不写）：  .\install.ps1 -Diag     （菜单里也有：选 10) 排查）
 
 Q: 想改设置
    → 游戏内按 F1 打开配置管理器改，改完即生效（大部分）。或者直接编辑
      ...\profiles\MAKABAKA\BepInEx\config\ 下的 .cfg 文件（改完重启游戏）。
 
 Q: r2modman 里提示 mod "已更新"或想重装
-   → 需要联网（会从 Thunderstore 重新下载）。注意：ChestFlowTweaks 和 InventorySortOnly
-     这两个自制插件不在 Thunderstore 上，重装清单里不会包含它们，别删包里的文件。
+   → 需要联网（会从 Thunderstore 重新下载）。注意：InventorySortOnly / SafeBox / SafeQuickStack /
+     VRMModelSwitcher / KeepBuffsOnDeath / ItemSkin / PortalBroadcastFix 这些自制插件不在 Thunderstore 上，
+     重装清单里不会包含它们，也别删包里的文件。
 
 ----------------------------------------------------------------
 【6. 卸载 / 还原】
@@ -229,8 +245,8 @@ Q: r2modman 里提示 mod "已更新"或想重装
 ----------------------------------------------------------------
 【7. 本档 mod 概览（详细清单见 Mod清单_MAKABAKA.txt）】
 ----------------------------------------------------------------
-数量：42 个 Thunderstore 包（37 启用 + 5 已装禁用）+ 6 个自制插件
-覆盖：物品栏扩展 / 快捷栏 / 装备管理、储物与自动入库（ChestFlow）、物品堆叠与重量、
+数量：mods.yml 共 38 条（36 个 Thunderstore 包 + 2 个本地自研条目），全部启用 —— 本版不再随包任何禁用 mod
+覆盖：物品栏扩展 / 快捷栏 / 装备管理、快速堆叠（自研 SafeQuickStack，P 键）与箱子整理（QSS 按钮 / O 键）、物品堆叠与重量、
       一键整理（自制）、建造辅助（PlanBuild、Build Camera、AutoRepairBuilding）、
       附魔战利品（EpicLoot + 中文）、地图共享（OneMapToRuleThemAll）、目标点传送
       （TargetPortal）、植物批量种植（PlantEasily）、宠物自动喂食（PetPantry）、
@@ -238,10 +254,11 @@ Q: r2modman 里提示 mod "已更新"或想重装
       （Recycle N Reclaim）、UI（BetterUI、MinimalUI）、跑动中换装、闪避快捷键、
       斜坡战斗修正、钓鱼、天气不毁建筑等。
 
-关于"已装的 6 个禁用 mod"（jg224-ChestFlow、HexQuickStackStorage、hyr-ItemStacks、
-QuickStackStore 兼容补丁、ValheimSkipIntro、ValheimVRM 1.2.2）：文件和配置都在包里，状态是禁用 ——
-ChestFlow 是本版刻意禁用的（多人同开一箱有丢物风险，快速堆叠改用自研 SafeQuickStack）；
-ValheimVRM 1.2.2 已被新版 EnhancedValheimVRM 取代。需要时可在 r2modman 里勾选启用（ChestFlow 慎用）。
+本版起不再随包任何禁用 mod。原"6 个已装禁用"（jg224-ChestFlow、HexQuickStackStorage、hyr-ItemStacks、
+QuickStackStore 兼容补丁、ValheimSkipIntro、ValheimVRM 1.2.2）以及 jg224-ModCore 已全部移除：
+ChestFlow 多人同开一箱会丢物品（ModCore 只被它依赖，随它一起移除）；其余五项长期禁用、功能已被替代。
+升级时安装器会从档里删掉这些目录与配置，并先备份到 BepInEx\_retired_backup_<时间戳>\（后悔可整目录拷回）。
+快速堆叠用自研 SafeQuickStack（P 键），箱子整理用 QSS（容器面板上的"整理"按钮，或开箱时按 O）。
 
 自制 / 本地插件七个（包里有 dll 和配置，务必别丢；都不在 Thunderstore 上）：
   SafeBox            —— 随身保险柜（柜档只在本机：BepInEx\config\SafeBox\<玩家ID>_<角色名>.box）
@@ -251,7 +268,7 @@ ValheimVRM 1.2.2 已被新版 EnhancedValheimVRM 取代。需要时可在 r2modm
   SafeQuickStack     —— P 键快速堆叠（P2P 安全，不抢占箱子所有权）
   VRMModelSwitcher   —— 游戏内 F9 换模型面板（配合 EnhancedValheimVRM）
   PortalBroadcastFix 1.0.0 —— 新放的传送门，队友不重连也能立刻看到（⚠ 要装到服务端才生效）
-  （ChestFlowTweaks 与 VRMGhostFix 本版已不再随包：前者随 ChestFlow 一起移除，后者由新加载器自带清理取代）
+  （ChestFlowTweaks 已随 ChestFlow 一起移除；VRMGhostFix 不再随包，由新加载器自带残留清理取代）
 
 ----------------------------------------------------------------
 【8. 别用 r2modman 点"更新 / 重装"的 mod（会覆盖本地改动）】
@@ -278,7 +295,7 @@ ValheimVRM 1.2.2 已被新版 EnhancedValheimVRM 取代。需要时可在 r2modm
   ① 插件（EnhancedValheimVRM.dll + UniVrm.shaders / OldUniVrm.shaders）
        → r2modman 的档里：<档>\BepInEx\plugins\Rawrtastic-EnhancedValheimVRM\
        （本包 profile 里本来就带着；脚本会再核一遍 md5：缺了补上、不一样就换成一致的）
-  ② Managed 程序集（18 个：VRM10.dll / UniGLTF.dll / MToon.dll / FreeImage.dll / AsyncImageLoader.Runtime.dll …）
+  ② Managed 程序集（13 个：VRM10.dll / UniGLTF.dll / MToon.dll / FreeImage.dll / AsyncImageLoader.Runtime.dll …）
        → 游戏本体里：<游戏>\valheim_Data\Managed\
        （覆盖前自动备份到 <游戏>\_vrm_backup_<时间>\）
   ③ 模型库：任意文件名的 .vrm（不需要等于角色名）
@@ -294,7 +311,7 @@ ValheimVRM 1.2.2 已被新版 EnhancedValheimVRM 取代。需要时可在 r2modm
 
 自动做法（推荐）：运行 一键安装.bat 时，最后会问「一并配置 EnhancedValheimVRM 吗？」，选 Y（回车）就会：
   · ① 插件：装进 r2modman 的档（逐文件比对 md5，缺的补、不一样的换，换前备份）
-  · ② Managed 程序集：把那 18 个程序集放进游戏本体（覆盖前备份到 <游戏>\valheim_Data\Managed\_evv_prev\）
+  · ② Managed 程序集：把那 13 个程序集放进游戏本体（覆盖前备份到 <游戏>\valheim_Data\Managed\_evv_prev\）
   · ③ 模型：先列出可选模型（★=本机已有 / ↓=需要下载+大小；顺序 = 清单顺序，与 Models\预览\ 参考图编号一致；
            已取消默认模型，回车 = 不换；输 p 看总览图 / p3 看第 3 个 / f 打开参考图文件夹），
        可多选（如 1,3 或 2-4），0 = 不换；首次下载会要一次只读令牌（只问一次并记住），

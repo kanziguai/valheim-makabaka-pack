@@ -26,7 +26,6 @@ function W($msg, $color = "Gray") { Write-Host $msg -ForegroundColor $color }
 $CriticalCfg = @(
     "Azumatt.AzuExtendedPlayerInventory.cfg",
     "randyknapp.mods.epiclooot.cfg", "randyknapp.mods.epicloot.cfg",
-    "jg224.chestflow.cfg",
     "shudnal.ItemStacksItemWeights.cfg",
     "Azumatt.Recycle_N_Reclaim.cfg",
     "Azumatt.PetPantry.cfg",

@@ -1,10 +1,19 @@
-﻿﻿# 英灵神殿 MAKABAKA 整合档 · 一键安装
+﻿# 英灵神殿 MAKABAKA 整合档 · 一键安装
 
-Valheim 1.0 联机整合档（r2modman profile）：**Thunderstore 42 个包（36 启用 / 6 禁用）**
-＋ 自制插件（SafeBox 0.6.0、SafeQuickStack 0.1.0、KeepBuffsOnDeath 1.0.1、ItemSkin 1.0.1、PortalBroadcastFix、InventorySortOnly 1.0.1）
-＋ ChestFlow 及界面汉化 ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
+Valheim 1.0 联机整合档（r2modman profile）：**mods.yml 38 条（36 个 Thunderstore 包 + 2 个本地条目，全部启用，无禁用项）**
+＋ 自制插件（SafeBox 0.6.0、SafeQuickStack 0.2.1、KeepBuffsOnDeath 1.0.1、ItemSkin 1.0.1、PortalBroadcastFix、InventorySortOnly 1.0.1、
+VRMModelSwitcher 1.3.2、VRMAliasLink 0.2.3、QssButtonNudge 1.0.0、TablePullGate 0.1.1）
+＋ 减雾 Muted_Mist ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
+（v1.15 起 ChestFlow 与 ModCore 已移除：多人同开一箱有丢物风险；快速堆叠用自研 SafeQuickStack，箱子整理用 QSS。
+v1.16 起箱子里那个"整理"按钮若压在原版"堆叠"按钮上，自研 QssButtonNudge 会自动把它下移让开。
+v1.17 起 EnhancedValheimVRM 升级到 1.4.1（换用新版 UniVRM 运行库：Managed 程序集 18 → 13），
+NoRainDamage 升级到 1.3.1。
+v1.18 起自研 VRMAliasLink 升级到 0.2.0：同一局里谁按 F9 换了模型，其他人约 2 秒后自动跟着换
+（判等用模型内容指纹 sha256 前16位，与文件名/编号无关；手写 _别名表.txt 优先级最高）。
+v1.19 起 VRMAliasLink → 0.2.3：修掉 0.2.0 的"一开游戏就崩"（装了 v1.18 的人请换掉那个 dll）；
+同版安装脚本 ③ 步加了限时、多硬盘的数据文件夹会全列出来让你挑、并且不再自动新建路径。）
 
-**当前版本：v1.14（2026-09-20）** · 安装包 约 96 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
+**当前版本：v1.18（2026-09-24）** · 安装包 约 96 MB（不含模型；模型按需下载，详见 `模型说明.txt`）· 见 [Releases](../../releases)
 
 > 仓库里只放脚本 + 文档（几百 KB）；安装包 zip 走 Release 附件，不进 git 历史。
 
@@ -127,11 +136,11 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 | 步骤 | 内容 |
 |---|---|
 | 1 | 找源档：同目录的 `MAKABAKA/` 文件夹 → 同目录的 zip → **都没有就从 GitHub 下载最新版**（首次运行会问「安装包放哪」，可换到别的盘，选过就记住 —— 见下）|
-| 2 | 找 r2modman 的 profiles 目录（命令行 → 上次记住的 → r2modman 自己的记录 → 默认位置 → 扫盘 → 问你）。**找到多个数据文件夹时会列出来让你选**（有人每块盘都有一份），默认选上次那个，也可输 `9` 再扫盘、输 `0` 自己指定 |
+| 2 | 找 r2modman 的 profiles 目录：命令行 → 上次记住的 → r2modman 自己的记录（含日志里出现的 `\Valheim\profiles`，所以数据文件夹改过名/搬过盘也能认）→ 默认位置（`r2modmanPlus-local` / `r2modman` / `Thunderstore Mod Manager` 等，含符号链接搬家的）→ 扫所有固定硬盘（最多 6 层、跳过 Windows 等大目录、最多 40 秒）→ 问你。**找到多个数据文件夹时会列出来让你选**（有人每块盘都有一份），默认选上次那个，也可输 `9` 再扫盘、输 `0` 自己指定。想搞清它到底翻了哪些地方：`install.ps1 -Diag`（只读）或菜单 `10)` |
 | 3 | r2modman 正在运行就先关掉（它的退出会重写档信息）|
 | 4 | 没装过 → 全新安装；装过 → **原地升级**（优先保留你的设置，旧文件先备份）|
 | 5 | 复制（升级模式跳过 `BepInEx\config`，只补缺失的配置文件）|
-| 6 | 校验：10 个关键文件 MD5 ＋ mod 启用/禁用计数 ＋ 自制插件版本 |
+| 6 | 校验：15 个关键文件 MD5 ＋ mod 启用/禁用计数 ＋ 自制插件版本 |
 | 7 | 收尾：告诉你怎么启动（r2modman 里选 `MAKABAKA` → `Start modded`）+ 可选配置 EnhancedValheimVRM（见下） |
 
 ### EnhancedValheimVRM（角色换模型）：文件要落在两个不同位置
@@ -141,7 +150,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 | 放什么 | 源目录 | 装到哪里 |
 |---|---|---|
 | 插件 `EnhancedValheimVRM.dll` + `UniVrm.shaders / OldUniVrm.shaders` | `EnhancedValheimVRM_手动安装\BepInEx_pluginsに入れるファイル\` | **r2modman 的档里**：`<档>\BepInEx\plugins\Rawrtastic-EnhancedValheimVRM\` |
-| Managed 程序集（18 个，`VRM10.dll`/`UniGLTF.dll`/`MToon.dll`/`FreeImage.dll`…） | `EnhancedValheimVRM_手动安装\valheim_Data_Managedに入れる文件\` | **游戏本体里**：`<游戏>\valheim_Data\Managed\`（覆盖前自动备份到 `<游戏>\valheim_Data\Managed\_evv_prev\`） |
+| Managed 程序集（13 个，`VRM10.dll`/`UniGLTF.dll`/`MToon.dll`/`FreeImage.dll`…） | `EnhancedValheimVRM_手动安装\valheim_Data_Managedに入れる文件\` | **游戏本体里**：`<游戏>\valheim_Data\Managed\`（覆盖前自动备份到 `<游戏>\valheim_Data\Managed\_evv_prev\`） |
 | 模型与设置 | 按需下载（见下）/ 本机缓存 / `-ModelPath` 指定的本地文件 | **游戏本体里**：`<游戏>\EnhancedValheimVRM\（新版不需要角色名或 settings 文件）` |
 
 **从 v1.4 起，角色模型不再进安装包**（安装包只含 mod 本体+脚本+文档，日常更新只下几十 MB）：
@@ -226,8 +235,9 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 
 1. **别在 r2modman 里对某些 mod 点 Update / Reinstall** —— 会被官方版覆盖，丢掉汉化/自研修改：
    AzuExtendedPlayerInventory、Recycle_N_Reclaim（自编译）、MinimalUI / BetterUI / PetPantry /
-   ChestFlow / TargetPortal / PlanBuild / InstantMonsterLootDrop（汉化或补丁）、Endurance（汉化版）、
-   以及三个自制插件（SafeBox / KeepBuffsOnDeath / VRMGhostFix）。完整清单见 `安装指南.txt` 第 8 节。
+   TargetPortal / PlanBuild / InstantMonsterLootDrop（汉化或补丁）、Endurance（汉化版）、
+   以及自制插件（SafeBox / KeepBuffsOnDeath / SafeQuickStack / InventorySortOnly / VRMModelSwitcher / VRMAliasLink /
+   QssButtonNudge / TablePullGate）。完整清单见 `Mod清单_MAKABAKA.txt` 与 `安装指南.txt` 第 8 节。
 2. **别在装完 EnhancedValheimVRM 的 dll 后点 Steam 的"验证游戏文件完整性"** —— 会清掉 `valheim_Data\Managed`
    里那些 dll（重跑脚本即可恢复）。
 
@@ -246,7 +256,7 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 | `键位自定义指南.txt` | 客户端各自改键位/配置的说明 |
 | `游戏内功能速查.txt` | 装完能干什么、快捷键、怎么还原官方数值 |
 | `r2modman使用说明.txt` | 只讲 r2modman 怎么用 |
-| `Mod清单_MAKABAKA.txt` | 42 个 Thunderstore 包 + 自制插件清单 |
+| `Mod清单_MAKABAKA.txt` | 36 个 Thunderstore 包 + 10 个自制插件清单 |
 | `EpicLoot游玩指南.md/.txt` | EpicLoot 附魔/词缀/合成玩法 |
 | `更新说明_*.txt` | 每个版本的改动 |
 | `版本号.txt` | 当前包版本与命名规则 |
@@ -256,6 +266,44 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 
 ## 7. 版本历史
 
+- **v1.19（2026-09-25）**
+  - 自研 `VRMAliasLink` 0.2.0 → **0.2.3（三次修复）**。0.2.0 里有个属性自引用（表达式体里又读自己），
+    一被读就无限递归 → 栈溢出：点启动后十几秒进程消失、游戏窗口起不来，Windows 事件日志 `0xc0000005 / ntdll.dll`，
+    日志停在 `本地别名表 = …（存在）；订阅 = (未设置)`（再往下那行 `广播：发出 = True…` 永远打不出来）。
+    编译 0 警告、离线自测全绿都拦不住 —— 只有真进一次游戏才能发现。0.2.1 只改那一行，功能与 0.2.0 相同
+    （0.2.1 还有个"第二局重复备份"的小毛病，见下一条）。
+  - **0.2.1 → 0.2.2：修「广播落名不记盘」**。广播落名那条路径只在"清单行已存在且指纹不同"时才写
+    `_别名_manifest.txt`，而落名时该行刚按源文件指纹写进内存 → 条件恒假 → 从不写盘。后果：下一局插件把
+    自己造的 `<玩家名>.vrm` 当成"不是本插件建的"外来文件，先整份备份（几十~几百 MB 进 `_别名备份_<时间>\`）再覆盖。
+    0.2.2 改成"真落了名就写盘"（与别名表那条路径一致）。双机实测发现的（两人已能互看对方模型）。
+  - `check-contract.sh` 增加「属性自引用」静态自检，防同类回归。
+  - 一键安装脚本（`install.ps1`）：③ 步找 r2modman 数据文件夹加了限时与"命中即停"（原来全量扫几千个文件，
+    本机 25.6 秒 → 1 秒级）；多硬盘识别会把所有盘上的数据文件夹都列出来让你选（有档的排前）；**不再自动新建路径**，
+    只认机器上已有的路径，除非用 `-ProfilesRoot` 显式指定。
+  - 含 v1.18 的全部内容。
+- **v1.18（2026-09-24）**
+  - 自研 `VRMAliasLink` 0.1.1 → **0.2.0：模型广播** —— 同一局里谁按 F9 换了模型，其他人约 2 秒后自动跟着换
+    （他不用重进、你也不用动手）；判等用【模型内容指纹】sha256 前 16 位，与文件名/编号无关
+    （两台机文件名不同、编号撞车都能对上）；只传"谁用哪一只"几十字节，**仍然不传模型本体**。
+  - 优先级：手写 `_别名表.txt` > 广播 > 订阅；别名表"模型一栏"现在也可以直接写指纹。
+  - 新增文件 `<游戏>\EnhancedValheimVRM\_模型指纹.txt`（本机模型指纹索引，删掉会自动重建）。
+  - 前置要求：**每个人都装 0.2.0**（一边 0.1.x 那边收不到广播）；开关在 `BepInEx\config\local.vrm.aliaslink.cfg` 的「4-广播」段。
+    ⚠️ 0.2.0 有启动崩溃（见 v1.19），实际请统一用 **0.2.3**。
+  - 含 v1.17 的全部内容（EnhancedValheimVRM 1.4.1、NoRainDamage 1.3.1、安装脚本两处修复）。
+- **v1.17（2026-09-24）**
+  - 上游更新：**EnhancedValheimVRM 1.3.1 → 1.4.1**（换用新版 UniVRM 运行库：安装到游戏 `valheim_Data\Managed` 的程序集
+    18 → 13；弹簧 Immobile / MaxAngle 限制、碰撞体尺寸上限、`EnablePlayerFade` 距离修正等）。
+    日志里仍会出现一条"版本与分享源一致 / Share"提示，属正常。
+  - 上游更新：**NoRainDamage 1.3.0 → 1.3.1**（修"读档后建筑在无雨时也持续掉血"的判定 bug；血条/雨伤害配置行为不变）。
+  - `EnhancedValheimVRM_手动安装\` 同步到 1.4.1 官方包布局（插件与伴随 dll 17 个 + Managed 13 个）；
+    安装脚本 `-Verify` 的程序集数量判据同步改成 13。
+- **v1.16（2026-09-23）**
+  - 合并上游：EpicLoot 0.14.12、PlantEasily 2.2.1（都不动既有配置）。
+  - 自研 `VRMModelSwitcher` 1.3.2：换模型前先断链再写，避免把共享同一文件的名字一起覆盖（数据安全修复）。
+  - 新增自研 `QssButtonNudge` 1.0.0（箱子"整理"按钮与"堆叠"重叠时自动下移）、
+    `VRMAliasLink` 0.1.1（模型别名，F4 立即同步）、
+    `TablePullGate` 0.1.1（附魔台只在鉴定/升级表取附近箱子）。
+  - 文档同步：README / 游戏内功能速查 / 键位自定义指南 / Mod 清单 / 安装指南。
 - **v1.0（2026-09-15）** 首个分享版
   - 新增 `Azumatt-Hooked` 1.1.1（钓鱼玩法重做，已按"手感保留、收益收敛"调平衡）
   - 新增自制插件 `SafeBox` 0.5.4（随身 9 格保险柜，死亡不掉落、Ctrl+左键快速存取）、
@@ -268,6 +316,6 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 ## 8. 免责 / 出处
 
 整合了 Thunderstore 上**公开可下载**的 mod，以及自编译 / 本地汉化的文件（`Endurance` 汉化版、
-`ChestFlow` 汉化版、`ChestFlowTweaks 0.3.1`、`SafeBox`、`KeepBuffsOnDeath`、`VRMGhostFix` 等）。
+`SafeBox`、`KeepBuffsOnDeath`、`SafeQuickStack`、`InventorySortOnly` 等）。
 各 mod 版权归原作者，本仓库仅供朋友之间联机使用，**请勿用于商业用途**。
 打包档里不含游戏本体、不含世界/角色存档。

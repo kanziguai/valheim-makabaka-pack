@@ -91,3 +91,18 @@ MAKABAKA 整合档 —— 安装包校验值（每个版本发布时更新）
   大小：100827228 字节
   MD5 ：94bf5bb1d48b473d3b01c041880a50b8
   SHA256：7db2882e97a744e0c1d59b057fb346850e06dec7619d837a8a12d545e7ecb67a
+
+
+[ v1.15 ]  2026-09-22
+  文件：MAKABAKA_profile_v1.15_20260922.zip
+  大小：100035136 字节
+  MD5 ：8344c3fc4bc5f4a65d557c8dc93e9010
+  SHA256：148e37523bccb8c654bbc263439e96563856d88216b3476564d2fe8f16d7c8f1
+  说明：移除 ChestFlow/ModCore 及 6 项无用 mod；合入 EpicLoot 0.14.11 / Jotunn 2.30.2 等更新；
+        SafeQuickStack 0.2.1；新入 Muted_Mist。
+
+[ v1.19 ]  2026-09-25
+  文件：MAKABAKA_profile_v1.19_20260925.zip
+  大小：102093337 字节
+  MD5 ：49565ab7408b8a2606ade120dea2af8e
+  SHA256：dda906b53b83adbf54ccfa0c11257aa1b34d80d8330c99d6d00ccdea5af77cb8

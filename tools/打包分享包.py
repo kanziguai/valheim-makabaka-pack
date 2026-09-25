@@ -102,7 +102,9 @@ def refresh_expect(share: Path) -> None:
     ps = REPO / "install.ps1"
     if not ps.exists():
         return
-    text = ps.read_text(encoding="utf-8-sig", errors="replace")
+    # newline="" 必须加：不这样的话 read_text 会把 CRLF 统一成 LF，
+    # 后面按字节 replace 就永远匹配不到（表现为"打印了已更新、文件其实没变"——2026-09-25 真实事故）。
+    text = ps.read_text(encoding="utf-8-sig", errors="replace", newline="")
     pat = re.compile(r'"((?:BepInEx|valheim_Data)[^"]+\.(?:dll|shaders))"\s*=\s*"([0-9a-f]{32})"')
     changed = []
     def sub(m):
@@ -119,10 +121,31 @@ def refresh_expect(share: Path) -> None:
     new_text = pat.sub(sub, text)
     print(f"\n== 0) 出厂校验值（$Expect）自检：{len(pat.findall(text))} 项")
     if changed:
-        # 二进制级替换：保住 UTF-8 BOM（PowerShell 5.1 没 BOM 会按 GBK 读）
-        raw = ps.read_bytes()
-        raw2 = raw.replace(text.encode("utf-8"), new_text.encode("utf-8"))
-        ps.write_bytes(raw2)
+        # 原地替换（文本里现在保着 CRLF，逐行替换，绝不动其它字节）
+        assert text != new_text
+        out = text
+        for rel, old_hash, new_hash in changed:
+            a = '"%s" = "%s"' % (rel, old_hash)
+            b = '"%s" = "%s"' % (rel, new_hash)
+            assert out.count(a) == 1, f"$Expect 表里 {rel} 这行不唯一，没敢改"
+            out = out.replace(a, b)
+        # 写回：utf-8-sig = 带 BOM（PowerShell 5.1 没 BOM 会按 GBK 读），换行原样
+        ps.write_text(out, encoding="utf-8-sig", newline="")
+        # 回读确认真的落盘了（防再出现"以为改了、其实没改"）
+        back = ps.read_text(encoding="utf-8-sig", errors="replace", newline="")
+        for rel, old_hash, new_hash in changed:
+            if ('"%s" = "%s"' % (rel, new_hash)) not in back or ('"%s" = "%s"' % (rel, old_hash)) in back:
+                raise SystemExit(f"[x] $Expect 写回 install.ps1 失败：{rel}（{old_hash} → {new_hash}）没生效")
+        # 全表对齐体检：所有表项都应等于分享包里的实际文件
+        bad = []
+        for rel, h in re.findall(r'"((?:BepInEx|valheim_Data)[^"]+\.(?:dll|shaders))"\s*=\s*"([0-9a-f]{32})"', back):
+            disk = share / "MAKABAKA" / Path(rel.replace("\\", "/"))
+            if disk.exists() and hashlib.md5(disk.read_bytes()).hexdigest() != h:
+                bad.append(rel)
+        if bad:
+            print("  [!] 还有表项与分享包文件不一致：" + "、".join(bad))
+        else:
+            print("  ✓ $Expect 与分享包内文件全部一致")
         for rel, old, new in changed:
             print(f"  ↻ 已更新 {rel}\n        {old} → {new}")
         print("  （不更新的话，别人装完会看到假的\"与出厂不一致\"）")
@@ -254,7 +277,8 @@ def main() -> int:
         print("  （--dry-run：没有真的生成）")
         return 0
     if out.exists():
-        print(f"  [!] 已存在同名 zip，先移走：{out.name}", file=sys.stderr)
+        print(f"  [x] 已存在同名 zip，**不覆盖、本次没有生成任何东西**：{out.name}")
+        print(f"      要重打：先把它移走（如 mv '{out}' '{out}.old'），或用 --out 指定别的路径。")
         return 1
 
     part = out.with_suffix(".zip.part")

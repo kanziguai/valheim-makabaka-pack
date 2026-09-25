@@ -37,14 +37,23 @@
 
   关于 r2modman 装在别的盘：r2modman 的"数据文件夹"可以用 设置→Locations→Change data folder
   挪到别的盘，所以本脚本按以下顺序找（找到就用）：
-    ① 命令行 -ProfilesRoot 指定 ② 上次记住的 install-path.txt ③ r2modman 自己记录过的路径
+    ① 命令行 -ProfilesRoot 指定 ② 上次记住的 install-path.txt
+    ③ r2modman 自己记录过的路径 —— 只翻它自己的小文件（日志/配置/LevelDB），
+       不走进 profiles、image-cache、_import_cache 那些大目录，每个文件只读开头，最多 6 秒，
+       翻到"确实存在的 \Valheim\profiles"就立刻收工（2026-09-25：以前这里会静默几十秒，看着像卡死）
     ④ 默认位置（%APPDATA%\r2modmanPlus-local 等，含通过符号链接/联结点搬家的情况）
-       —— 只有"里面确实还有档"才算候选；只剩空壳（数据文件夹被挪走了）就只提示、不当目标，
-          免得 r2modman 明明在别的盘、脚本却静默装到 C 盘去
-    ⑤ 逐个扫描所有固定硬盘（找 r2modmanPlus-local 或含 <游戏>\profiles 的目录）
+    ⑤ 逐个扫描所有固定硬盘（找 r2modmanPlus-local 或含 <游戏>\profiles 的目录，最多 12 秒）
+       —— ④⑤ 找到的全都算候选，不管前面有没有找到都扫一遍：
+          有人 C 盘一份、D 盘也一份，多路径一起列出来让你挑（2026-09-25 加）。
+          排序：里面还有档的排前面，"空壳"（一个档都没有的数据文件夹）一律排最后。
     ⑥ 实在找不到就问你要路径（r2modman→设置→Locations→Browse data folder）
+  探测开始会先打一行"正在找 r2modman 的数据文件夹…"；正常 1~2 秒出结果，扫盘那趟约 5 秒。
   找到 2 个以上候选（或加了 -Pick）会列出来让你选；只找到 1 个就直接用 —— [2/7] 会写出来源
+  绝不自己新建路径：只用机器上现有的 r2modman 数据文件夹。只有你明确指定的路径
+  （-ProfilesRoot <路径>、或菜单里自己粘的路径）不存在时，才会按你说的建出来。
     -Pick                  只找到一个数据文件夹时也列出来让你选一次（想装到别处时用）
+    -Diag                  只排查"r2modman 数据文件夹在哪"：把 ①正在运行的 r2modman ②常见默认位置
+                           ③r2modman 自己记录过的路径 ④扫各硬盘 的结果全打出来，然后退出（不改任何文件）
 #>
 param(
     [string]$ProfilesRoot = "",
@@ -56,6 +65,7 @@ param(
     [string]$BackupPath = "",      # 指定回滚备份目录
     [switch]$Pick,               # 就算只找到一个数据文件夹也列出来让你选（想装到别处时用）
     [switch]$DetectOnly,
+    [switch]$Diag,               # 只排查"r2modman 数据文件夹在哪"：打印探测明细后退出，不改任何文件
     [switch]$DryRun,             # 只演练：把将要做的每一步（改哪些档内文件、VRM 三处、要下哪些模型）打印出来，不写任何文件
     [switch]$Verify,             # 只读自检：核对"装好没有"，逐项 ✅/⚠️/❌ 后退出（退出码 1 = 有 ❌）
     [switch]$NoRemember,
@@ -100,7 +110,7 @@ if (-not $NonInteractive -and $PSBoundParameters.Count -eq 0) {
         Write-Host "  7) 查看可选 VRM 模型"
         Write-Host "  8) 只安装 / 更换 VRM"
         Write-Host "  9) 只更新 mod，不处理 VRM"
-        Write-Host "  0) 退出"
+        Write-Host " 10) 排查：r2modman 数据文件夹在哪（只读）"
         Write-Host ""
         $menu = Read-Host "请输入编号"
         switch ($menu.Trim()) {
@@ -117,8 +127,8 @@ if (-not $NonInteractive -and $PSBoundParameters.Count -eq 0) {
             '7' { $ListModels = $true; $script:MenuSelected = $true; break }
             '8' { $VRMOnly = $true; $script:MenuSelected = $true; break }
             '9' { $ModsOnly = $true; $SkipVRM = $true; $script:MenuSelected = $true; break }
-            '0' { exit 0 }
-            default { Write-Host "输入无效，请输入 0 到 9。" -ForegroundColor Yellow; Start-Sleep -Seconds 1 }
+            '10' { $Diag = $true; $script:MenuSelected = $true; break }
+            default { Write-Host "输入无效，请输入 0 到 10。" -ForegroundColor Yellow; Start-Sleep -Seconds 1 }
         }
         if ($script:MenuSelected) { break }
     }
@@ -130,7 +140,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 
 # ---------- 出厂校验值（不一致只提示，不阻断）----------
 $Expect = @{
-    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "4ca65ee6417ace9bc35187f35be2e5d0"
+    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "02925d7278748d8cb19bc6ba6bed08cb"
     "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll"   = "5e632a79528a5fe12c792afbb95e7d65"
     "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"
     "BepInEx\plugins\SafeBox\SafeBox.dll" = "2978b55e6bd1233d802175e987327b33"
@@ -140,18 +150,24 @@ $Expect = @{
     "BepInEx\plugins\ItemSkin\ItemSkin.dll" = "c6a3b2aa698b120726febe59fb055bee"
     "BepInEx\plugins\Azumatt-Minimal_UI\MinimalUI.dll" = "d81470836d83a1e802fd09446b5fcea0"
     "BepInEx\plugins\InventorySortOnly\InventorySortOnly.dll" = "957c0c96dafe4d7a738a59a9837144ce"
+"BepInEx\plugins\local-SafeQuickStack\SafeQuickStack.dll" = "7539fd5d6284b964348a5d1377653e10"
+    "BepInEx\plugins\VRMModelSwitcher\VRMModelSwitcher.dll" = "25354a2f9c6430f2259c8083db1921b4"
+    "BepInEx\plugins\local-VRMAliasLink\VRMAliasLink.dll" = "7f6ddbc17ec59178aa7a94b5c432fba1"
+    "BepInEx\plugins\QssButtonNudge\QssButtonNudge.dll" = "389724775d536c67d3fce96b0faa5d9c"
+    "BepInEx\plugins\local-TablePullGate\TablePullGate.dll" = "d91e55bc6452b4a4f06429aa36c12871"
 }
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
 $ReleasesRepo   = "kanziguai/valheim-makabaka-pack"   # ← GitHub 仓库（owner/repo）
-$ScriptBuild    = "2026-09-20"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
+$ScriptBuild    = "2026-09-25"                        # ← 本脚本的日期（发新版时由 tools/发布新版.py 自动更新）
 $ReleaseLatest  = "https://github.com/$ReleasesRepo/releases/latest/download"
 $SumAssetName   = "SHA256SUMS.txt"                   # Release 里固定名字的校验清单附件
 $VrmDefaultModel = ""                                   # 已取消默认模型（清单里 default 为空 → 不重排；菜单顺序=清单顺序=参考图编号）
 
 # 必须人人一致的配置项（安装/升级后强制校正；升级模式会保留玩家自己的 config，所以必须在这里兜住）
 $script:EnforcedConfig = @(
-    @{ File = "jg224.chestflow.cfg"; Section = "Multiplayer"; Key = "AllowConcurrentChestUse"; Value = "false" }
+    # v1.15 起 ChestFlow 已从包里移除（连同 ModCore），不再需要强制校正任何配置项。
+    # 保留本数组结构：以后若再有"必须人人一致"的配置项，按上面格式往里加即可。
 )
 # 下载线路：全部是实测能用的 GitHub 加速（国内可直连）；顺序 = 测速不可用时的兜底顺序
 #   ""       = 直连 github.com（放最后）
@@ -171,8 +187,8 @@ $MirrorProbeSeconds = 6        # 测速单条线路超时
 $MirrorGoodEnough   = 1.5      # MB/s：某条线路已经这么快就用它，不再测后面的（省时间）
 $script:ProbeCache  = @{}      # 同一个 URL 只测一次
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.14_20260920.zip"
-$FallbackMd5     = "94bf5bb1d48b473d3b01c041880a50b8"
+$FallbackAsset   = "MAKABAKA_profile_v1.19_20260925.zip"
+$FallbackMd5     = "49565ab7408b8a2606ade120dea2af8e"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -213,6 +229,10 @@ function Get-ModelCacheDir([string]$workDir) {
 $script:ProfCands = New-Object System.Collections.Generic.List[string]
 $script:ProfSrc   = @{}       # 候选 → 来源（命令行 / 记住的 / r2modman 记录过 / 默认位置 / 扫盘找到）
 $script:DefaultShell = $null  # 默认位置那个"一个档都没有"的空壳（数据文件夹被挪走后留下的）
+$script:ProfHints   = New-Object System.Collections.Generic.List[string]   # 探测到"像数据文件夹但用不了"的路径（排查用）
+$script:DiagDefault = New-Object System.Collections.Generic.List[string]   # 默认位置逐个探测的结果（排查用）
+$script:ProfShells  = New-Object System.Collections.Generic.List[string]   # "一个档都没有"的数据文件夹（空壳）：只当备选，排在有档的后面
+$script:ProfShellSrc = @{}                                                 # 空壳 → 来源
 function Add-ProfCand([string]$p, [string]$Src = "") {
     if ([string]::IsNullOrWhiteSpace($p)) { return }
     foreach ($x in $script:ProfCands) {
@@ -225,6 +245,20 @@ function Get-ProfSrc([string]$p) {
     if ($p -and $script:ProfSrc.ContainsKey($p)) { return $script:ProfSrc[$p] }
     return ""
 }
+function Get-ProfShellSrc([string]$p) {
+    if ($p -and $script:ProfShellSrc.ContainsKey($p)) { return $script:ProfShellSrc[$p] }
+    return "扫盘找到"
+}
+# 分层加入：里面已经有档的算正式候选；只有空壳的先记着，等全盘扫完再放到最后当备选。
+# 这样"每块盘都有一份 r2modman"能同时列出来让你挑，又不会让被搬走后留下的空壳顶到第一位。
+function Add-ProfCandTier([string]$p, [string]$Src = "") {
+    if ([string]::IsNullOrWhiteSpace($p)) { return }
+    if (Test-ProfRootHasProfiles $p) { Add-ProfCand $p $Src; return }
+    foreach ($x in $script:ProfCands) { if ($x -ieq $p) { return } }
+    foreach ($x in $script:ProfShells) { if ($x -ieq $p) { if ($Src -and -not $script:ProfShellSrc.ContainsKey($x)) { $script:ProfShellSrc[$x] = $Src }; return } }
+    $script:ProfShells.Add($p)
+    if ($Src) { $script:ProfShellSrc[$p] = $Src }
+}
 # 这个数据文件夹里是否"真的还有档"（至少一个档里有 mods.yml）—— 空壳不算
 function Test-ProfRootHasProfiles([string]$root) {
     if ([string]::IsNullOrWhiteSpace($root) -or -not (Test-Path $root)) { return $false }
@@ -236,14 +270,16 @@ function Test-ProfRootHasProfiles([string]$root) {
     return $false
 }
 function Get-ProfCandNote([string]$root) {
+    if (-not (Test-Path $root)) { return "这个位置现在不可用（那个盘可能没插）" }
     $yml = Join-Path (Join-Path $root $ProfileName) "mods.yml"
+    $n = 0
+    try { $n = @(Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue).Count } catch {}
     if (Test-Path $yml) {
         $tm = ""
         try { $tm = (Get-Item $yml).LastWriteTime.ToString("yyyy-MM-dd HH:mm") } catch {}
-        return "已有 $ProfileName 档（$tm）"
+        return "已有 $ProfileName 档（$tm）；该数据文件夹里共 $n 个档"
     }
-    $n = 0
-    if (Test-Path $root) { try { $n = @(Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue).Count } catch {} }
+    if ($n -eq 0) { return "空的数据文件夹（一个档都没有）" }
     return "没有 $ProfileName 档，会新建（该数据文件夹里现有 $n 个档）"
 }
 
@@ -950,6 +986,7 @@ if (-not $VRMOnly) { $packRoot = Split-Path $src -Parent }
 # ---------- 2) 目标 profiles 目录（多路探测，支持数据文件夹被挪到别的盘）----------
 $GameName = "Valheim"
 $script:PathSource = ""
+$script:PathExplicit = $false   # 目标路径是不是"用户明确指定"的；只有这种情况才允许脚本新建路径
 $rememberFile = Join-Path $PSScriptRoot "install-path.txt"
 
 function Try-ProfilesRoot([string]$p) {
@@ -975,34 +1012,92 @@ function Try-AnyProfilesRoot([string]$p) {
 function Get-PathsFromAppFiles {
     # 找"r2modman 自己记录过的数据文件夹路径"。
     # r2modman 是 Electron 应用：路径可能写在日志/配置里（ANSI/UTF-8），也可能写在 LevelDB 里（UTF-16），
-    # 所以同一份文件两种编码各读一遍；每个文件最多留 40 条、总量最多 800 条，避免拖慢安装。
+    # 所以同一份文件两种编码各读一遍。
+    # 速度纪律（2026-09-25）：数据文件夹里装着整个已安装的档（几千个文件、上百 MB），
+    # 对它整棵树递归 + 全文读会让人白等 25~60 秒（看起来像卡死）。所以这里定四条规矩：
+    #   ① 不走进 profiles / _import_cache / image-cache / cache / exports / node_modules
+    #      —— 那里只有 mod 文件与插件日志，没有"数据文件夹在哪"这种信息
+    #   ② 每个文件只读开头 256 KB（路径字符串都在文件前部），只取最近改过的 150 个
+    #   ③ 一旦翻到"确实存在的 <...>\Valheim\profiles"就立刻返回（那就是数据文件夹）
+    #   ④ 总预算 6 秒，超时就用已有结果 —— 宁可少找几个，也不能让人干等
+    $budgetSec  = 6
+    $perFileCap = 256KB
+    $maxFiles   = 150
+    $skipPat    = '(?i)\\(profiles|_import_cache|image-cache|cache|exports|node_modules)(\\|$)'
     $roots = @()
-    if ($env:APPDATA)      { $roots += (Join-Path $env:APPDATA "r2modman"); $roots += (Join-Path $env:APPDATA "r2modmanPlus-local\config") }
-    if ($env:LOCALAPPDATA) { $roots += (Join-Path $env:LOCALAPPDATA "r2modman"); $roots += (Join-Path $env:LOCALAPPDATA "r2modmanPlus-local\config") }
+    if ($env:APPDATA) {
+        # 「数据文件夹本身」排最前：它自己的 log.txt 里就记着绝对路径 —— 最好用的一处
+        $roots += (Join-Path $env:APPDATA "r2modmanPlus-local")
+        $roots += (Join-Path $env:APPDATA "r2modmanPlus-local\config")
+        $roots += (Join-Path $env:APPDATA "r2modman\config")
+        $roots += (Join-Path $env:APPDATA "r2modman")              # Electron 的本地存储（LevelDB，UTF-16）
+        $roots += (Join-Path $env:APPDATA "r2modmanPlus")
+        $roots += (Join-Path $env:APPDATA "Thunderstore Mod Manager")
+    }
+    if ($env:LOCALAPPDATA) {
+        $roots += (Join-Path $env:LOCALAPPDATA "r2modmanPlus-local")
+        $roots += (Join-Path $env:LOCALAPPDATA "r2modmanPlus-local\config")
+        $roots += (Join-Path $env:LOCALAPPDATA "r2modman\config")
+        $roots += (Join-Path $env:LOCALAPPDATA "Thunderstore Mod Manager")
+    }
     $found = New-Object System.Collections.Generic.List[string]
     $seen  = New-Object System.Collections.Generic.HashSet[string]
+    $sw    = [System.Diagnostics.Stopwatch]::StartNew()
     foreach ($r in $roots) {
+        if ($sw.Elapsed.TotalSeconds -gt $budgetSec) { break }
         try { if (-not (Test-Path $r)) { continue } } catch { continue }
         $files = $null
         try {
-            $files = Get-ChildItem -Path $r -Recurse -File -ErrorAction SilentlyContinue |
-                     Where-Object { $_.Length -lt (64MB) -and (($_.Extension -eq "") -or ($_.Extension -match '^\.(log|ldb|sst|blob|json|yml|yaml|txt|db|config|dat|ini|cfg|json5)$')) }
+            $files = @(Get-ChildItem -Path $r -Recurse -File -ErrorAction SilentlyContinue |
+                     Where-Object { $_.Length -lt (64MB) -and ($_.FullName -notmatch $skipPat) -and (($_.Extension -eq "") -or ($_.Extension -match '^\.(log|ldb|sst|blob|json|yml|yaml|txt|db|config|dat|ini|cfg|json5)$')) } |
+                     Sort-Object -Property LastWriteTime -Descending | Select-Object -First $maxFiles)
         } catch { continue }
         foreach ($f in $files) {
+            if ($sw.Elapsed.TotalSeconds -gt $budgetSec) { break }
             try {
-                $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
+                # 只读文件开头：路径字符串都在前部，整个文件读进来最费时间（曾经在这里白等 25 秒）
+                $bytes = $null
+                $fs = $null
+                try {
+                    $fs = [System.IO.File]::Open($f.FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+                    $len = [int][Math]::Min([int64]$fs.Length, [int64]$perFileCap)
+                    if ($len -ge 4) {
+                        $buf = New-Object byte[] $len
+                        $got = 0
+                        while ($got -lt $len) {
+                            $n = $fs.Read($buf, $got, $len - $got)
+                            if ($n -le 0) { break }
+                            $got += $n
+                        }
+                        if ($got -gt 0) {
+                            if ($got -lt $len) { $bytes = New-Object byte[] $got; [Array]::Copy($buf, $bytes, $got) } else { $bytes = $buf }
+                        }
+                    }
+                } finally { if ($fs) { $fs.Dispose() } }
+                if (-not $bytes) { continue }
                 $perFile = 0
                 foreach ($encName in @("utf8", "latin", "u16")) {
                     if (($perFile -ge 40) -or ($found.Count -ge 800)) { break }
+                    $nBytes = $bytes.Length
                     try {
-                        if ($encName -eq "utf8")       { $txt = [System.Text.Encoding]::UTF8.GetString($bytes) }
-                        elseif ($encName -eq "latin")  { $txt = [System.Text.Encoding]::GetEncoding(28591).GetString($bytes) }
-                        else                           { $txt = [System.Text.Encoding]::Unicode.GetString($bytes) }
+                        if ($encName -eq "utf8")       { $txt = [System.Text.Encoding]::UTF8.GetString($bytes, 0, $nBytes) }
+                        elseif ($encName -eq "latin")  { $txt = [System.Text.Encoding]::GetEncoding(28591).GetString($bytes, 0, $nBytes) }
+                        else {
+                            if (($nBytes % 2) -ne 0) { $nBytes = $nBytes - 1 }        # UTF-16 要成对
+                            if ($nBytes -lt 2) { continue }
+                            $txt = [System.Text.Encoding]::Unicode.GetString($bytes, 0, $nBytes)
+                        }
                     } catch { continue }
                     foreach ($m in [regex]::Matches($txt, '[A-Za-z]:\\[^\x00-\x1F<>|:*?"\r\n]{2,140}')) {
-                        if ($m.Value -match 'r2modman') {
+                        # r2modman / Thunderstore 字样，或路径里直接就有 \Valheim\profiles（后者能让"数据文件夹改名/搬到别的盘"也被认出来）
+                        if ($m.Value -match '(?i)r2modman|thunderstore|\\Valheim\\profiles') {
                             $val = $m.Value.TrimEnd('\')
                             if ($seen.Add($val)) { $found.Add($val); $perFile++ }
+                            # 已经翻到"确实存在的数据文件夹" → 不用再翻别的文件了（用户不用干等）
+                            if ($val -match '(?i)^(.*?)\\Valheim\\profiles(\\|$)') {
+                                $guessProfiles = $Matches[1] + '\Valheim\profiles'
+                                if (Test-Path $guessProfiles) { return @($val) }
+                            }
                             if (($perFile -ge 40) -or ($found.Count -ge 800)) { break }
                         }
                     }
@@ -1013,33 +1108,167 @@ function Get-PathsFromAppFiles {
     return $found
 }
 function Find-DataFolderOnDrives {
+    param([int]$MaxDepth = 6, [int]$BudgetSec = 12)
+    # 扫所有固定硬盘找 r2modman 数据文件夹。两种判据：
+    #   ① 目录名里带 r2modman / Thunderstore（含数据文件夹被改名的常见写法）
+    #   ② 结构：某目录里有 <游戏>\profiles  —— 数据文件夹被改名、搬到别的盘也能认出来
+    # 逐层枚举（不是 -Recurse 全扫）：浅层先走（D:\r2modmanPlus-local 这类第 1~3 层就命中），
+    # 再往深了找藏在 AppData / 多层目录里的那份；跳过 Windows / Program Files 等大目录，总预算 $BudgetSec 秒。
+    # 实测（本机 4 个固定盘，depth 6）：整趟 4.6 秒。宁可少找几个，也不能在盘多的机器上把安装卡住。
     $hits = New-Object System.Collections.Generic.List[string]
+    $namePats = @("r2modman", "Thunderstore")
+    $skipLeaf = @('$Recycle.Bin', 'System Volume Information', 'Windows', 'Program Files', 'Program Files (x86)', 'ProgramData', 'Windows.old', '$WinREAgent', 'node_modules', 'Recovery', 'PerfLogs', 'MSOCache')
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
     $drives = @()
     try {
         $drives = @([System.IO.DriveInfo]::GetDrives() | Where-Object { $_.DriveType -eq 'Fixed' -and $_.IsReady } | ForEach-Object { $_.RootDirectory.FullName })
-    } catch {}
+    } catch { }
     foreach ($d in $drives) {
-        try {
-            foreach ($m in (Get-ChildItem -Path $d -Directory -Depth 2 -Filter "r2modmanPlus-local" -ErrorAction SilentlyContinue)) { $hits.Add($m.FullName) }
-        } catch {}
-        try {
-            foreach ($m in (Get-ChildItem -Path $d -Directory -Depth 2 -Filter $GameName -ErrorAction SilentlyContinue)) {
-                if (Test-Path (Join-Path $m.FullName "profiles")) { $hits.Add((Split-Path $m.FullName -Parent)) }
+        if ($sw.Elapsed.TotalSeconds -gt $BudgetSec) { break }
+        $level = @($d)
+        for ($depth = 1; $depth -le $MaxDepth; $depth++) {
+            $next = New-Object System.Collections.Generic.List[string]
+            foreach ($cur in $level) {
+                if ($sw.Elapsed.TotalSeconds -gt $BudgetSec) { break }
+                $kids = @()
+                try { $kids = @([System.IO.Directory]::EnumerateDirectories($cur)) } catch { $kids = @() }
+                foreach ($k in $kids) {
+                    $leaf = Split-Path $k -Leaf
+                    if ($skipLeaf -contains $leaf) { continue }
+                    $isModman = $false
+                    foreach ($pat in $namePats) { if ($leaf -like "*$pat*") { $isModman = $true; break } }
+                    if ($isModman) {
+                        if (Test-Path (Join-Path $k "Valheim\profiles")) { $hits.Add($k) }
+                        elseif (Test-Path (Join-Path $k "Valheim")) { $hits.Add($k) }
+                    }
+                    elseif ($leaf -ieq $GameName) {
+                        if (Test-Path (Join-Path $k "profiles")) { $hits.Add((Split-Path $k -Parent)) }
+                    }
+                    if ($depth -lt $MaxDepth) { $next.Add($k) }
+                }
             }
-        } catch {}
+            $level = $next
+        }
     }
     return ($hits | Select-Object -Unique)
 }
 
+function Show-ProfDiag {
+    # 自包含排查：把"数据文件夹可能在哪"的证据全打出来（只读，不写任何文件）
+    Say ""
+    Say '  ============================================================' 'Cyan'
+    Say '   排查：r2modman 数据文件夹在哪（只读，不写任何文件）' 'Cyan'
+    Say '  ============================================================' 'Cyan'
+    Say "  用户：$env:USERNAME    档名：$ProfileName    游戏名：$GameName"
+    Say "  APPDATA      = $env:APPDATA" 'DarkGray'
+    Say "  LOCALAPPDATA = $env:LOCALAPPDATA" 'DarkGray'
+
+    Say ''
+    Say '  ① 正在运行的 r2modman' 'Cyan'
+    try {
+        $procs = @(Get-Process -Name r2modman, r2modmanPlus -ErrorAction SilentlyContinue)
+        if ($procs.Count -gt 0) {
+            Say "     ✔ 在运行：$($procs[0].Path)" 'Green'
+            try {
+                $cl = (Get-CimInstance Win32_Process -Filter "name='r2modman.exe'" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty CommandLine)
+                if ($cl -match '--user-data-dir="?([^"]+)"?') {
+                    Say '       （上面那个是 r2modman 程序；它旁边那个 r2modmanPlus-local 才是数据文件夹）' 'DarkGray'
+                }
+            } catch { }
+        } else {
+            Say '     没在运行（不影响探测）' 'DarkGray'
+        }
+    } catch { Say '     （查进程失败，跳过）' 'DarkGray' }
+
+    Say ''
+    Say '  ② 常见默认位置' 'Cyan'
+    $any = $false
+    $bases = New-Object System.Collections.Generic.List[string]
+    foreach ($b in @($env:APPDATA, $env:LOCALAPPDATA, (Join-Path $env:USERPROFILE 'AppData\Roaming'), (Join-Path $env:USERPROFILE 'AppData\Local'))) {
+        if ([string]::IsNullOrWhiteSpace($b)) { continue }
+        $dup = $false
+        foreach ($x in $bases) { if ($x -ieq $b) { $dup = $true; break } }
+        if (-not $dup) { $bases.Add($b) }
+    }
+    foreach ($base in $bases) {
+        if ([string]::IsNullOrWhiteSpace($base)) { continue }
+        foreach ($nm in @('r2modmanPlus-local', 'r2modmanPlus', 'r2modman-plus', 'r2modman', 'Thunderstore Mod Manager')) {
+            $d = Join-Path $base $nm
+            $ex = $false
+            try { $ex = Test-Path $d } catch { }
+            if (-not $ex) { continue }
+            $any = $true
+            $c = Try-ProfilesRoot $d
+            if (-not $c) { $c = Try-AnyProfilesRoot $d }
+            if ($c -and (Test-ProfRootHasProfiles $c)) { Say "     ✔ $d   →   可用：$c" 'Green' }
+            elseif ($c) { Say "     ⚠ $d   →   有数据文件夹但一个档都没有（空壳）：$c" 'Yellow' }
+            else { Say "     · $d   （存在，但不是数据文件夹：里面没有 $GameName\profiles）" 'DarkGray' }
+        }
+    }
+    if (-not $any) { Say '     （这些位置都没有 r2modmanPlus-local / r2modman / Thunderstore Mod Manager）' 'DarkGray' }
+
+    Say ''
+    Say '  ③ r2modman 自己记录过的路径（日志 / 配置 / LevelDB 里翻出来的绝对路径）' 'Cyan'
+    $hits = @()
+    try { $hits = @(Get-PathsFromAppFiles) } catch { }
+    if ($hits.Count -eq 0) {
+        Say '     （没翻到）—— 这台机器上 r2modman 可能从没运行过，或者记录被清过' 'DarkGray'
+    } else {
+        $uniq = New-Object System.Collections.Generic.List[string]
+        $srcOf = @{}
+        foreach ($v in $hits) {
+            $c = $null
+            if ($v -match '(?i)^(.*?)\\Valheim\\profiles(\\|$)') {
+                $c = Try-ProfilesRoot ($Matches[1] + '\Valheim\profiles')
+                if (-not $c) { $c = Try-AnyProfilesRoot $Matches[1] }
+            } elseif ($v -match '(?i)^(.*?)\\Valheim') { $c = Try-AnyProfilesRoot $Matches[1] }
+            if ($c -and (Test-ProfRootHasProfiles $c)) {
+                if ($uniq -notcontains $c) { $uniq.Add($c); $srcOf[$c] = $v }
+            } elseif ($uniq.Count -lt 6 -and $v.Length -le 160) {
+                $k = "（用不了）$v"
+                if ($uniq -notcontains $k) { $uniq.Add($k) }
+            }
+        }
+        Say "     共翻到 $($hits.Count) 条路径；能用的档目录：" 'DarkGray'
+        if ($uniq.Count -eq 0) { Say '       （一条都用不了：记录里那些盘现在可能没插，或数据文件夹已删）' 'DarkGray' }
+        foreach ($u in $uniq) {
+            if ($u -like '（用不了）*') { Say "     · $u" 'DarkGray' }
+            else { Say "     ✔ $u" 'Green'; Say "         （记录里那条：$($srcOf[$u])）" 'DarkGray' }
+        }
+    }
+    Say ''
+    Say '  ④ 扫各硬盘（最多 12 秒；跳过 Windows / Program Files 等大目录）' 'Cyan'
+    $swDiag = [System.Diagnostics.Stopwatch]::StartNew()
+    $scan = @(Find-DataFolderOnDrives)   # 2026-09-25 修：以前这里根本没调扫描函数，所以永远"用时 0 秒 / 没扫到"
+    Say "     用时 $([int]$swDiag.Elapsed.TotalSeconds) 秒" 'DarkGray'
+    if ($scan.Count -eq 0) { Say '     没扫到（数据文件夹在很深的子目录里时扫盘可能找不到 → 用 -ProfilesRoot 直接指定）' 'DarkGray' }
+    else {
+        foreach ($s in $scan) {
+            $c = Try-ProfilesRoot $s
+            if (-not $c) { $c = Try-AnyProfilesRoot $s }
+            if ($c -and (Test-ProfRootHasProfiles $c)) { Say "     ✔ $c" 'Green' }
+            else { Say "     · $s   （没有档）" 'DarkGray' }
+        }
+    }
+
+    Say ''
+    Say '  结论 / 怎么办' 'Cyan'
+    Say '     · 已经能自动找到 → 直接跑 一键安装.bat（或菜单 1）' 'Yellow'
+    Say '     · 指定位置：一键安装.bat -ProfilesRoot <数据文件夹路径>' 'Yellow'
+    Say '     · 或跑 一键安装.bat 后用菜单 2) 自己粘路径' 'Yellow'
+    Say '     · 在 r2modman 里看：左下 Settings → Locations → Browse data folder' 'Yellow'
+    Say ''
+}
 function Scan-ProfCands {
     # 扫描所有固定硬盘，找 r2modman 数据文件夹（只加候选，不动任何东西）
-    $before = $script:ProfCands.Count
+    # 分两层：有档的 → 正式候选；只有空壳的 → 先记进 $script:ProfShells（排最后）
+    $before = $script:ProfCands.Count + $script:ProfShells.Count
     foreach ($d in (Find-DataFolderOnDrives)) {
         $c = Try-ProfilesRoot $d
         if (-not $c) { $c = Try-AnyProfilesRoot $d }
-        if ($c -and (Test-ProfRootHasProfiles $c)) { Add-ProfCand $c "扫盘找到" }
+        if ($c) { Add-ProfCandTier $c "扫盘找到" }
     }
-    return ($script:ProfCands.Count - $before)
+    return (($script:ProfCands.Count + $script:ProfShells.Count) - $before)
 }
 
 
@@ -1071,6 +1300,7 @@ else {
 $resolved = $null
 $remembered = $null
 $scanned = $false
+if ($Diag) { Show-ProfDiag; Exit 0 }
 
 # ① 命令行指定（宽松：数据文件夹 / profiles 目录都行；不存在就按给定的用，稍后新建）
 #    —— 明确指定了就不再问
@@ -1082,10 +1312,13 @@ if (-not [string]::IsNullOrWhiteSpace($ProfilesRoot)) {
         $resolved = $given
     }
     $script:PathSource = "命令行指定"
+    $script:PathExplicit = $true
     Say "        目标 profiles：$resolved" "DarkGray"
 }
 
 if (-not $resolved) {
+    # 先告诉用户在找什么：探测是只读的，但以前这一步会静默几秒到一分钟，看起来像卡死
+    Say "        正在找 r2modman 的数据文件夹…（记住的位置 → r2modman 自己的记录 → 默认位置 → 扫盘）" "DarkGray"
     # ② 上次记住的位置 —— 只当"默认选项"，不当最终答案（有人每块盘都有一份 r2modman）
     if (-not $NoRemember -and (Test-Path $rememberFile)) {
         try {
@@ -1103,8 +1336,22 @@ if (-not $resolved) {
                 $variants = @($hit)
                 if ($hit -match '\\\\') { $variants += ($hit -replace '\\\\', '\') }
                 foreach ($v in $variants) {
-                    if ($v -match '(?i)^(.*?r2modmanPlus-local)') { $c1 = Try-AnyProfilesRoot $Matches[1]; if ($c1) { Add-ProfCand $c1 "r2modman 记录过的路径" } }
-                    if ($v -match '(?i)^(.*?)\\Valheim(\\profiles)?') { $c2 = Try-AnyProfilesRoot $Matches[1]; if ($c2) { Add-ProfCand $c2 "r2modman 记录过的路径" } }
+                    $added = $false
+                    # 记录里出现 \Valheim\profiles —— 这就是档目录本身，数据文件夹改名/搬盘也能认
+                    if ($v -match '(?i)^(.*?)\\Valheim\\profiles(\\|$)') {
+                        $pv = $Matches[1] + '\Valheim\profiles'
+                        $c0 = Try-ProfilesRoot $pv
+                        if (-not $c0) { $c0 = Try-AnyProfilesRoot $Matches[1] }
+                        if ($c0) { Add-ProfCandTier $c0 "r2modman 记录过的路径"; $added = $true }
+                    }
+                    if (-not $added -and $v -match '(?i)^(.*?r2modmanPlus-local)') {
+                        $c1 = Try-AnyProfilesRoot $Matches[1]; if ($c1) { Add-ProfCandTier $c1 "r2modman 记录过的路径"; $added = $true }
+                    }
+                    if (-not $added -and $v -match '(?i)^(.*?)\\Valheim(\\profiles)?(\\|$)') {
+                        $c2 = Try-AnyProfilesRoot $Matches[1]; if ($c2) { Add-ProfCandTier $c2 "r2modman 记录过的路径"; $added = $true }
+                    }
+                    # 解析不出来也别丢：留给 -Diag / 找不到时的报告（比如记录里那个盘现在没插）
+                    if (-not $added -and $script:ProfHints.Count -lt 15 -and $v.Length -le 180) { $script:ProfHints.Add($v) }
                 }
             } catch { }
         }
@@ -1112,26 +1359,49 @@ if (-not $resolved) {
     # ④ 默认位置（APPDATA / LOCALAPPDATA / USERPROFILE）
     #    只有"里面真的还有档"才算候选；只有空壳（数据文件夹被挪到别的盘后留下的）就只记下来当提示，
     #    免得 r2modman 明明在别的盘、脚本却因为 C 盘这个残留静默装到 C 盘去。
-    foreach ($d in @((Join-Path $env:APPDATA "r2modmanPlus-local"), (Join-Path $env:LOCALAPPDATA "r2modmanPlus-local"), (Join-Path $env:USERPROFILE "AppData\Roaming\r2modmanPlus-local"))) {
-        $c = Try-ProfilesRoot $d
-        if (-not $c) { $c = Try-AnyProfilesRoot $d }
-        if ($c) {
-            if (Test-ProfRootHasProfiles $c) { Add-ProfCand $c "默认位置" }
-            elseif (-not $script:DefaultShell) { $script:DefaultShell = $c }
+    $script:DiagDefault = New-Object System.Collections.Generic.List[string]
+    $defNames = @("r2modmanPlus-local", "r2modmanPlus", "r2modman-plus", "r2modman", "Thunderstore Mod Manager")
+    $defBases = @($env:APPDATA, $env:LOCALAPPDATA, (Join-Path $env:USERPROFILE "AppData\Roaming"), (Join-Path $env:USERPROFILE "AppData\Local"))
+    foreach ($base in $defBases) {
+        if ([string]::IsNullOrWhiteSpace($base)) { continue }
+        foreach ($nm in $defNames) {
+            $d = Join-Path $base $nm
+            $exists = $false
+            try { $exists = Test-Path $d } catch { }
+            if (-not $exists) { continue }
+            $c = Try-ProfilesRoot $d
+            if (-not $c) { $c = Try-AnyProfilesRoot $d }
+            if ($c) {
+                if (Test-ProfRootHasProfiles $c) { Add-ProfCand $c "默认位置"; $script:DiagDefault.Add("✔ $d   →   可用：$c") }
+                else {
+                    $script:DiagDefault.Add("⚠ $d   →   有个空壳（一个档都没有）：$c")
+                    if (-not $script:DefaultShell) { $script:DefaultShell = $c }
+                    Add-ProfCandTier $c "默认位置（空壳）"
+                }
+            } else { $script:DiagDefault.Add("· $d   （存在，但不是数据文件夹：里面没有 $GameName\profiles）") }
         }
     }
-    # 一个都没找到 → 扫盘
-    if ($script:ProfCands.Count -eq 0) {
-        Say "  [2/7] 默认位置没有 r2modman 的档，正在扫描各硬盘（最多十几秒）…" "Yellow"
+    # ⑤ 扫各硬盘：不管前面找没找到都扫一遍
+    #    —— 有人每块盘都有一份 r2modman 数据文件夹（C 盘一份、D 盘一份）；只认"默认位置 / 记录里那一条"的话，
+    #       另一块盘那份永远看不见，也就没法让你挑（2026-09-25 加的多路径识别）。
+    if (-not $scanned) {
+        if ($script:ProfCands.Count -eq 0) { Say "        记录里 / 默认位置都没有 → 接着扫各硬盘（最多 12 秒）…" "Yellow" }
+        else { Say "        再扫一遍各硬盘，看还有没有别处（别的盘）的 r2modman 数据文件夹…（最多 12 秒）" "DarkGray" }
         $null = Scan-ProfCands
         $scanned = $true
     }
-    # 上次装的那个排最前（多半就是要升级的那份）
+    # 扫完把"空壳"（一个档都没有的数据文件夹）也放进来当备选 —— 一律排在有档的后面
+    foreach ($sh in $script:ProfShells) {
+        $dup = $false
+        foreach ($x in $script:ProfCands) { if ($x -ieq $sh) { $dup = $true; break } }
+        if (-not $dup) { Add-ProfCand $sh (Get-ProfShellSrc $sh) }
+    }
+    # 上次装的那个排最前（多半就是要升级的那份）；上次那个要是已经变成空壳，就只放最后当备选
     if ($remembered) {
         $idxR = -1
         for ($i = 0; $i -lt $script:ProfCands.Count; $i++) { if ($script:ProfCands[$i] -ieq $remembered) { $idxR = $i; break } }
         if ($idxR -gt 0) { $script:ProfCands.RemoveAt($idxR); $script:ProfCands.Insert(0, $remembered) }
-        elseif ($idxR -lt 0) { $script:ProfCands.Insert(0, $remembered) }
+        elseif ($idxR -lt 0) { Add-ProfCandTier $remembered "上次装在这" }
     }
 
     if ($script:ProfCands.Count -eq 0 -and $script:DefaultShell) {
@@ -1139,11 +1409,34 @@ if (-not $resolved) {
         Say "        $($script:DefaultShell)" "DarkGray"
         Say "        这多半是数据文件夹被挪到别的盘（r2modman→设置→Locations）后留下的空壳，所以没把它当目标。" "Yellow"
     }
-    if (($script:ProfCands.Count -eq 1) -and $NonInteractive -and -not $Pick) {
+    # 有几个候选"里面真有档"？—— 只有 2 个以上才值得让你停下来选；
+    # 1 个有档 + 若干空壳的情况直接用有档那份，别的只当信息打出来（2026-09-25）
+    $nWithProf = 0
+    $firstWithProf = $null
+    foreach ($x in $script:ProfCands) {
+        if (Test-ProfRootHasProfiles $x) { $nWithProf++; if (-not $firstWithProf) { $firstWithProf = $x } }
+    }
+    if (($script:ProfCands.Count -eq 1) -and -not $Pick) {
+        # 只有一个候选：交互模式也直接用它（否则会被当成"没找到"去问用户要路径 —— 2026-09-24 修的坑）
         $resolved = $script:ProfCands[0]
         $src1 = Get-ProfSrc $resolved
-        if ($src1) { $script:PathSource = "自动找到（$src1，-NonInteractive）" } else { $script:PathSource = "自动找到（-NonInteractive）" }
-        Say "        非交互模式使用唯一候选：$resolved" "DarkGray"
+        if ($src1) { $script:PathSource = "自动找到（$src1）" } else { $script:PathSource = "自动找到" }
+        Say "        自动找到唯一的数据文件夹：$resolved" "DarkGray"
+        if (-not (Test-ProfRootHasProfiles $resolved)) {
+            Say "        注意：这个数据文件夹里现在【一个档都没有】→ 会在里面新建一个 $ProfileName 档。" "Yellow"
+            Say "              （脚本不会新建任何路径：这条路径是你机器上本来就有的）" "DarkGray"
+        }
+        Say "        想装到别的地方：用 一键安装.bat -ProfilesRoot <路径>，或跑菜单里的 2)" "DarkGray"
+    }
+    elseif ((-not $Pick) -and ($nWithProf -eq 1) -and ($script:ProfCands.Count -gt 1)) {
+        # 只有一个位置"里面真有档"（别的都是空壳）→ 直接用有档的那份，别的只列出来看看，不拿这个烦你
+        $resolved = $firstWithProf
+        $src2 = Get-ProfSrc $resolved
+        if ($src2) { $script:PathSource = "自动找到（$src2）" } else { $script:PathSource = "自动找到" }
+        Say "        自动用这一份（里面已经有档）：$resolved" "DarkGray"
+        Say "        另外还发现 $($script:ProfCands.Count - 1) 个 r2modman 数据文件夹（里面还没有任何档），没动它们：" "DarkGray"
+        foreach ($x in $script:ProfCands) { if ($x -ine $resolved) { Say "          · $x   （$(Get-ProfCandNote $x)）" "DarkGray" } }
+        Say "        想装到别的地方：菜单里的 2) 自己指定，或用 一键安装.bat -ProfilesRoot <路径>" "DarkGray"
     }
     elseif (($script:ProfCands.Count -ge 1 -or $Pick) -and $NonInteractive) {
         $resolved = $script:ProfCands[0]
@@ -1187,7 +1480,7 @@ if (-not $resolved) {
                 $resolved = $script:ProfCands[0]; $script:PathSource = "你选的（第 1 项）"
             }
             elseif (($ansP -match '^\s*9\s*$') -and (-not $scanned)) {
-                Say "        扫描中（最多十几秒）…" "Yellow"
+                Say "        扫描中（最多 12 秒）…" "Yellow"
                 $added = Scan-ProfCands
                 $scanned = $true
                 if ($remembered) {
@@ -1203,7 +1496,7 @@ if (-not $resolved) {
                 $typedP = ("" + (Read-Host "  把数据文件夹路径粘进来（可输入完整 MAKABAKA 档目录；回车=放弃）")).Trim().Trim('"').TrimEnd('\')
                 if ([string]::IsNullOrWhiteSpace($typedP)) { continue }
                 $rT = Resolve-ExplicitProfilesRoot $typedP
-                if ($rT) { $resolved = $rT; $script:PathSource = "你手动指定" }
+                if ($rT) { $resolved = $rT; $script:PathSource = "你手动指定"; $script:PathExplicit = $true }
                 else { Say "        这个路径用不了，再试一次。" "Yellow" }
                 continue
             }
@@ -1224,15 +1517,15 @@ if (-not $resolved -and -not $NonInteractive) {
         Say "        这多半是数据文件夹被挪到别的盘后留下的空壳，所以这次没把它当目标。" "Yellow"
         Say ""
     }
-    Say "  没能自动找到 r2modman 的档目录。手动找法：" "Yellow"
+    Show-ProfDiag
     Say "    打开 r2modman → 左下 Settings（设置）→ Locations 标签页 → 点 Browse data folder" "Yellow"
     Say "    弹出的文件夹就是数据文件夹（里面有 Valheim、config、image-cache 等）" "Yellow"
     Say "    如果 r2modman 还没装/没运行过：先装好、启动一次、选好 Valheim 位置，再回来运行本脚本。" "Yellow"
     $ans = "" + (Read-Host "  把该文件夹路径粘贴到这里（也可以把文件夹直接拖进本窗口），回车=放弃")
     if (-not [string]::IsNullOrWhiteSpace($ans)) {
-        $resolved = Try-ProfilesRoot $ans
-        if (-not $resolved) { $resolved = Try-AnyProfilesRoot $ans }
-        if ($resolved) { $script:PathSource = "你手动指定" }
+        # 这是你明确指定的路径 → 用宽松解析（不存在也认，后面会按你说的建出来）
+        $resolved = Resolve-ExplicitProfilesRoot $ans
+        if ($resolved) { $script:PathSource = "你手动指定"; $script:PathExplicit = $true }
     }
 }
 if (-not $resolved) {
@@ -1293,8 +1586,8 @@ if ($Verify) {
         $sh = @(Get-ChildItem -Path $evDir -Filter "*.shaders" -File -ErrorAction SilentlyContinue)
         if ($sh.Count -ge 2) { VOk "shader 包 $($sh.Count) 个（UniVrm / OldUniVrm）" } elseif ($sh.Count -eq 1) { VWarn "shader 包只有 1 个（建议 2 个）" } else { VWarn "shader 包缺失" }
         $asm = @(Get-ChildItem -Path $evDir -Filter "*.dll" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "EnhancedValheimVRM.dll" })
-        if ($asm.Count -ge 18) { VOk "插件目录内 UniVRM 程序集 $($asm.Count) 个（≥18）" }
-        elseif ($asm.Count -gt 0) { VBad "插件目录内程序集只有 $($asm.Count) 个（应为 18）" }
+        if ($asm.Count -ge 13) { VOk "插件目录内 UniVRM 程序集 $($asm.Count) 个（≥13）" }
+        elseif ($asm.Count -gt 0) { VBad "插件目录内程序集只有 $($asm.Count) 个（应为 13）" }
         else { VWarn "插件目录里没有程序集（加载器没装全）" }
         if ($managed -and $asm.Count -gt 0) {
             $same = 0; $diff = 0; $miss = 0
@@ -1482,11 +1775,13 @@ if ($DryRun) {
 }
 
 if (-not (Test-Path $ProfilesRoot)) {
+    if (-not $script:PathExplicit) {
+        Fail "解析出来的档目录不存在：$ProfilesRoot  —— 本脚本不会自己新建路径（只认机器上现有的 r2modman 数据文件夹）。先装好 r2modman 并启动一次，或用 一键安装.bat -ProfilesRoot <数据文件夹> 明确指定。"
+    }
+    # 走到这里 = 用户自己明确指定的路径（-ProfilesRoot / 菜单里手粘的）→ 按他说的建
     try { New-Item -ItemType Directory -Path $ProfilesRoot -Force | Out-Null }
     catch { Fail "无法创建目录 $ProfilesRoot ：$($_.Exception.Message)" }
-    Say "        （该目录原本不存在，已新建）" "Yellow"
-    Say "        提示：如果 r2modman 你还没装/没运行过，请先装好 r2modman 并启动一次" "Yellow"
-    Say "             （它会自己建立目录并让你选 Valheim 安装位置），再运行本脚本。" "Yellow"
+    Say "        （这条路径是你自己指定的、机器上还没有 → 已按你说的建出来）" "Yellow"
 }
 }   # ← 结束"完整安装"的档目录探测（-VRMOnly 走上面的轻量分支）
 
@@ -1519,6 +1814,65 @@ function Disable-LegacyVrmResidue([string]$profRootThis) {
         Say "        ① $($it.F) → .old（与新版加载器不能共存；备份在 $(Split-Path $bakX -Leaf)）" "Green"
         $n++
     }
+    return $n
+}
+
+# v1.15：退役 mod 清理 —— 目标档里若还有这些 mod（老版本安装留下的），安装时【整个删掉】并先备份
+# 成因：安装器只新增/覆盖、从不删用户的活体文件 => 老用户档里的 ChestFlow.dll / ModCore.dll 一直会被
+#       BepInEx 加载，表现为"本版说已移除"其实还在跑（真实事故：ChestFlow 多人同开一箱丢物品）。
+function Remove-RetiredMods([string]$profRootThis) {
+    $pluginsX = Join-Path $profRootThis "BepInEx\plugins"
+    $cfgX     = Join-Path $profRootThis "BepInEx\config"
+    $bakX     = Join-Path (Join-Path $profRootThis "BepInEx") ("_retired_backup_" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+    $n = 0
+    $list = @(
+        @{ D = "jg224-ChestFlow";                        C = "jg224.chestflow.cfg";            Why = "多人同开一箱会丢物品，快速堆叠由自研 SafeQuickStack 接管" },
+        @{ D = "jg224-ModCore";                           C = "jg224.modcore.cfg";             Why = "只有 ChestFlow 依赖它，随 ChestFlow 一起移除" },
+        @{ D = "ChestFlowTweaks";                         C = "local.chestflow.tweaks.cfg";    Why = "ChestFlow 的自研补丁，已无作用" },
+        @{ D = "Hex_Viking-HexQuickStackStorage";         C = "com.hex.quickstackstorage.cfg"; Why = "功能与 SafeQuickStack 重叠，长期禁用" },
+        @{ D = "Stonaar-ValheimSkipIntro";                C = "lesly.valheim.skipintro.cfg";   Why = "长期禁用（游戏自带跳过片头）" },
+        @{ D = "hyr-ItemStacks";                          C = "net.mtnewton.itemstacks.cfg";   Why = "已改走 shudnal-ItemStacksItemWeights" },
+        @{ D = "KuboNinja_Squad-QuickStackStore_Valheim1_Compat"; C = "";                       Why = "QSS 的 1.0 兼容补丁，长期禁用且 QSS 正常" },
+        @{ D = "ValheimVRM_1.2.2";                        C = "";                              Why = "旧 VRM 加载器，已被 EnhancedValheimVRM 取代" }
+    )
+    foreach ($it in $list) {
+        $hit = $false
+        $dir = Join-Path $pluginsX $it.D
+        if (Test-Path $dir) {
+            New-Item -ItemType Directory -Path $bakX -Force | Out-Null
+            Copy-Item $dir (Join-Path $bakX $it.D) -Recurse -Force
+            Remove-Item $dir -Recurse -Force
+            Say ("        退役① 删目录 plugins\" + $it.D + "（" + $it.Why + "）") "Green"
+            $hit = $true
+        }
+        if ($it.C -ne "") {
+            $cf = Join-Path $cfgX $it.C
+            if (Test-Path $cf) {
+                New-Item -ItemType Directory -Path $bakX -Force | Out-Null
+                Copy-Item $cf (Join-Path $bakX $it.C) -Force
+                Remove-Item $cf -Force
+                Say ("        退役② 删配置 " + $it.C) "Green"
+                $hit = $true
+            }
+        }
+        if ($hit) { $n++ }
+    }
+    # ModCore / QSS 兼容补丁在别处留下的运行期产物（随它们一起退役）
+    $extras = @(
+        @{ Rel = "BepInEx\JG224ModCore";                                                    Wh = "ModCore 的运行期报告目录" },
+        @{ Rel = "BepInEx\patchers\KuboNinja_Squad-QuickStackStore_Valheim1_Compat";          Wh = "QSS 兼容补丁的 patcher 副本（patcher 不删会继续在启动时跑）" }
+    )
+    foreach ($extra in $extras) {
+        $p2 = Join-Path $profRootThis $extra.Rel
+        if (Test-Path $p2) {
+            New-Item -ItemType Directory -Path $bakX -Force | Out-Null
+            Copy-Item $p2 (Join-Path $bakX (Split-Path $extra.Rel -Leaf)) -Recurse -Force
+            Remove-Item $p2 -Recurse -Force
+            Say ("        退役三 删 " + $extra.Rel + "（" + $extra.Wh + "）") "Green"
+            $n++
+        }
+    }
+    if ($n -gt 0) { Say ("        （退役 mod 备份在 BepInEx\" + (Split-Path $bakX -Leaf) + "，后悔可整目录拷回）") "DarkGray" }
     return $n
 }
 
@@ -1650,14 +2004,14 @@ foreach ($rel in $Expect.Keys) {
     if ($h -ne $Expect[$rel]) { $bad += "$rel （内容与出厂不一致）" }
 }
 if ($bad.Count -eq 0) {
-    $critTxt = "EpicLoot 0.14.10、Endurance 汉化版、MinimalUI 汉化+补丁、SafeBox、ItemSkin、InventorySortOnly"
+    $critTxt = "EpicLoot 0.14.11、Endurance 汉化版、MinimalUI 汉化+补丁、SafeBox、ItemSkin、InventorySortOnly"
     Say "        关键文件校验通过 ✓（$critTxt）" "Green"
 } else {
     Say "        [注意] 以下文件与出厂版本不一致：" "Yellow"
     foreach ($b in $bad) { Say "          - $b" "Yellow" }
     Say "        （若是刚升级后仍不一致，说明升级没生效，请把本日志发我们）" "Yellow"
 }
-# 新版自制/本地插件版本上报（ChestFlow 本版已禁用、ChestFlowTweaks 已移除）
+# 新版自制/本地插件版本上报（ChestFlow / ModCore 本版已从包里移除）
 foreach ($pm in @(@{ P = "local-SafeQuickStack"; N = "SafeQuickStack（P 键快速堆叠）" },
                   @{ P = "local-VRMModelSwitcher"; N = "VRMModelSwitcher（游戏内 F9 换模型）" })) {
     try {
@@ -1672,15 +2026,14 @@ if ($script:EvMode) {
     $nDis2 = Disable-LegacyVrmResidue -profRootThis $dst
     if ($nDis2 -gt 0) { Say "        （已停用 $nDis2 个与新版加载器冲突的旧插件：.dll → .dll.old）" "Green" }
 }
+# v1.15：退役 mod（ChestFlow / ModCore / 六项无用 mod）从档里删掉，不只是停用
+$nRet = Remove-RetiredMods -profRootThis $dst
+if ($nRet -eq 0) { Say "        （没有需要退役清理的旧 mod：档里很干净）" "DarkGray" }
 try {
     $mods = Get-Content (Join-Path $dst "mods.yml") -Raw
     $enabled = ([regex]::Matches($mods, "(?m)^  enabled: true")).Count
     $disabled = ([regex]::Matches($mods, "(?m)^  enabled: false")).Count
     Say "        mod 状态：启用 $enabled 个 / 禁用 $disabled 个"
-} catch {}
-try {
-    $bytes = [System.IO.File]::ReadAllBytes((Join-Path $dst "BepInEx\plugins\ChestFlowTweaks\ChestFlowTweaks.dll"))
-    if ([System.Text.Encoding]::ASCII.GetString($bytes).Contains("0.3.1")) { Say "        ChestFlowTweaks：0.3.1（已修复掉帧 bug）" "Green" }
 } catch {}
 
 # ---------- 7) 后续步骤 ----------
@@ -1697,7 +2050,7 @@ Say "   → 详见 安装指南.txt 第 8 节""别用 r2modman 点更新的 mod"
 Say ""
 Say "  如果帧率明显偏低：" "Yellow"
 Say "   → 先看上面第 [6/7] 步是否显示""关键文件校验通过""；不一致就把日志发我们。" "Yellow"
-Say "   → 本版已禁用 ChestFlow（多人同开一箱有丢物风险），快速堆叠由自研 SafeQuickStack 接管。" "Yellow"
+Say "   → 本版已移除 ChestFlow 与 ModCore（多人同开一箱有丢物风险），快速堆叠由自研 SafeQuickStack 接管。" "Yellow"
 
 }   # ← 结束 3~7 步（-VRMOnly 不走这里）
 

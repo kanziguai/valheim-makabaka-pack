@@ -1,13 +1,14 @@
 ﻿Valheim mod 清单（r2modman 档名：MAKABAKA）
-导出：v1.14（2026-09-20）按 mods.yml 全量重导；「⚠ 本地改动」标注沿用历史记录
+导出：v1.16（2026-09-23）按 mods.yml 全量重导；「⚠ 本地改动」标注沿用历史记录
 （版本号一律取 mods.yml；「⚠ 本地改动」里的版本号是当时的记录）
-启用 39 个 / 已装禁用 6 个 / 自制·本地插件（不在 Thunderstore 上）7 个：
-SafeBox / KeepBuffsOnDeath / ItemSkin / PortalBroadcastFix / InventorySortOnly / SafeQuickStack / VRMModelSwitcher
+启用 38 条 / 已装禁用 0 条（36 个 Thunderstore 包 + 2 个本地自研条目），自制·本地插件 10 个：
+SafeBox / KeepBuffsOnDeath / ItemSkin / PortalBroadcastFix / InventorySortOnly / SafeQuickStack / VRMModelSwitcher /
+VRMAliasLink / QssButtonNudge / TablePullGate
 
 ======================================================================
-【一、启用中（39 个）】—— 前面带 * 的表示“别在 r2modman 里点 Update/Reinstall”
+【一、启用中（38 条）】—— 前面带 * 的表示“别在 r2modman 里点 Update/Reinstall”
 ======================================================================
-   1. Advize-PlantEasily  v2.2.0   by Advize
+   1. Advize-PlantEasily  v2.2.1   by Advize
      说明：Allows you to plant evenly spaced crops, either one at a time or in any amount of rows and columns, with grid snapping features and invalid crop placement prevention. Har
    2. Azumatt-AzuCraftyBoxes  v1.8.19   by Azumatt
      说明：AzuCraftyBoxes is a Valheim mod that allows players to access and use resources from nearby containers when crafting and building, based on a configurable range and item 
@@ -40,76 +41,74 @@ SafeBox / KeepBuffsOnDeath / ItemSkin / PortalBroadcastFix / InventorySortOnly /
      说明：Epic Loot translation file for Chinese simple Lang./Epic Loot 汉化
   13. coemt-Surtling_Boats  v2.0.8   by coemt
      说明：Allows you to use Surtling cores to speed up boats, can now choose a different item in the config
-  14. denikson-BepInExPack_Valheim  v5.4.2350   by denikson
-     说明：BepInEx pack for Valheim. Preconfigured with the correct entry point for mods and preferred defaults for the community.
-  15. Digitalroot-Digitalroots_Slope_Combat_Assistance  v2.0.30   by Digitalroot
+  14. Digitalroot-Digitalroots_Slope_Combat_Assistance  v2.0.30   by Digitalroot
      说明：Digitalroot's take on the Slope Combat Fix mod. DoD compatible.
-  16. DrummerCraig-OneMapToRuleThemAll  v2.8.1   by DrummerCraig
+  15. DrummerCraig-OneMapToRuleThemAll  v2.8.1   by DrummerCraig
      说明：Shared map exploration (fog of war) and player map pins across all players. Create automatic map pins and/or use client-side radar...highly configurable.
-  17. Goldenrevolver-Quick_Stack_Store_Sort_Trash_Restock  v1.4.15   by Goldenrevolver
+  16. Goldenrevolver-Quick_Stack_Store_Sort_Trash_Restock  v1.4.15   by Goldenrevolver
      说明：Quick Stacking, Sorting, Trashing and more in one cohesive package
-  18. Hex_Viking-HexEquipWhileRunning  v1.1.1   by Hex_Viking
+  17. Hex_Viking-HexEquipWhileRunning  v1.1.1   by Hex_Viking
      说明：Allows equip, unequip, and reload actions while running.
-  19. jg224-ModCore  v0.5.0   by jg224
-     说明：Gameplay-neutral coordination, compatibility, diagnostics, and shared service core for JG224 Valheim mods.
-  20. JoelOliMclean-NoRainDamage  v1.3.0   by JoelOliMclean
+  18. JoelOliMclean-NoRainDamage  v1.3.1   by JoelOliMclean
      说明：Valheim 1.0 Release Support!
-  21. KompjoeFriek-FermenterUtilities  v1.1.4   by KompjoeFriek
+  19. KompjoeFriek-FermenterUtilities  v1.1.4   by KompjoeFriek
      说明：A few customisation options for fermenters including percentage progress, not requiring cover and custom fermentation time
-  22. Korppis-Spearfishing  v1.0.5   by Korppis
+  20. Korppis-Spearfishing  v1.0.5   by Korppis
      说明：Catch fish with projectile weapons such as spear, harpoon and bow.
-  23. local-SafeQuickStack  v0.1.0   by local
+  21. local-SafeQuickStack  v0.1.0   by local
      说明：P2P-safe quick stack for ordinary player-built chests; never claims ownership.
      ⚠ 本地改动：自制 0.1.0：P 键快速堆叠（P2P 安全，不抢占箱子所有权）
      ⚠ 本地改动：自制 0.1.0：P 键快速堆叠（P2P 安全，不抢占箱子所有权）
-  24. local-VRMModelSwitcher  v1.3.1   by local
+  22. local-VRMModelSwitcher  v1.3.1   by local
      说明：Local model switcher for EnhancedValheimVRM.
-     ⚠ 本地改动：自制 1.3.1：游戏内 F9 换模型面板（配合 EnhancedValheimVRM）
-     ⚠ 本地改动：自制 1.3.1：游戏内 F9 换模型面板（配合 EnhancedValheimVRM）
-  25. RandyKnapp-EpicLoot  v0.14.10   by RandyKnapp
+     ⚠ 本地改动：自制 1.3.2：游戏内 F9 换模型面板（配合 EnhancedValheimVRM）；1.3.2 修"写模型前先断链"（防覆盖共享文件）
+  23. RandyKnapp-EpicLoot  v0.14.12   by RandyKnapp
      说明：Adds loot drops, magic items, and enchanting to Valheim.
-  26. Rawrtastic-EnhancedValheimVRM  v1.3.1   by aMidnightNova
+  24. Rawrtastic-EnhancedValheimVRM  v1.4.1   by aMidnightNova
      说明：Enhanced VRM avatar support for Valheim.
-  27. RobgobStuff-Achievement_Enabler_Plus  v2.0.3   by RobgobStuff
+  25. RobgobStuff-Achievement_Enabler_Plus  v2.0.3   by RobgobStuff
      说明：Earn achievements with mods installed and clear old cheat marks from items, characters and worlds.
-  28. Searica-DodgeShortcut  v1.4.0   by Searica
+  26. Searica-DodgeShortcut  v1.4.0   by Searica
      说明：Simple mod to add a configurable dodge button. Allows you to dodge with a single key press.
-* 29. ShelledGhost-PlanBuild  v0.18.8   by ShelledGhost
+* 27. ShelledGhost-PlanBuild  v0.18.8   by ShelledGhost
      说明：Fork of sirskunkalot's PlanBuild, updated for Valheim 1.0. Plan, copy and share your building creations with ease. Includes terrain tools and immersion items.
      ⚠ 本地改动：1.0 兼容分支版 → 点 Update/Reinstall 会覆盖，别点
-  30. shudnal-ConditionalConfigSync  v1.0.8   by shudnal
+  28. shudnal-ConditionalConfigSync  v1.0.9   by shudnal
      说明：Shared config synchronization and server policy library for Valheim mods. Installed as a dependency and compatible with Jotunn and ServerSync.
-  31. shudnal-ConfigurationManager  v1.1.21   by shudnal
+  29. shudnal-ConfigurationManager  v1.1.21   by shudnal
      说明：Localized, recolored, refined. Split view mode. Config files editor. Setting edit window. Changed values are highlighted. Prevent user input or pause the game while windo
-  32. shudnal-ItemStacksItemWeights  v1.1.1   by shudnal
+  30. shudnal-ItemStacksItemWeights  v1.1.1   by shudnal
      说明：Control item stack sizes and weights. Dynamic server-to-client synchronization. Works globally or per item.
-  33. Skarif-AutoRepairBuilding  v1.3.1812   by Skarif
+  31. Skarif-AutoRepairBuilding  v1.3.1813   by Skarif
      说明：Simple mod for auto repair buildings
-* 34. Smoothbrain-TargetPortal  v1.2.3   by Smoothbrain
+* 32. Smoothbrain-TargetPortal  v1.2.3   by Smoothbrain
      说明：Lets you target any portal, instead of having to connect two portals via a tag.
      ⚠ 本地改动：作者源码自编译（dll 内版本 1.2.6 > Thunderstore 1.2.3） → 点 Update/Reinstall 会覆盖，别点
-  35. TastyChickenLegs-HoneyPlease  v1.3.1   by TastyChickenLegs
+  33. TastyChickenLegs-HoneyPlease  v1.3.2   by TastyChickenLegs
      说明：Update and cleaned up code. Automate your Beehives. Change honey production speed and store the honey when full
-  36. ValheimModding-HookGenPatcher  v0.0.4   by ValheimModding
+  34. ValheimModding-HookGenPatcher  v0.0.4   by ValheimModding
      说明：Generates MonoMod.RuntimeDetour.HookGen's MMHOOK file during the BepInEx preloader phase.
-  37. ValheimModding-Jotunn  v2.30.1   by ValheimModding
+  35. ValheimModding-Jotunn  v2.30.2   by ValheimModding
      说明：Jötunn (/ˈjɔːtʊn/, 'giant'), the Valheim Library was created with the goal of making the lives of mod developers easier. It enables you to create mods for Valheim using a
-  38. ValheimModding-JsonDotNET  v13.0.4   by ValheimModding
+  36. ValheimModding-JsonDotNET  v13.0.4   by ValheimModding
      说明：Shared version 13.0.3 of Json.NET from Newtonsoft, net45 package for use in Valheim mods. Maintained by the ValheimModding team.
-  39. ValheimModding-YamlDotNet  v16.3.1   by ValheimModding
+  37. ValheimModding-YamlDotNet  v16.3.1   by ValheimModding
      说明：Shared version 16.3.0 of YamlDotNet from Antoine Aubry and contributors, net47 package for use in Valheim mods. Maintained by the ValheimModding team.
 
 ======================================================================
-【二、已装但禁用（6 个）】—— 想用可在 r2modman 里启用（随包带 .old 载荷的能直接启用）
-======================================================================
- 1. Hex_Viking-HexQuickStackStorage  v1.2.0   by Hex_Viking
- 2. hyr-ItemStacks  v1.2.0   by hyr
- 3. jg224-ChestFlow  v0.5.7   by jg224  （本版禁用：多人同开一箱有丢物风险；快捷存取改用自研 SafeQuickStack。载荷以 .old 形式随包，可自行启用）
- 4. KuboNinja_Squad-QuickStackStore_Valheim1_Compat  v1.0.0   by KuboNinja_Squad
- 5. Stonaar-ValheimSkipIntro  v1.0.0   by Stonaar  （游戏已自带跳过片头，故禁用）
- 6. ValheimVRM_1.2.2  v1.2.2   by yoship1639  （旧版模型加载器，已被 EnhancedValheimVRM 取代；安装脚本会自动停用它，本包不带它的文件）
+  38. VentureValheim-Muted_Mist  v1.0.0   by VentureValheim
+      说明：Reduces the mist in the Mistlands（米德兰兹减雾，纯客户端可视效果）
 
+  （另：BepInEx 本体 denikson-BepInExPack_Valheim 5.4.2350 由 r2modman 安装，
+   不在本包的 mods.yml 里；本包带的是它的 core / doorstop 目录与配置。）
+【二、已装但禁用（0 个）】—— v1.15 起不再随包任何禁用 mod
 ======================================================================
+  原 7 项已全部移除，升级时安装器会自动从档里删掉并备份到 BepInEx\_retired_backup_<时间戳>\：
+  jg224-ChestFlow、jg224-ModCore、Hex_Viking-HexQuickStackStorage、hyr-ItemStacks、
+  KuboNinja_Squad-QuickStackStore_Valheim1_Compat、Stonaar-ValheimSkipIntro、ValheimVRM_1.2.2。
+  快速堆叠改为自研 SafeQuickStack（P 键），箱子整理改为 QSS（容器面板上的"整理"按钮 / O 键）。
+  新入包且在启用中：VentureValheim-Muted_Mist v1.0.0（米德兰兹减雾，纯客户端可视效果）。
+
 【三、自制 / 本地插件（7 个，不在 Thunderstore 上，r2modman 不会更新它们）】
 ======================================================================
  1. SafeBox.dll  49664 B
@@ -124,19 +123,36 @@ SafeBox / KeepBuffsOnDeath / ItemSkin / PortalBroadcastFix / InventorySortOnly /
  5. PortalBroadcastFix.dll  12288 B
      说明：自研 1.0.0：修 TargetPortal“我新放的传送门朋友看不到，得重连/重启服务器才出现”
      ⚠ 要装在服务端（房主那台）才生效；客户端装了不会做任何事（也无副作用）
- 6. SafeQuickStack.dll  12288 B   （本地条目 local-SafeQuickStack，见【一】）
-     说明：自研 0.1.0：P2P 安全的快速堆叠（P 键），不抢占箱子所有权
- 7. VRMModelSwitcher.dll  23040 B   （本地条目 local-VRMModelSwitcher，见【一】）
-     说明：自研 1.3.1：游戏内 F9 换模型面板（配合 EnhancedValheimVRM）
+ 6. SafeQuickStack.dll  20480 B   （本地条目 local-SafeQuickStack，见【一】）
+     说明：自研 0.2.1：P2P 安全的快速堆叠（P 键），不抢占箱子所有权；
+     握手失败会在同一次按键内自动重试（最多 3 次、间隔 0.4s），并写诊断日志 [SQS] retry / settle blocked / press summary
+ 7. VRMModelSwitcher.dll  23552 B   （本地条目 local-VRMModelSwitcher，见【一】）
+     说明：自研 1.3.2：游戏内 F9 换模型面板（配合 EnhancedValheimVRM）；
+     1.3.2 修：写模型前先断开硬链接再写全新文件（此前会把共享同一 inode 的其它名字一起覆盖掉）
+ 8. VRMAliasLink.dll  47104 B
+     说明：自研 0.2.3：模型别名 + 模型广播 —— 别人自改的模型在你这边按角色名直接显示；
+     他按 F9 换模型会自动告诉你（约 2 秒跟着换），判等用【模型内容指纹 sha256 前16位】，
+     （0.2.2 = 修 0.2.0 的"一开游戏就崩"＋ 0.2.1 的"第二局会白备份一遍对方模型"；功能与 0.2.0 相同，见到 0.2.0/0.2.1 建议换掉）
+     与文件名/编号无关（两台机文件名不同、编号撞车也能对上）；手写 _别名表.txt 优先级最高；F4 立即同步。
+     本项不在 mods.yml 里 ⇒ r2modman 已装列表看不到它，但 BepInEx 照常加载（手工放的插件就是这样）
+ 9. QssButtonNudge.dll  8704 B
+     说明：自研 1.0.0：打开箱子时若 QSS 的"整理"按钮与原版"堆叠"按钮重叠，自动把它下移让开（只改位置，不碰数据）；
+     不想要就删 BepInEx\plugins\QssButtonNudge\。同样不在 mods.yml 里
+10. TablePullGate.dll  14848 B
+     说明：自研 0.1.1：EpicLoot 附魔台只在"鉴定"与"升级表"页能取附近 20 米箱子里的东西，牺牲/祛魔/附魔/增强/转换/符文只用背包；
+     同样不在 mods.yml 里
  （本版移除：ChestFlowTweaks —— 随 ChestFlow 一起不随包；VRMGhostFix —— 新加载器自带残留清理，已停用）
+  （v1.15 另移除 7 项 Thunderstore 条目与全部文件：ChestFlow、ModCore、HexQuickStackStorage、hyr-ItemStacks、
+    QSS 兼容补丁、ValheimSkipIntro、ValheimVRM 1.2.2）
 
 ======================================================================
 【附：需要更新的 md5 出厂校验值（install.ps1 用）】
 ======================================================================
 （与 install.ps1 的 $Expect 表一一对应；打包时 tools/打包分享包.py 会按包内实际文件自动刷新）
 
-    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "4ca65ee6417ace9bc35187f35be2e5d0"
-    "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll"   = "5e632a79528a5fe12c792afbb95e7d65"
+（共 15 项）
+    "BepInEx\plugins\RandyKnapp-EpicLoot\EpicLoot.dll" = "02925d7278748d8cb19bc6ba6bed08cb"
+    "BepInEx\plugins\blacks7ar-Endurance\Endurance.dll" = "5e632a79528a5fe12c792afbb95e7d65"
     "BepInEx\plugins\Skarif-AutoRepairBuilding\AutoRepairBuilding.dll" = "3519ae6136d816dbc49425f002ed3447"
     "BepInEx\plugins\SafeBox\SafeBox.dll" = "2978b55e6bd1233d802175e987327b33"
     "BepInEx\plugins\KeepBuffsOnDeath\KeepBuffsOnDeath.dll" = "6fc8037642f4bc4508d585312525e191"
@@ -145,3 +161,8 @@ SafeBox / KeepBuffsOnDeath / ItemSkin / PortalBroadcastFix / InventorySortOnly /
     "BepInEx\plugins\ItemSkin\ItemSkin.dll" = "c6a3b2aa698b120726febe59fb055bee"
     "BepInEx\plugins\Azumatt-Minimal_UI\MinimalUI.dll" = "d81470836d83a1e802fd09446b5fcea0"
     "BepInEx\plugins\InventorySortOnly\InventorySortOnly.dll" = "957c0c96dafe4d7a738a59a9837144ce"
+    "BepInEx\plugins\local-SafeQuickStack\SafeQuickStack.dll" = "7539fd5d6284b964348a5d1377653e10"
+    "BepInEx\plugins\VRMModelSwitcher\VRMModelSwitcher.dll" = "25354a2f9c6430f2259c8083db1921b4"
+    "BepInEx\plugins\local-VRMAliasLink\VRMAliasLink.dll" = "27537da72cd57200781e02065eeca1f6"
+    "BepInEx\plugins\QssButtonNudge\QssButtonNudge.dll" = "389724775d536c67d3fce96b0faa5d9c"
+    "BepInEx\plugins\local-TablePullGate\TablePullGate.dll" = "d91e55bc6452b4a4f06429aa36c12871"

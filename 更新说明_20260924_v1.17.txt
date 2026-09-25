@@ -1,0 +1,39 @@
+﻿MAKABAKA v1.17（2026-09-24）
+
+本版更新（两个上游 mod 升级，其余内容与 v1.16 相同）：
+
+- EnhancedValheimVRM 1.3.1 → 1.4.1（换模型加载器换用新版 UniVRM 运行库）
+  · 装进游戏 valheim_Data\Managed 的程序集由 18 个变成 13 个（少了 FastSpringBone 与 5 个 VRMShaders.*，
+    新增 SpringBoneJobs / UniGLTF.UniUnlit / VRM10.MToon10）——安装脚本会自动处理，不用你手动删文件。
+  · 附带修复：弹簧骨骼 Immobile / MaxAngle 限制、碰撞体尺寸上限、EnablePlayerFade 的距离判定。
+  · 你已有的模型、settings_<角色名>.txt、别名表都不会被动（安装器只更新插件与运行库）。
+  · 日志里可能仍有一条"与分享源一致/Share"的提示，属正常。
+- NoRainDamage 1.3.0 → 1.3.1
+  · 修一个判定 bug：读档后建筑在没下雨时也可能被按"淋湿"持续扣血。
+  · 你的配置（最大伤害 / 每分钟伤害 / 过滤）保持原样。
+
+- 一键安装脚本：修掉一处"看起来卡住"
+  · 机器上只找到 1 个 r2modman 数据文件夹时，交互式运行（菜单选 1）以前会落到
+    "没能自动找到档目录，请粘贴路径"那一支 —— 实际是在等你输入，不是卡死。
+    现在只有一个候选就直接用它（仍会打印用的是哪个路径）。
+    要装到别处：一键安装.bat -ProfilesRoot <路径>，或菜单里的 2)。
+  · 同时删掉了分享包里误留的一份"上次记住的路径"（测试残留），它会让升级看起来指向不存在的目录。
+
+- 一键安装脚本：找 r2modman 数据文件夹的能力加强了（认位置更准）
+  · ③ 从 r2modman 自己的记录（日志/配置）里翻路径时：只要路径里带 \Valheim\profiles 就认
+    （以前必须带 r2modman 字样）→ 数据文件夹改过名、搬到别的盘也能自动认出来。
+  · ④ 默认位置从只有 %APPDATA%\r2modmanPlus-local 扩展到 %APPDATA% / %LOCALAPPDATA% / 用户目录 下的
+    r2modmanPlus-local、r2modman、r2modmanPlus、Thunderstore Mod Manager 等，逐个查、去重，
+    且只算"里面真的有档"的（只剩空壳不当目标）。
+  · ⑤ 扫盘从 2 层加深到 6 层，跳过 Windows / Program Files 等大目录，逐层枚举不整盘递归，最多 40 秒。
+  · 新增排查开关：install.ps1 -Diag（只读；菜单里也有，选 10）—— 把"正在运行的 r2modman /
+    常见默认位置 / r2modman 记录过的路径 / 扫盘结果"全打出来。完全找不到时也会自动打这份明细，
+    不会再只丢一句"没找到"就让你粘路径。
+
+升级提示：
+
+- 升级前安装器会自动创建完整 profile 备份（桌面 MAKABAKA_backup-<时间戳>），后悔可整目录拷回。
+- 你的配置一律保留（升级模式跳过 BepInEx\config 整个目录）。
+- VRM 层是纯客户端外观，不影响联机一致性；但建议所有人都装上本版，避免各自版本不一致时排查困难。
+- 手动安装（不用安装器）的话：EnhancedValheimVRM_手动安装\ 里已经换成 1.4.1 的文件，
+  照里面的两个目录放即可 —— 旧版的 FastSpringBone.dll 与 VRMShaders.* 那 6 个程序集可以删掉。
