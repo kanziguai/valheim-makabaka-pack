@@ -98,15 +98,20 @@ function Get-SkinKindFromPrefab {
     if ([string]::IsNullOrEmpty($Prefab)) { return "" }
     if ($Prefab -match '^Battleaxe') { return "战斧" }
     if ($Prefab -match '^Bow')       { return "弓" }
+    if ($Prefab -match '^Crossbow')  { return "弩" }
+    if ($Prefab -match '^THSword')   { return "双手剑" }
     if ($Prefab -match '^Sword')     { return "剑" }
     if ($Prefab -match '^Knife')     { return "刀" }
     if ($Prefab -match '^Axe')       { return "斧" }
     if ($Prefab -match '^Mace|^Club'){ return "锤" }
-    if ($Prefab -match '^Atgeir')    { return "长柄斧" }
+    if ($Prefab -match '^Atgeir')    { return "戟" }
     if ($Prefab -match '^Spear')     { return "矛" }
     if ($Prefab -match '^Sledge')    { return "大锤" }
     if ($Prefab -match '^Shield')    { return "盾" }
     if ($Prefab -match '^Pickaxe')   { return "镐" }
+    if ($Prefab -match '^Staff')     { return "法杖" }
+    if ($Prefab -match '^Fist')      { return "拳套" }
+    if ($Prefab -match '^(Hammer|Hoe|Cultivator|Scythe|FishingRod|Tankard|Feaster|Torch|GrapplingHook)') { return "工具" }
     return ""
 }
 
@@ -337,10 +342,13 @@ function Select-SkinInteractive {
 
     # 第 2 步：要替换的物品（同类型排最前、标建议）
     $kind = $chosen.Type
+    # 弓/弩算一家：选了弓类模型，弩也排在前面（反之亦然）
+    $fam = @($kind)
+    if ($kind -eq "弓") { $fam += "弩" } elseif ($kind -eq "弩") { $fam += "弓" }
     $same = @()
     $other = @()
     foreach ($tg in $targets) {
-        if ($kind -and $tg.Kind -eq $kind) { $same += $tg } else { $other += $tg }
+        if ($kind -and ($fam -contains $tg.Kind)) { $same += $tg } else { $other += $tg }
     }
     $ord = @($same + $other)
     Write-Host ""
@@ -351,7 +359,7 @@ function Select-SkinInteractive {
     foreach ($tg in $ord) {
         $k2++
         $mark = ""
-        if ($kind -and $tg.Kind -eq $kind) { $mark = "   ★建议" }
+        if ($kind -and ($fam -contains $tg.Kind)) { $mark = "   ★建议" }
         elseif ($chosen.Suggest -and $chosen.Suggest -eq $tg.Prefab) { $mark = "   ★模型声明用于此" }
         Write-Host ("       {0,2}) {1}  [{2}]{3}" -f $k2, $tg.Label, $tg.Prefab, $mark)
     }

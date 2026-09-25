@@ -43,6 +43,18 @@ if [ -f "$SRC_MAN" ]; then
   fi
 fi
 
+# 外观替换的目标清单（跟着仓库走；模型实体走私有仓库，不同步）
+for f in "Models/武器替换/目标清单.txt" "Models/武器替换/README.txt"; do
+  src="$REPO/$f"; dst="$SHARE/$f"
+  [ -f "$src" ] || continue
+  mkdir -p "$(dirname "$dst")"
+  if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
+    echo "  [一致] $f"; same=$((same+1))
+  else
+    cp -p "$src" "$dst"; echo "  [已更新] $f（$(stat -c%s "$src") 字节）"; changed=$((changed+1))
+  fi
+done
+
 # 联机排查报告（跟着仓库走）
 for f in 联机数据同步排查_20260917.md; do
   src="$REPO/$f"; dst="$SHARE/$f"

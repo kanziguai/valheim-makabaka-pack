@@ -1,9 +1,9 @@
 ﻿Valheim mod 清单（r2modman 档名：MAKABAKA）
 导出：v1.16（2026-09-23）按 mods.yml 全量重导；「⚠ 本地改动」标注沿用历史记录
 （版本号一律取 mods.yml；「⚠ 本地改动」里的版本号是当时的记录）
-启用 38 条 / 已装禁用 0 条（36 个 Thunderstore 包 + 2 个本地自研条目），自制·本地插件 10 个：
+启用 38 条 / 已装禁用 0 条（36 个 Thunderstore 包 + 2 个本地自研条目），自制·本地插件 11 个：
 SafeBox / KeepBuffsOnDeath / ItemSkin / PortalBroadcastFix / InventorySortOnly / SafeQuickStack / VRMModelSwitcher /
-VRMAliasLink / QssButtonNudge / TablePullGate
+VRMAliasLink / QssButtonNudge / TablePullGate / RecycleYieldTweak
 
 ======================================================================
 【一、启用中（38 条）】—— 前面带 * 的表示“别在 r2modman 里点 Update/Reinstall”
@@ -109,7 +109,7 @@ VRMAliasLink / QssButtonNudge / TablePullGate
   快速堆叠改为自研 SafeQuickStack（P 键），箱子整理改为 QSS（容器面板上的"整理"按钮 / O 键）。
   新入包且在启用中：VentureValheim-Muted_Mist v1.0.0（米德兰兹减雾，纯客户端可视效果）。
 
-【三、自制 / 本地插件（7 个，不在 Thunderstore 上，r2modman 不会更新它们）】
+【三、自制 / 本地插件（11 个，不在 Thunderstore 上，r2modman 不会更新它们）】
 ======================================================================
  1. SafeBox.dll  49664 B
      说明：自研 0.5.9：随身保险柜。本版＝性能（总开关真的停掉每帧工作；格子「脏才画」；稳定态零写入）＋
@@ -141,6 +141,11 @@ VRMAliasLink / QssButtonNudge / TablePullGate
 10. TablePullGate.dll  14848 B
      说明：自研 0.1.1：EpicLoot 附魔台只在"鉴定"与"升级表"页能取附近 20 米箱子里的东西，牺牲/祛魔/附魔/增强/转换/符文只用背包；
      同样不在 mods.yml 里
+11. RecycleYieldTweak.dll  12288 B
+     说明：自研 1.0.0：附魔装备回收时固定返还【对应稀有度的尘 ×2 + 精华 ×2】，饰品（Trinket/Utility）再 +1 符文石；
+     基础材料仍按原版（配方材料 ×50%，不可堆叠物品至少各 1 个）照给，宝石照旧返还。
+     它用 Harmony 前置补丁接管 Recycle_N_Reclaim 的附魔材料那一步（不改它的 DLL），删 BepInEx\plugins\RecycleYieldTweak\ 即回退；
+     参数在 BepInEx\config\local.recycleyieldtweak.cfg。同样不在 mods.yml 里
  （本版移除：ChestFlowTweaks —— 随 ChestFlow 一起不随包；VRMGhostFix —— 新加载器自带残留清理，已停用）
   （v1.15 另移除 7 项 Thunderstore 条目与全部文件：ChestFlow、ModCore、HexQuickStackStorage、hyr-ItemStacks、
     QSS 兼容补丁、ValheimSkipIntro、ValheimVRM 1.2.2）

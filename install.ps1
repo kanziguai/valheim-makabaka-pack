@@ -155,6 +155,7 @@ $Expect = @{
     "BepInEx\plugins\local-VRMAliasLink\VRMAliasLink.dll" = "7f6ddbc17ec59178aa7a94b5c432fba1"
     "BepInEx\plugins\QssButtonNudge\QssButtonNudge.dll" = "389724775d536c67d3fce96b0faa5d9c"
     "BepInEx\plugins\local-TablePullGate\TablePullGate.dll" = "d91e55bc6452b4a4f06429aa36c12871"
+    "BepInEx\plugins\RecycleYieldTweak\RecycleYieldTweak.dll" = "d019bc3e6e8b73b5d587fac316239957"
 }
 
 # ---------- 在线安装：本地没有包时，从 GitHub Release 取最新版 ----------
@@ -187,8 +188,8 @@ $MirrorProbeSeconds = 6        # 测速单条线路超时
 $MirrorGoodEnough   = 1.5      # MB/s：某条线路已经这么快就用它，不再测后面的（省时间）
 $script:ProbeCache  = @{}      # 同一个 URL 只测一次
 # 联网拿不到校验清单时的兜底（每次发新版由仓库同步更新，随脚本一起走）
-$FallbackAsset   = "MAKABAKA_profile_v1.19_20260925.zip"
-$FallbackMd5     = "49565ab7408b8a2606ade120dea2af8e"
+$FallbackAsset   = "MAKABAKA_profile_v1.20_20260925.zip"
+$FallbackMd5     = "05aac5e4d04abfdcf253f6d9a4bb59d8"
 $script:WorkDir        = ""    # 安装包下载/解压放哪（-DownloadDir / 上次记住的 / 交互选择 / %TEMP%\makabaka_pack）
 $script:CacheDir       = ""    # = <WorkDir>\pack（下载缓存）
 $script:ModelCacheDir  = ""    # 模型缓存（换模型时用）
@@ -2682,14 +2683,16 @@ if (-not $SkipSkin) {
                     Say "        （非交互：未指定 -SkinTarget/-SkinModel → 保持现有外观设置不动）" "DarkGray"
                 }
             } else {
-                $pick = Select-SkinInteractive -LibDir $skinLibDir
-                if ([string]::IsNullOrEmpty($pick.Prefab) -or [string]::IsNullOrEmpty($pick.Model)) {
+                # 注意：变量名不能叫 $pick —— 脚本参数里有 [switch]$Pick，PowerShell 变量名不区分大小写，
+                # 给 [switch] 变量赋 PSCustomObject 会直接抛 "Cannot convert ... to SwitchParameter"（2026-09-25 真实事故）
+                $skinSel = Select-SkinInteractive -LibDir $skinLibDir
+                if ([string]::IsNullOrEmpty($skinSel.Prefab) -or [string]::IsNullOrEmpty($skinSel.Model)) {
                     $skinR = Install-Skin -ProfileDir $dst -LibDir $skinLibDir -Prefab "" -ModelName "" -PackProfileDir $src -PackRoot $packRoot -Token $skinToken -Log $skinLog
                     Say "        已按「不替换」处理（想换：重跑本脚本、或游戏里按 F1 改 local.itemskin）" "DarkGray"
                 } else {
-                    $skinR = Install-Skin -ProfileDir $dst -LibDir $skinLibDir -Prefab $pick.Prefab -ModelName $pick.Model -PackProfileDir $src -PackRoot $packRoot -Token $skinToken -Log $skinLog
+                    $skinR = Install-Skin -ProfileDir $dst -LibDir $skinLibDir -Prefab $skinSel.Prefab -ModelName $skinSel.Model -PackProfileDir $src -PackRoot $packRoot -Token $skinToken -Log $skinLog
                     if ($skinR.Ok) {
-                        Say "        ✓ 已应用：$($pick.Prefab)  ←  $($pick.Display)（$($pick.Model)）" "Green"
+                        Say "        ✓ 已应用：$($skinSel.Prefab)  ←  $($skinSel.Display)（$($skinSel.Model)）" "Green"
                         Say "        游戏里可在 F1 → Item Skin Replacer 里微调（缩放/旋转/光泽/发光颜色）" "DarkGray"
                     } else { Say "        [×] 应用失败（模型库里的目录没了？）" "Yellow" }
                 }

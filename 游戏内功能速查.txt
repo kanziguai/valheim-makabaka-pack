@@ -43,6 +43,9 @@
   HexEquipWhileRunning     跑动中可以换装 / 卸装 / 装填
   SlopeCombatAssistance    斜坡上也能正常打到敌人
   Recycle N Reclaim        制作菜单里多了"Reclaim（回收）"页，把物品拆回材料
+                           · 基础材料按配方 ×50% 返还（不可堆叠物品至少各 1 个）；拆错了 Ctrl+Z 20 秒内可撤销
+                           · 带附魔的装备（自研 RecycleYieldTweak 1.0.0）额外固定返还：对应稀有度的尘 ×2 + 精华 ×2，
+                             饰品（Trinket/Utility）再 +1 符文石；宝石照旧返还
 
 【地图 / 传送】
   OneMapToRuleThemAll      全队共享地图迷雾与标记（可在 F1 里配置雷达、自动标记）

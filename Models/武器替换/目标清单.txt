@@ -1,56 +1,21 @@
-# 武器/物品外观替换 —— 可选目标清单
+﻿# 武器/物品外观替换 —— 可选目标清单
 # 格式：<原版 prefab 名> = <显示名> | <类型>
-#   · 类型用来在前面的「选模型」之后把同类物品排到最前（可留空，留空就按名字猜：Bow*=弓、Sword*=剑…）
-#   · 名字和顺序随你改；装上也能直接手输 prefab 名（例如 BowHuntsman）
-#   · 下面这些都是游戏里真实存在的物品（已核对过 prefab 名）
+#   · 类型 = 选完模型后把同类物品排到最前（留空则按名字猜：Bow*=弓）
+#   · 名字和顺序随你改；装的时候也能直接手输 prefab 名（例如 BowSpineSnap）
+#   · 下面每一行的 prefab 名都对着游戏资源清单逐个核对过（真实存在），显示名取自游戏内置简体中文语言包
+#   · 本版只列弓（弩/剑/斧/盾/法杖…这些不提供，已按需求取消）
+#   · 熔炉里的「铸胚：…」半成品没列（例：BowGoldUncooked），需要时手输 prefab 名即可
 
+# ── 弓（12 件）──
 Bow = 粗弓 | 弓
 BowFineWood = 细木弓 | 弓
-BowHuntsman = 猎人之弓 | 弓
+BowHuntsman = 猎户弓 | 弓
 BowDraugrFang = 尸鬼之牙 | 弓
-SwordBronze = 青铜剑 | 剑
-SwordIron = 铁剑 | 剑
-SwordSilver = 银剑 | 剑
-SwordBlackmetal = 黑金属剑 | 剑
-KnifeFlint = 燧石刀 | 刀
-KnifeCopper = 铜刀 | 刀
-KnifeChitin = 甲壳刀 | 刀
-AxeStone = 石斧 | 斧
-AxeFlint = 燧石斧 | 斧
-AxeBronze = 青铜斧 | 斧
-AxeIron = 铁斧 | 斧
-Club = 棍棒 | 锤
-MaceBronze = 青铜锤 | 锤
-MaceIron = 铁锤 | 锤
-MaceSilver = 银锤 | 锤
-MaceNeedle = 针锤 | 锤
-AtgeirBronze = 青铜长柄斧 | 长柄斧
-AtgeirIron = 铁长柄斧 | 长柄斧
-AtgeirBlackmetal = 黑金属长柄斧 | 长柄斧
-SpearFlint = 燧石矛 | 矛
-SpearBronze = 青铜矛 | 矛
-SpearChitin = 甲壳矛 | 矛
-SpearWolfFang = 狼牙矛 | 矛
-SpearCarapace = 甲壳矛·黑 | 矛
-Battleaxe = 战斧 | 战斧
-BattleaxeCrystal = 水晶战斧 | 战斧
-SledgeStagbreaker = 碎鹿者 | 大锤
-SledgeIron = 铁大锤 | 大锤
-SledgeDemolisher = 毁灭者 | 大锤
-ShieldWood = 木盾 | 盾
-ShieldBronzeBuckler = 青铜圆盾 | 盾
-ShieldIronBuckler = 铁圆盾 | 盾
-ShieldBanded = 铁条盾 | 盾
-ShieldIronSquare = 铁方盾 | 盾
-ShieldSilver = 银盾 | 盾
-ShieldBlackmetal = 黑金属盾 | 盾
-ShieldCarapace = 甲壳盾 | 盾
-PickaxeAntler = 鹿角镐 | 镐
-PickaxeBronze = 青铜镐 | 镐
-PickaxeIron = 铁镐 | 镐
-Hammer = 锤子 | 工具
-Hoe = 锄头 | 工具
-Cultivator = 耕具 | 工具
-FishingRod = 钓竿 | 工具
-Torch = 火把 | 工具
-Tankard = 酒杯 | 工具
+BowSpineSnap = 断脊 | 弓
+BowAshlands = 灰烬之牙 | 弓
+BowAshlandsBlood = 嗜血之牙 | 弓
+BowAshlandsRoot = 邪根之牙 | 弓
+BowAshlandsStorm = 风暴之牙 | 弓
+BowGold = 北境之弓 | 弓
+BowGold_BloodLightning = 雷血之弓 | 弓
+BowGold_FrostFire = 冰火之弓 | 弓

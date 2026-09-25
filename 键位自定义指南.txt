@@ -48,9 +48,9 @@
   UI 编辑模式开关（本包已改 F6）                F6                      Azumatt.MinimalUI.cfg
   UI 编辑：切换编辑层（右键）                   Mouse1                  Azumatt.MinimalUI.cfg
   UI 编辑：网格开关（与 g 撞）                  G                       Azumatt.MinimalUI.cfg
-  丢弃物品                                      Delete                  Azumatt.Recycle_N_Reclaim.cfg
-  标记待回收                                    Mouse2                  Azumatt.Recycle_N_Reclaim.cfg
-  标记待回收的修饰键（与右键一起按住）          X                       Azumatt.Recycle_N_Reclaim.cfg
+  丢弃物品（本版已移除该功能）                  Delete（无效）          Azumatt.Recycle_N_Reclaim.cfg
+  标记待回收（本版已移除该功能）                Mouse2（无效）          Azumatt.Recycle_N_Reclaim.cfg
+  标记待回收的修饰键（本版已移除该功能）        X（无效）               Azumatt.Recycle_N_Reclaim.cfg
   撤销上一次回收                                Z + LeftControl         Azumatt.Recycle_N_Reclaim.cfg
   打开/关闭配置管理器（改键入口）               F1                      _shudnal.ConfigurationManager.cfg
   配置管理器窗口复位                            F1 + LeftControl        _shudnal.ConfigurationManager.cfg

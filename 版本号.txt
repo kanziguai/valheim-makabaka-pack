@@ -1,6 +1,6 @@
-﻿版本：v1.19
+﻿版本：v1.20
 日期：2026-09-25
-包文件：MAKABAKA_profile_v1.19_20260925.zip
+包文件：MAKABAKA_profile_v1.20_20260925.zip
 
 命名规则（从 v1.0 起）：安装包文件名一律带版本号，格式
   MAKABAKA_profile_v<主.次>_<打包日期>.zip

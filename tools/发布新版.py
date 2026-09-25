@@ -174,7 +174,8 @@ def main():
 
     # ---- 3) install.ps1 内置兜底版本 ----
     ps = ROOT / "install.ps1"
-    pstext = ps.read_text(encoding="utf-8")
+    # newline="" 必须加：否则 CRLF 会被读成 LF，写回就把整份脚本的换行改掉（2026-09-25 真实事故）
+    pstext = ps.read_text(encoding="utf-8-sig", newline="")
     pstext, n1 = re.subn(r'\$FallbackAsset\s*=\s*"[^"]+"', '$FallbackAsset   = "%s"' % zname, pstext)
     pstext, n2 = re.subn(r'\$FallbackMd5\s*=\s*"[^"]+"', '$FallbackMd5     = "%s"' % md5, pstext)
     if n1 != 1 or n2 != 1:
@@ -183,7 +184,7 @@ def main():
         args.date[:4], args.date[4:6], args.date[6:8]), pstext)
     if n3 != 1:
         die("install.ps1 里的 $ScriptBuild 没替换成功（n3=%d），请手改" % n3)
-    ps.write_text(pstext, encoding="utf-8")
+    ps.write_text(pstext, encoding="utf-8-sig", newline="")   # BOM + CRLF 原样写回
     log("已更新 install.ps1 内置兜底版本与脚本日期")
 
     # ---- 4) git 提交推送 ----

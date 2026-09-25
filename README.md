@@ -1,7 +1,7 @@
 ﻿# 英灵神殿 MAKABAKA 整合档 · 一键安装
 
 Valheim 1.0 联机整合档（r2modman profile）：**mods.yml 38 条（36 个 Thunderstore 包 + 2 个本地条目，全部启用，无禁用项）**
-＋ 自制插件（SafeBox 0.6.0、SafeQuickStack 0.2.1、KeepBuffsOnDeath 1.0.1、ItemSkin 1.0.1、PortalBroadcastFix、InventorySortOnly 1.0.1、
+＋ 自制插件（SafeBox 0.6.0、SafeQuickStack 0.2.1、KeepBuffsOnDeath 1.0.1、ItemSkin 1.0.1、PortalBroadcastFix、InventorySortOnly 1.0.1、RecycleYieldTweak 1.0.0、
 VRMModelSwitcher 1.3.2、VRMAliasLink 0.2.3、QssButtonNudge 1.0.0、TablePullGate 0.1.1）
 ＋ 减雾 Muted_Mist ＋ Azumatt-Hooked 1.1.1（已调平衡）＋ Achievement_Enabler_Plus 2.0.3。
 （v1.15 起 ChestFlow 与 ModCore 已移除：多人同开一箱有丢物风险；快速堆叠用自研 SafeQuickStack，箱子整理用 QSS。
@@ -43,7 +43,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\联机一致性自检.ps1 
   - 预览图：`Models\武器替换\预览\<模型名>.jpg`（随包分发，看得到图才需要下模型）
   - 只有清单排名没有实体的模型标「需凭据下载」：安装时用令牌从私有仓库取（校验 sha256）；没有凭据就跳过
 - **第 2 步 选物品**：**同类型**物品排在最前并标 ★建议；也可直接手输 prefab 名
-  - 清单：`Models\武器替换\目标清单.txt`，格式 `<prefab> = <显示名> | <类型>`（50 个游戏内真实存在的物品，可自行增删）
+  - 清单：`Models\武器替换\目标清单.txt`，格式 `<prefab> = <显示名> | <类型>`
+    （**本版只列弓**：12 支 —— 粗弓/细木弓/猎户弓/尸鬼之牙/断脊/灰烬之牙/嗜血之牙/邪根之牙/风暴之牙/北境之弓/雷血之弓/冰火之弓）
+     名字与顺序可自行增删；prefab 名与显示名都对着游戏数据逐个核对过。弩/剑/斧/盾/法杖等其它物品未列入。
 - 插件本体：`BepInEx\plugins\ItemSkin\`（配置 `local.itemskin.cfg`，游戏里按 F1 也能改）
 - 非交互参数：`-SkinTarget BowDraugrFang -SkinModel 灵跃心弦`；`-SkipSkin` 跳过
 
@@ -266,6 +268,18 @@ $d="$env:USERPROFILE\valheim-makabaka-pack"; if (Test-Path "$d\.git") { git -C $
 
 ## 7. 版本历史
 
+- **v1.20（2026-09-25）**
+  - 新增自研 `RecycleYieldTweak` 1.0.0：**附魔装备回收的材料固定给**。Recycle_N_Reclaim 原本要按"稀有度+物品类型"
+    去 EpicLoot 配置查附魔成本、再逐条校验你认不认识那件附魔材料/配方，任何一步不满足就静默跳过（或加"缺少需求"
+    挡住整件）→ 表现为"有的附魔装备拆了给尘/精华，有的什么也不给"。现在只要这件装备能被回收：
+    **基础材料照旧**（配方材料 × 50%，不可堆叠物品取整后至少 1 个）＋ **对应稀有度的尘 ×2 + 精华 ×2**
+    （饰品再 +1 符文石），宝石照旧返还。参数在 `BepInEx\config\local.recycleyieldtweak.cfg`；
+    不想要就删 `BepInEx\plugins\RecycleYieldTweak\`（它不改 Recycle_N_Reclaim.dll 一个字节，版本/哈希校验不受影响）。
+  - 武器/物品外观替换的**目标清单改为只列弓**（12 支：粗弓/细木弓/猎户弓/尸鬼之牙/断脊/灰烬之牙/嗜血之牙/邪根之牙/
+    风暴之牙/北境之弓/雷血之弓/冰火之弓），并纠正了旧清单里的显示名（如"猎人之弓"→官方名"猎户弓"）；
+    `SkinLib.ps1` 补上 弩/双手剑/戟/法杖/拳套/工具 的类型识别，且弓与弩算一家。
+  - 文档：键位指南里 Recycle_N_Reclaim 的「丢弃物品 / 标记待回收」三个键标注为"本版已移除"（自编译版摘了该功能）。
+  - 含 v1.19 的全部内容。
 - **v1.19（2026-09-25）**
   - 自研 `VRMAliasLink` 0.2.0 → **0.2.3（三次修复）**。0.2.0 里有个属性自引用（表达式体里又读自己），
     一被读就无限递归 → 栈溢出：点启动后十几秒进程消失、游戏窗口起不来，Windows 事件日志 `0xc0000005 / ntdll.dll`，
